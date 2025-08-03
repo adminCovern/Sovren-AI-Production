@@ -1,0 +1,224 @@
+<svg viewBox="0 0 1400 900" xmlns="http://www.w3.org/2000/svg">
+  <!-- Title -->
+  <text x="700" y="30" text-anchor="middle" font-size="24" font-weight="bold">SOVREN AI - Data Flow Architecture</text>
+  
+  <!-- User Interactions -->
+  <g id="user-layer">
+    <rect x="50" y="60" width="200" height="80" fill="#E3F2FD" stroke="#1565C0" stroke-width="2" rx="5"/>
+    <text x="150" y="90" text-anchor="middle" font-size="14" font-weight="bold">User Interactions</text>
+    <text x="150" y="110" text-anchor="middle" font-size="12">• Voice Commands</text>
+    <text x="150" y="125" text-anchor="middle" font-size="12">• Gestures/Clicks</text>
+  </g>
+  
+  <!-- Frontend State Flow -->
+  <g id="frontend-flow">
+    <rect x="350" y="60" width="300" height="140" fill="#F3E5F5" stroke="#7B1FA2" stroke-width="2" rx="5"/>
+    <text x="500" y="85" text-anchor="middle" font-size="14" font-weight="bold">Frontend (React/Three.js)</text>
+    
+    <rect x="370" y="100" width="120" height="40" fill="#E1BEE7" stroke="#7B1FA2" rx="3"/>
+    <text x="430" y="125" text-anchor="middle" font-size="11">3D Scene State</text>
+    
+    <rect x="510" y="100" width="120" height="40" fill="#E1BEE7" stroke="#7B1FA2" rx="3"/>
+    <text x="570" y="125" text-anchor="middle" font-size="11">Redux Store</text>
+    
+    <rect x="430" y="150" width="140" height="40" fill="#E1BEE7" stroke="#7B1FA2" rx="3"/>
+    <text x="500" y="175" text-anchor="middle" font-size="11">WebSocket Client</text>
+  </g>
+  
+  <!-- Real-time Communication -->
+  <g id="realtime-layer">
+    <rect x="750" y="60" width="250" height="140" fill="#E8F5E9" stroke="#388E3C" stroke-width="2" rx="5"/>
+    <text x="875" y="85" text-anchor="middle" font-size="14" font-weight="bold">Real-time Layer</text>
+    
+    <rect x="770" y="100" width="210" height="30" fill="#C8E6C9" stroke="#388E3C" rx="3"/>
+    <text x="875" y="120" text-anchor="middle" font-size="11">WebSocket Server</text>
+    
+    <rect x="770" y="140" width="100" height="30" fill="#C8E6C9" stroke="#388E3C" rx="3"/>
+    <text x="820" y="160" text-anchor="middle" font-size="11">Event Bus</text>
+    
+    <rect x="880" y="140" width="100" height="30" fill="#C8E6C9" stroke="#388E3C" rx="3"/>
+    <text x="930" y="160" text-anchor="middle" font-size="11">Pub/Sub</text>
+  </g>
+  
+  <!-- Executive Processing -->
+  <g id="executive-layer">
+    <rect x="1100" y="60" width="250" height="140" fill="#FFF3E0" stroke="#F57C00" stroke-width="2" rx="5"/>
+    <text x="1225" y="85" text-anchor="middle" font-size="14" font-weight="bold">Executive Engine</text>
+    
+    <rect x="1120" y="100" width="210" height="30" fill="#FFE0B2" stroke="#F57C00" rx="3"/>
+    <text x="1225" y="120" text-anchor="middle" font-size="11">8 Shadow Board Execs</text>
+    
+    <rect x="1120" y="140" width="100" height="30" fill="#FFE0B2" stroke="#F57C00" rx="3"/>
+    <text x="1170" y="160" text-anchor="middle" font-size="11">RAFT State</text>
+    
+    <rect x="1230" y="140" width="100" height="30" fill="#FFE0B2" stroke="#F57C00" rx="3"/>
+    <text x="1280" y="160" text-anchor="middle" font-size="11">Decisions</text>
+  </g>
+  
+  <!-- API Gateway -->
+  <g id="api-gateway">
+    <rect x="50" y="250" width="1300" height="80" fill="#FFEBEE" stroke="#C62828" stroke-width="2" rx="5"/>
+    <text x="700" y="275" text-anchor="middle" font-size="16" font-weight="bold">API Gateway & Integration Layer</text>
+    
+    <rect x="100" y="285" width="150" height="35" fill="#FFCDD2" stroke="#C62828" rx="3"/>
+    <text x="175" y="307" text-anchor="middle" font-size="12">Auth Handler</text>
+    
+    <rect x="300" y="285" width="150" height="35" fill="#FFCDD2" stroke="#C62828" rx="3"/>
+    <text x="375" y="307" text-anchor="middle" font-size="12">Request Router</text>
+    
+    <rect x="500" y="285" width="150" height="35" fill="#FFCDD2" stroke="#C62828" rx="3"/>
+    <text x="575" y="307" text-anchor="middle" font-size="12">Rate Limiter</text>
+    
+    <rect x="700" y="285" width="150" height="35" fill="#FFCDD2" stroke="#C62828" rx="3"/>
+    <text x="775" y="307" text-anchor="middle" font-size="12">Integration APIs</text>
+    
+    <rect x="900" y="285" width="150" height="35" fill="#FFCDD2" stroke="#C62828" rx="3"/>
+    <text x="975" y="307" text-anchor="middle" font-size="12">Webhook Handler</text>
+    
+    <rect x="1100" y="285" width="150" height="35" fill="#FFCDD2" stroke="#C62828" rx="3"/>
+    <text x="1175" y="307" text-anchor="middle" font-size="12">Response Cache</text>
+  </g>
+  
+  <!-- Backend Services -->
+  <g id="backend-services">
+    <!-- Email Service -->
+    <rect x="50" y="380" width="200" height="120" fill="#E8EAF6" stroke="#3F51B5" stroke-width="2" rx="5"/>
+    <text x="150" y="405" text-anchor="middle" font-size="13" font-weight="bold">Email Service</text>
+    <text x="150" y="425" text-anchor="middle" font-size="11">• Gmail API</text>
+    <text x="150" y="440" text-anchor="middle" font-size="11">• Outlook API</text>
+    <text x="150" y="455" text-anchor="middle" font-size="11">• IMAP/SMTP</text>
+    <text x="150" y="475" text-anchor="middle" font-size="11">→ Executive Drafts</text>
+    <text x="150" y="490" text-anchor="middle" font-size="11">→ Auto Responses</text>
+    
+    <!-- Calendar Service -->
+    <rect x="280" y="380" width="200" height="120" fill="#E8EAF6" stroke="#3F51B5" stroke-width="2" rx="5"/>
+    <text x="380" y="405" text-anchor="middle" font-size="13" font-weight="bold">Calendar Service</text>
+    <text x="380" y="425" text-anchor="middle" font-size="11">• Google Calendar</text>
+    <text x="380" y="440" text-anchor="middle" font-size="11">• Outlook Calendar</text>
+    <text x="380" y="455" text-anchor="middle" font-size="11">• CalDAV</text>
+    <text x="380" y="475" text-anchor="middle" font-size="11">→ AI Scheduling</text>
+    <text x="380" y="490" text-anchor="middle" font-size="11">→ Conflict Res</text>
+    
+    <!-- CRM Service -->
+    <rect x="510" y="380" width="200" height="120" fill="#E8EAF6" stroke="#3F51B5" stroke-width="2" rx="5"/>
+    <text x="610" y="405" text-anchor="middle" font-size="13" font-weight="bold">CRM Service</text>
+    <text x="610" y="425" text-anchor="middle" font-size="11">• Salesforce</text>
+    <text x="610" y="440" text-anchor="middle" font-size="11">• HubSpot</text>
+    <text x="610" y="455" text-anchor="middle" font-size="11">• Pipedrive</text>
+    <text x="610" y="475" text-anchor="middle" font-size="11">→ Deal Updates</text>
+    <text x="610" y="490" text-anchor="middle" font-size="11">→ Auto Actions</text>
+    
+    <!-- Voice Service -->
+    <rect x="740" y="380" width="200" height="120" fill="#E8EAF6" stroke="#3F51B5" stroke-width="2" rx="5"/>
+    <text x="840" y="405" text-anchor="middle" font-size="13" font-weight="bold">Voice Service</text>
+    <text x="840" y="425" text-anchor="middle" font-size="11">• FreeSwitch PBX</text>
+    <text x="840" y="440" text-anchor="middle" font-size="11">• Skyetel Trunk</text>
+    <text x="840" y="455" text-anchor="middle" font-size="11">• WebRTC</text>
+    <text x="840" y="475" text-anchor="middle" font-size="11">→ Executive Calls</text>
+    <text x="840" y="490" text-anchor="middle" font-size="11">→ Transcription</text>
+    
+    <!-- GPU Manager -->
+    <rect x="970" y="380" width="180" height="120" fill="#E8EAF6" stroke="#3F51B5" stroke-width="2" rx="5"/>
+    <text x="1060" y="405" text-anchor="middle" font-size="13" font-weight="bold">GPU Manager</text>
+    <text x="1060" y="425" text-anchor="middle" font-size="11">• 8x B200 GPUs</text>
+    <text x="1060" y="440" text-anchor="middle" font-size="11">• Dynamic Alloc</text>
+    <text x="1060" y="455" text-anchor="middle" font-size="11">• Whisper ASR</text>
+    <text x="1060" y="475" text-anchor="middle" font-size="11">• StyleTTS2</text>
+    <text x="1060" y="490" text-anchor="middle" font-size="11">• Mixtral LLM</text>
+    
+    <!-- Security -->
+    <rect x="1180" y="380" width="170" height="120" fill="#E8EAF6" stroke="#3F51B5" stroke-width="2" rx="5"/>
+    <text x="1265" y="405" text-anchor="middle" font-size="13" font-weight="bold">Security</text>
+    <text x="1265" y="425" text-anchor="middle" font-size="11">• Zero-Knowledge</text>
+    <text x="1265" y="440" text-anchor="middle" font-size="11">• Adversarial</text>
+    <text x="1265" y="455" text-anchor="middle" font-size="11">• Audit Chain</text>
+    <text x="1265" y="475" text-anchor="middle" font-size="11">• Encryption</text>
+    <text x="1265" y="490" text-anchor="middle" font-size="11">• Access Control</text>
+  </g>
+  
+  <!-- Data Stores -->
+  <g id="data-stores">
+    <rect x="50" y="550" width="300" height="100" fill="#E0F2F1" stroke="#00796B" stroke-width="2" rx="5"/>
+    <text x="200" y="575" text-anchor="middle" font-size="14" font-weight="bold">PostgreSQL</text>
+    <text x="200" y="595" text-anchor="middle" font-size="11">• Executive State</text>
+    <text x="200" y="610" text-anchor="middle" font-size="11">• User Data</text>
+    <text x="200" y="625" text-anchor="middle" font-size="11">• Integration Config</text>
+    <text x="200" y="640" text-anchor="middle" font-size="11">• Activity History</text>
+    
+    <rect x="380" y="550" width="300" height="100" fill="#E0F2F1" stroke="#00796B" stroke-width="2" rx="5"/>
+    <text x="530" y="575" text-anchor="middle" font-size="14" font-weight="bold">Redis Cache</text>
+    <text x="530" y="595" text-anchor="middle" font-size="11">• Session Data</text>
+    <text x="530" y="610" text-anchor="middle" font-size="11">• Real-time State</text>
+    <text x="530" y="625" text-anchor="middle" font-size="11">• API Responses</text>
+    <text x="530" y="640" text-anchor="middle" font-size="11">• GPU Allocation</text>
+    
+    <rect x="710" y="550" width="300" height="100" fill="#E0F2F1" stroke="#00796B" stroke-width="2" rx="5"/>
+    <text x="860" y="575" text-anchor="middle" font-size="14" font-weight="bold">Blockchain Audit</text>
+    <text x="860" y="595" text-anchor="middle" font-size="11">• Decision History</text>
+    <text x="860" y="610" text-anchor="middle" font-size="11">• Approval Chain</text>
+    <text x="860" y="625" text-anchor="middle" font-size="11">• Immutable Logs</text>
+    <text x="860" y="640" text-anchor="middle" font-size="11">• Compliance Records</text>
+    
+    <rect x="1040" y="550" width="310" height="100" fill="#E0F2F1" stroke="#00796B" stroke-width="2" rx="5"/>
+    <text x="1195" y="575" text-anchor="middle" font-size="14" font-weight="bold">Time Machine DB</text>
+    <text x="1195" y="595" text-anchor="middle" font-size="11">• Temporal Data</text>
+    <text x="1195" y="610" text-anchor="middle" font-size="11">• Causality Tracking</text>
+    <text x="1195" y="625" text-anchor="middle" font-size="11">• What-If Analysis</text>
+    <text x="1195" y="640" text-anchor="middle" font-size="11">• Pattern History</text>
+  </g>
+  
+  <!-- Data Flow Arrows -->
+  <g id="arrows" stroke="#666" stroke-width="2" fill="none" marker-end="url(#arrowhead)">
+    <!-- User to Frontend -->
+    <path d="M 250 100 L 350 100"/>
+    
+    <!-- Frontend to Real-time -->
+    <path d="M 650 130 L 750 130"/>
+    
+    <!-- Real-time to Executive -->
+    <path d="M 1000 130 L 1100 130"/>
+    
+    <!-- All to API Gateway -->
+    <path d="M 150 140 L 150 250"/>
+    <path d="M 500 200 L 500 250"/>
+    <path d="M 875 200 L 875 250"/>
+    <path d="M 1225 200 L 1225 250"/>
+    
+    <!-- API Gateway to Services -->
+    <path d="M 175 330 L 150 380"/>
+    <path d="M 375 330 L 380 380"/>
+    <path d="M 575 330 L 610 380"/>
+    <path d="M 775 330 L 840 380"/>
+    <path d="M 975 330 L 1060 380"/>
+    <path d="M 1175 330 L 1265 380"/>
+    
+    <!-- Services to Data Stores -->
+    <path d="M 150 500 L 200 550"/>
+    <path d="M 380 500 L 530 550"/>
+    <path d="M 610 500 L 530 550"/>
+    <path d="M 840 500 L 860 550"/>
+    <path d="M 1060 500 L 860 550"/>
+    <path d="M 1265 500 L 1195 550"/>
+    
+    <!-- Bidirectional flows -->
+    <path d="M 530 650 L 530 700" stroke-dasharray="5,5"/>
+    <path d="M 860 650 L 860 700" stroke-dasharray="5,5"/>
+  </g>
+  
+  <!-- Arrow marker -->
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="0" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#666"/>
+    </marker>
+  </defs>
+  
+  <!-- Key Data Flows Legend -->
+  <g id="legend" transform="translate(50, 750)">
+    <text x="0" y="0" font-size="16" font-weight="bold">Key Data Flows:</text>
+    <text x="0" y="25" font-size="12">1. User Action → Frontend → WebSocket → Executive Engine → Decision</text>
+    <text x="0" y="45" font-size="12">2. Executive Decision → API Gateway → Integration Service → External System</text>
+    <text x="0" y="65" font-size="12">3. External Event → Webhook → Event Bus → Executive Engine → Frontend Update</text>
+    <text x="0" y="85" font-size="12">4. All Actions → Blockchain Audit Trail (Immutable Record)</text>
+    <text x="0" y="105" font-size="12">5. GPU Resources → Dynamic Allocation → Voice/AI Processing → Real-time Response</text>
+  </g>
+</svg>

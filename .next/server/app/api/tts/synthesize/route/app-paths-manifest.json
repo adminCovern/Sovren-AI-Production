@@ -1,0 +1,3 @@
+{
+  "/api/tts/synthesize/route": "app/api/tts/synthesize/route.js"
+}

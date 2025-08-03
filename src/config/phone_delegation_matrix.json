@@ -1,0 +1,537 @@
+{
+  "version": "1.0",
+  "lastUpdated": "2024-01-15T00:00:00Z",
+  "description": "Phone call delegation matrix for SOVREN AI and executive team",
+  
+  "entities": {
+    "sovren-ai": {
+      "name": "SOVREN AI",
+      "role": "Neural OS Core",
+      "phoneNumber": "+1-555-SOVREN",
+      "priority": 11,
+      "capabilities": {
+        "canInitiateCalls": true,
+        "canReceiveCalls": true,
+        "canTransferCalls": true,
+        "canConferenceCalls": true,
+        "maxConcurrentCalls": 10,
+        "autoAnswer": true,
+        "recordCalls": true
+      },
+      "specializations": [
+        "system-control",
+        "neural-processing", 
+        "decision-making",
+        "orchestration",
+        "intelligence",
+        "omniscience",
+        "emergency-response"
+      ],
+      "workingHours": {
+        "timezone": "UTC",
+        "schedule": "24/7",
+        "alwaysAvailable": true
+      }
+    },
+    
+    "ceo": {
+      "name": "Chief Executive Officer",
+      "role": "CEO", 
+      "phoneNumber": "+1-555-CEO-EXEC",
+      "priority": 10,
+      "capabilities": {
+        "canInitiateCalls": true,
+        "canReceiveCalls": true,
+        "canTransferCalls": true,
+        "canConferenceCalls": true,
+        "maxConcurrentCalls": 3,
+        "autoAnswer": false,
+        "recordCalls": true
+      },
+      "specializations": [
+        "strategy",
+        "vision", 
+        "leadership",
+        "board-relations",
+        "investor-relations",
+        "partnerships",
+        "crisis-management"
+      ],
+      "workingHours": {
+        "timezone": "America/New_York",
+        "schedule": "Monday-Friday 8:00-18:00",
+        "emergencyAvailable": true
+      }
+    },
+    
+    "cfo": {
+      "name": "Chief Financial Officer",
+      "role": "CFO",
+      "phoneNumber": "+1-555-CFO-EXEC", 
+      "priority": 9,
+      "capabilities": {
+        "canInitiateCalls": true,
+        "canReceiveCalls": true,
+        "canTransferCalls": true,
+        "canConferenceCalls": true,
+        "maxConcurrentCalls": 3,
+        "autoAnswer": false,
+        "recordCalls": true
+      },
+      "specializations": [
+        "finance",
+        "budget",
+        "accounting", 
+        "investors",
+        "funding",
+        "financial-planning",
+        "risk-management"
+      ],
+      "workingHours": {
+        "timezone": "America/New_York",
+        "schedule": "Monday-Friday 8:00-18:00",
+        "emergencyAvailable": true
+      }
+    },
+    
+    "cto": {
+      "name": "Chief Technology Officer", 
+      "role": "CTO",
+      "phoneNumber": "+1-555-CTO-EXEC",
+      "priority": 8,
+      "capabilities": {
+        "canInitiateCalls": true,
+        "canReceiveCalls": true,
+        "canTransferCalls": true,
+        "canConferenceCalls": true,
+        "maxConcurrentCalls": 4,
+        "autoAnswer": false,
+        "recordCalls": true
+      },
+      "specializations": [
+        "technology",
+        "development",
+        "infrastructure", 
+        "security",
+        "innovation",
+        "technical-architecture",
+        "system-integration"
+      ],
+      "workingHours": {
+        "timezone": "America/New_York", 
+        "schedule": "Monday-Friday 9:00-19:00",
+        "emergencyAvailable": true
+      }
+    },
+    
+    "cmo": {
+      "name": "Chief Marketing Officer",
+      "role": "CMO",
+      "phoneNumber": "+1-555-CMO-EXEC",
+      "priority": 7,
+      "capabilities": {
+        "canInitiateCalls": true,
+        "canReceiveCalls": true,
+        "canTransferCalls": true,
+        "canConferenceCalls": true,
+        "maxConcurrentCalls": 4,
+        "autoAnswer": false,
+        "recordCalls": true
+      },
+      "specializations": [
+        "marketing",
+        "branding",
+        "campaigns",
+        "customers",
+        "growth",
+        "public-relations",
+        "customer-acquisition"
+      ],
+      "workingHours": {
+        "timezone": "America/New_York",
+        "schedule": "Monday-Friday 8:00-18:00", 
+        "emergencyAvailable": false
+      }
+    },
+    
+    "coo": {
+      "name": "Chief Operating Officer",
+      "role": "COO",
+      "phoneNumber": "+1-555-COO-EXEC",
+      "priority": 8,
+      "capabilities": {
+        "canInitiateCalls": true,
+        "canReceiveCalls": true,
+        "canTransferCalls": true,
+        "canConferenceCalls": true,
+        "maxConcurrentCalls": 4,
+        "autoAnswer": false,
+        "recordCalls": true
+      },
+      "specializations": [
+        "operations",
+        "processes",
+        "efficiency",
+        "logistics",
+        "management",
+        "supply-chain",
+        "quality-control"
+      ],
+      "workingHours": {
+        "timezone": "America/New_York",
+        "schedule": "Monday-Friday 8:00-18:00",
+        "emergencyAvailable": true
+      }
+    },
+    
+    "chro": {
+      "name": "Chief Human Resources Officer",
+      "role": "CHRO", 
+      "phoneNumber": "+1-555-CHRO-EXEC",
+      "priority": 6,
+      "capabilities": {
+        "canInitiateCalls": true,
+        "canReceiveCalls": true,
+        "canTransferCalls": true,
+        "canConferenceCalls": true,
+        "maxConcurrentCalls": 3,
+        "autoAnswer": false,
+        "recordCalls": true
+      },
+      "specializations": [
+        "hr",
+        "hiring",
+        "culture",
+        "employees",
+        "benefits",
+        "talent-management",
+        "employee-relations"
+      ],
+      "workingHours": {
+        "timezone": "America/New_York",
+        "schedule": "Monday-Friday 8:00-17:00",
+        "emergencyAvailable": false
+      }
+    },
+    
+    "clo": {
+      "name": "Chief Legal Officer",
+      "role": "CLO",
+      "phoneNumber": "+1-555-CLO-EXEC", 
+      "priority": 7,
+      "capabilities": {
+        "canInitiateCalls": true,
+        "canReceiveCalls": true,
+        "canTransferCalls": true,
+        "canConferenceCalls": true,
+        "maxConcurrentCalls": 2,
+        "autoAnswer": false,
+        "recordCalls": true
+      },
+      "specializations": [
+        "legal",
+        "compliance",
+        "contracts",
+        "risk",
+        "governance",
+        "regulatory-affairs",
+        "intellectual-property"
+      ],
+      "workingHours": {
+        "timezone": "America/New_York",
+        "schedule": "Monday-Friday 9:00-18:00",
+        "emergencyAvailable": true
+      }
+    },
+    
+    "cso": {
+      "name": "Chief Strategy Officer",
+      "role": "CSO",
+      "phoneNumber": "+1-555-CSO-EXEC",
+      "priority": 7,
+      "capabilities": {
+        "canInitiateCalls": true,
+        "canReceiveCalls": true,
+        "canTransferCalls": true,
+        "canConferenceCalls": true,
+        "maxConcurrentCalls": 3,
+        "autoAnswer": false,
+        "recordCalls": true
+      },
+      "specializations": [
+        "strategy",
+        "planning",
+        "analysis",
+        "competition",
+        "growth",
+        "market-research",
+        "business-development"
+      ],
+      "workingHours": {
+        "timezone": "America/New_York",
+        "schedule": "Monday-Friday 8:00-18:00",
+        "emergencyAvailable": false
+      }
+    }
+  },
+  
+  "delegationRules": [
+    {
+      "id": "emergency-escalation",
+      "priority": 1,
+      "conditions": {
+        "keywords": ["emergency", "urgent", "crisis", "down", "outage", "security breach"],
+        "callerType": "any",
+        "timeOfDay": "any"
+      },
+      "actions": {
+        "primaryHandler": "sovren-ai",
+        "escalateTo": ["ceo", "cto", "coo"],
+        "notifyAll": true,
+        "recordCall": true,
+        "transcribeCall": true
+      }
+    },
+    
+    {
+      "id": "investor-relations",
+      "priority": 2,
+      "conditions": {
+        "keywords": ["investor", "funding", "investment", "venture", "capital", "board"],
+        "callerType": "external",
+        "timeOfDay": "business-hours"
+      },
+      "actions": {
+        "primaryHandler": "ceo",
+        "backupHandler": "cfo",
+        "notifyOthers": ["sovren-ai"],
+        "recordCall": true,
+        "transcribeCall": true
+      }
+    },
+    
+    {
+      "id": "financial-matters",
+      "priority": 3,
+      "conditions": {
+        "keywords": ["budget", "financial", "accounting", "revenue", "expenses", "audit"],
+        "callerType": "any",
+        "timeOfDay": "business-hours"
+      },
+      "actions": {
+        "primaryHandler": "cfo",
+        "backupHandler": "ceo",
+        "notifyOthers": ["sovren-ai"],
+        "recordCall": true,
+        "transcribeCall": true
+      }
+    },
+    
+    {
+      "id": "technical-issues",
+      "priority": 4,
+      "conditions": {
+        "keywords": ["technical", "system", "bug", "development", "infrastructure", "security"],
+        "callerType": "any",
+        "timeOfDay": "any"
+      },
+      "actions": {
+        "primaryHandler": "cto",
+        "backupHandler": "sovren-ai",
+        "notifyOthers": [],
+        "recordCall": true,
+        "transcribeCall": true
+      }
+    },
+    
+    {
+      "id": "marketing-inquiries",
+      "priority": 5,
+      "conditions": {
+        "keywords": ["marketing", "campaign", "brand", "customer", "promotion", "advertising"],
+        "callerType": "external",
+        "timeOfDay": "business-hours"
+      },
+      "actions": {
+        "primaryHandler": "cmo",
+        "backupHandler": "sovren-ai",
+        "notifyOthers": [],
+        "recordCall": true,
+        "transcribeCall": true
+      }
+    },
+    
+    {
+      "id": "operational-matters",
+      "priority": 6,
+      "conditions": {
+        "keywords": ["operations", "process", "logistics", "supply", "quality", "efficiency"],
+        "callerType": "any",
+        "timeOfDay": "business-hours"
+      },
+      "actions": {
+        "primaryHandler": "coo",
+        "backupHandler": "sovren-ai",
+        "notifyOthers": [],
+        "recordCall": true,
+        "transcribeCall": true
+      }
+    },
+    
+    {
+      "id": "hr-matters",
+      "priority": 7,
+      "conditions": {
+        "keywords": ["hr", "hiring", "employee", "benefits", "culture", "talent"],
+        "callerType": "any",
+        "timeOfDay": "business-hours"
+      },
+      "actions": {
+        "primaryHandler": "chro",
+        "backupHandler": "sovren-ai",
+        "notifyOthers": [],
+        "recordCall": true,
+        "transcribeCall": true
+      }
+    },
+    
+    {
+      "id": "legal-matters",
+      "priority": 8,
+      "conditions": {
+        "keywords": ["legal", "contract", "compliance", "regulatory", "lawsuit", "intellectual property"],
+        "callerType": "any",
+        "timeOfDay": "business-hours"
+      },
+      "actions": {
+        "primaryHandler": "clo",
+        "backupHandler": "ceo",
+        "notifyOthers": ["sovren-ai"],
+        "recordCall": true,
+        "transcribeCall": true
+      }
+    },
+    
+    {
+      "id": "strategic-planning",
+      "priority": 9,
+      "conditions": {
+        "keywords": ["strategy", "planning", "roadmap", "competition", "market", "growth"],
+        "callerType": "any",
+        "timeOfDay": "business-hours"
+      },
+      "actions": {
+        "primaryHandler": "cso",
+        "backupHandler": "ceo",
+        "notifyOthers": ["sovren-ai"],
+        "recordCall": true,
+        "transcribeCall": true
+      }
+    },
+    
+    {
+      "id": "general-inquiries",
+      "priority": 10,
+      "conditions": {
+        "keywords": [],
+        "callerType": "any",
+        "timeOfDay": "any"
+      },
+      "actions": {
+        "primaryHandler": "sovren-ai",
+        "backupHandler": "ceo",
+        "notifyOthers": [],
+        "recordCall": true,
+        "transcribeCall": true
+      }
+    }
+  ],
+  
+  "callRouting": {
+    "mainNumber": "+1-555-SOVREN-AI",
+    "defaultHandler": "sovren-ai",
+    "businessHours": {
+      "timezone": "America/New_York",
+      "monday": "08:00-18:00",
+      "tuesday": "08:00-18:00", 
+      "wednesday": "08:00-18:00",
+      "thursday": "08:00-18:00",
+      "friday": "08:00-18:00",
+      "saturday": "closed",
+      "sunday": "closed"
+    },
+    "afterHoursHandler": "sovren-ai",
+    "emergencyHandler": "sovren-ai"
+  },
+  
+  "voicemailSettings": {
+    "enabled": true,
+    "transcribeVoicemails": true,
+    "emailNotifications": true,
+    "maxDuration": 300,
+    "greetingMessage": "You have reached SOVREN AI Executive Command Center. Please leave a detailed message and we will respond promptly."
+  },
+  
+  "callRecording": {
+    "enabled": true,
+    "retentionPeriod": "7 years",
+    "encryptionEnabled": true,
+    "complianceMode": true,
+    "autoTranscription": true
+  },
+  
+  "integrations": {
+    "freeswitchPBX": {
+      "enabled": true,
+      "serverUrl": "sip.sovren.ai",
+      "port": 5060,
+      "protocol": "SIP"
+    },
+    "skyetelSIPTrunk": {
+      "enabled": true,
+      "provider": "Skyetel",
+      "endpoint": "sip.skyetel.com",
+      "authentication": "token-based"
+    },
+    "whisperASR": {
+      "enabled": true,
+      "model": "whisper-large-v3",
+      "realTimeTranscription": true,
+      "languageDetection": true
+    },
+    "styleTTS2": {
+      "enabled": true,
+      "voiceModels": [
+        "sovren-ai-neural",
+        "ceo-authoritative", 
+        "cfo-analytical",
+        "cto-technical",
+        "cmo-persuasive",
+        "coo-operational",
+        "chro-empathetic",
+        "clo-precise",
+        "cso-strategic"
+      ]
+    }
+  },
+  
+  "securitySettings": {
+    "callEncryption": true,
+    "callerVerification": true,
+    "blockedNumbers": [],
+    "allowedCountries": ["US", "CA", "GB", "AU"],
+    "fraudDetection": true,
+    "rateLimiting": {
+      "maxCallsPerHour": 100,
+      "maxCallsPerDay": 500
+    }
+  },
+  
+  "analytics": {
+    "callMetrics": true,
+    "responseTimeTracking": true,
+    "satisfactionScoring": true,
+    "performanceReporting": true,
+    "realTimeMonitoring": true
+  }
+}
