@@ -21,6 +21,7 @@ export interface VoiceSystemConfig {
     language: string;
     realTime: boolean;
   };
+  subscriptionTier?: 'sovren_proof' | 'sovren_proof_plus'; // NEW: Subscription tier
 }
 
 export interface VoiceSystemStatus {
@@ -43,20 +44,24 @@ export class VoiceSystemManager {
   private systemStatus: VoiceSystemStatus;
 
   constructor(private config: VoiceSystemConfig) {
-    // Initialize components
+    // Get subscription tier from config or default to basic
+    const subscriptionTier = config.subscriptionTier || 'sovren_proof';
+
+    // Initialize components with subscription tier
     this.audioProcessor = new AudioProcessor(config.audio);
-    this.voiceRouter = new ExecutiveVoiceRouter();
-    this.voiceSynthesizer = new VoiceSynthesizer(config.synthesis);
+    this.voiceRouter = new ExecutiveVoiceRouter(subscriptionTier);
+    this.voiceSynthesizer = new VoiceSynthesizer(config.synthesis, subscriptionTier);
     this.sipClient = new SIPClient(config.sip, this.audioProcessor, this.voiceRouter);
 
-    // Initialize system status
+    // Initialize system status with tier-appropriate executive count
+    const maxExecutives = subscriptionTier === 'sovren_proof_plus' ? 9 : 5;
     this.systemStatus = {
       isInitialized: false,
       sipStatus: 'disconnected',
       audioStatus: 'inactive',
       synthesisStatus: config.synthesis.enabled ? 'loading' : 'disabled',
       activeCalls: 0,
-      availableExecutives: 8,
+      availableExecutives: maxExecutives,
       systemLoad: 0
     };
 

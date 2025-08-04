@@ -16,7 +16,31 @@ export interface ExecutiveProfile {
   canReceiveEmail: boolean;
   phoneNumber?: string;
   emailAddress?: string;
+  subscriptionTier: 'sovren_proof' | 'sovren_proof_plus' | 'all'; // NEW: Required subscription tier
 }
+
+export interface SubscriptionTierConfig {
+  tier: 'sovren_proof' | 'sovren_proof_plus';
+  maxExecutives: number;
+  allowedExecutiveIds: string[];
+  features: string[];
+}
+
+// Subscription tier definitions
+export const SUBSCRIPTION_TIER_CONFIGS: Record<string, SubscriptionTierConfig> = {
+  sovren_proof: {
+    tier: 'sovren_proof',
+    maxExecutives: 5, // SOVREN AI + 4 executives
+    allowedExecutiveIds: ['sovren-ai', 'cfo', 'cmo', 'clo', 'cto'], // Core 4 executives
+    features: ['basic_voice', 'call_routing', 'email_integration']
+  },
+  sovren_proof_plus: {
+    tier: 'sovren_proof_plus',
+    maxExecutives: 9, // SOVREN AI + 8 executives
+    allowedExecutiveIds: ['sovren-ai', 'cfo', 'cto', 'cmo', 'coo', 'chro', 'clo', 'cso', 'cio'], // All executives
+    features: ['advanced_voice', 'call_routing', 'email_integration', 'custom_training', 'api_access']
+  }
+};
 
 export interface CallRoutingRule {
   id: string;
@@ -54,15 +78,20 @@ export class ExecutiveVoiceRouter {
   private routingRules: CallRoutingRule[] = [];
   private callHistory: Map<string, CallContext[]> = new Map();
   private eventListeners: Map<string, Function[]> = new Map();
+  private subscriptionTier: 'sovren_proof' | 'sovren_proof_plus';
+  private tierConfig: SubscriptionTierConfig;
 
-  constructor() {
+  constructor(subscriptionTier: 'sovren_proof' | 'sovren_proof_plus' = 'sovren_proof') {
+    this.subscriptionTier = subscriptionTier;
+    this.tierConfig = SUBSCRIPTION_TIER_CONFIGS[subscriptionTier];
     this.initializeExecutives();
     this.initializeRoutingRules();
     this.initializeEventListeners();
   }
 
   private initializeExecutives(): void {
-    const executiveProfiles: ExecutiveProfile[] = [
+    // Define all available executive profiles with subscription tier requirements
+    const allExecutiveProfiles: ExecutiveProfile[] = [
       {
         id: 'sovren-ai',
         name: 'SOVREN AI Core System',
@@ -78,23 +107,8 @@ export class ExecutiveVoiceRouter {
         canInitiateCall: true,
         canReceiveCall: true,
         canSendEmail: true,
-        canReceiveEmail: true
-      },
-      {
-        id: 'ceo',
-        name: 'Chief Executive Officer',
-        role: 'CEO',
-        availability: 'available',
-        priority: 10,
-        specializations: ['strategy', 'vision', 'leadership', 'board', 'investors'],
-        currentLoad: 0,
-        maxConcurrentCalls: 2,
-        voiceModel: 'ceo-authoritative',
-        personaType: 'executive',
-        canInitiateCall: true,
-        canReceiveCall: true,
-        canSendEmail: true,
-        canReceiveEmail: true
+        canReceiveEmail: true,
+        subscriptionTier: 'all' // Available in all tiers
       },
       {
         id: 'cfo',
@@ -110,30 +124,15 @@ export class ExecutiveVoiceRouter {
         canInitiateCall: true,
         canReceiveCall: true,
         canSendEmail: true,
-        canReceiveEmail: true
-      },
-      {
-        id: 'cto',
-        name: 'Chief Technology Officer',
-        role: 'CTO',
-        availability: 'available',
-        priority: 8,
-        specializations: ['technology', 'development', 'infrastructure', 'security', 'innovation'],
-        currentLoad: 0,
-        maxConcurrentCalls: 3,
-        voiceModel: 'cto-technical',
-        personaType: 'executive',
-        canInitiateCall: true,
-        canReceiveCall: true,
-        canSendEmail: true,
-        canReceiveEmail: true
+        canReceiveEmail: true,
+        subscriptionTier: 'sovren_proof' // Core executive - available in basic tier
       },
       {
         id: 'cmo',
         name: 'Chief Marketing Officer',
         role: 'CMO',
         availability: 'available',
-        priority: 7,
+        priority: 8,
         specializations: ['marketing', 'branding', 'campaigns', 'customers', 'growth'],
         currentLoad: 0,
         maxConcurrentCalls: 4,
@@ -142,39 +141,8 @@ export class ExecutiveVoiceRouter {
         canInitiateCall: true,
         canReceiveCall: true,
         canSendEmail: true,
-        canReceiveEmail: true
-      },
-      {
-        id: 'coo',
-        name: 'Chief Operating Officer',
-        role: 'COO',
-        availability: 'available',
-        priority: 8,
-        specializations: ['operations', 'processes', 'efficiency', 'logistics', 'management'],
-        currentLoad: 0,
-        maxConcurrentCalls: 3,
-        voiceModel: 'coo-operational',
-        personaType: 'executive',
-        canInitiateCall: true,
-        canReceiveCall: true,
-        canSendEmail: true,
-        canReceiveEmail: true
-      },
-      {
-        id: 'chro',
-        name: 'Chief Human Resources Officer',
-        role: 'CHRO',
-        availability: 'available',
-        priority: 6,
-        specializations: ['hr', 'hiring', 'culture', 'employees', 'benefits'],
-        currentLoad: 0,
-        maxConcurrentCalls: 4,
-        voiceModel: 'chro-empathetic',
-        personaType: 'executive',
-        canInitiateCall: true,
-        canReceiveCall: true,
-        canSendEmail: true,
-        canReceiveEmail: true
+        canReceiveEmail: true,
+        subscriptionTier: 'sovren_proof' // Core executive - available in basic tier
       },
       {
         id: 'clo',
@@ -190,7 +158,59 @@ export class ExecutiveVoiceRouter {
         canInitiateCall: true,
         canReceiveCall: true,
         canSendEmail: true,
-        canReceiveEmail: true
+        canReceiveEmail: true,
+        subscriptionTier: 'sovren_proof' // Core executive - available in basic tier
+      },
+      {
+        id: 'cto',
+        name: 'Chief Technology Officer',
+        role: 'CTO',
+        availability: 'available',
+        priority: 8,
+        specializations: ['technology', 'development', 'infrastructure', 'security', 'innovation'],
+        currentLoad: 0,
+        maxConcurrentCalls: 3,
+        voiceModel: 'cto-technical',
+        personaType: 'executive',
+        canInitiateCall: true,
+        canReceiveCall: true,
+        canSendEmail: true,
+        canReceiveEmail: true,
+        subscriptionTier: 'sovren_proof' // Core executive - available in basic tier
+      },
+      {
+        id: 'coo',
+        name: 'Chief Operating Officer',
+        role: 'COO',
+        availability: 'available',
+        priority: 8,
+        specializations: ['operations', 'processes', 'efficiency', 'logistics', 'management'],
+        currentLoad: 0,
+        maxConcurrentCalls: 3,
+        voiceModel: 'coo-operational',
+        personaType: 'executive',
+        canInitiateCall: true,
+        canReceiveCall: true,
+        canSendEmail: true,
+        canReceiveEmail: true,
+        subscriptionTier: 'sovren_proof_plus' // Premium executive - requires Plus tier
+      },
+      {
+        id: 'chro',
+        name: 'Chief Human Resources Officer',
+        role: 'CHRO',
+        availability: 'available',
+        priority: 6,
+        specializations: ['hr', 'hiring', 'culture', 'employees', 'benefits'],
+        currentLoad: 0,
+        maxConcurrentCalls: 4,
+        voiceModel: 'chro-empathetic',
+        personaType: 'executive',
+        canInitiateCall: true,
+        canReceiveCall: true,
+        canSendEmail: true,
+        canReceiveEmail: true,
+        subscriptionTier: 'sovren_proof_plus' // Premium executive - requires Plus tier
       },
       {
         id: 'cso',
@@ -206,13 +226,52 @@ export class ExecutiveVoiceRouter {
         canInitiateCall: true,
         canReceiveCall: true,
         canSendEmail: true,
-        canReceiveEmail: true
+        canReceiveEmail: true,
+        subscriptionTier: 'sovren_proof_plus' // Premium executive - requires Plus tier
+      },
+      {
+        id: 'cio',
+        name: 'Chief Information Officer',
+        role: 'CIO',
+        availability: 'available',
+        priority: 6,
+        specializations: ['information', 'data', 'systems', 'analytics', 'digital'],
+        currentLoad: 0,
+        maxConcurrentCalls: 3,
+        voiceModel: 'cio-analytical',
+        personaType: 'executive',
+        canInitiateCall: true,
+        canReceiveCall: true,
+        canSendEmail: true,
+        canReceiveEmail: true,
+        subscriptionTier: 'sovren_proof_plus' // Premium executive - requires Plus tier
       }
     ];
 
-    executiveProfiles.forEach(profile => {
+    // Filter executives based on subscription tier
+    const allowedExecutives = allExecutiveProfiles.filter(profile => {
+      // SOVREN AI is always available
+      if (profile.subscriptionTier === 'all') return true;
+
+      // Check if executive is allowed in current tier
+      if (profile.subscriptionTier === 'sovren_proof') {
+        return this.tierConfig.allowedExecutiveIds.includes(profile.id);
+      }
+
+      if (profile.subscriptionTier === 'sovren_proof_plus') {
+        return this.subscriptionTier === 'sovren_proof_plus';
+      }
+
+      return false;
+    });
+
+    // Initialize only allowed executives
+    allowedExecutives.forEach(profile => {
       this.executives.set(profile.id, profile);
     });
+
+    console.log(`🎯 Initialized ${allowedExecutives.length} executives for ${this.subscriptionTier} tier`);
+    console.log(`📋 Available executives: ${allowedExecutives.map(e => e.role).join(', ')}`);
   }
 
   private initializeRoutingRules(): void {
@@ -382,41 +441,52 @@ export class ExecutiveVoiceRouter {
     try {
       // Build call context
       const callContext = await this.buildCallContext(callerUri, context);
-      
+
       // Find matching routing rules
       const matchingRules = this.findMatchingRules(callContext);
-      
+
       // Get executive assignment from rules
       let assignedExecutive = this.getExecutiveFromRules(matchingRules);
-      
+
       // If no rule-based assignment, use load balancing
       if (!assignedExecutive) {
         assignedExecutive = this.loadBalanceExecutives(callContext);
       }
-      
+
+      // SUBSCRIPTION TIER VALIDATION - NEW
+      if (assignedExecutive && !this.validateExecutiveAccess(assignedExecutive)) {
+        console.warn(`🚫 Access denied to ${assignedExecutive} for ${this.subscriptionTier} tier`);
+        assignedExecutive = this.getAlternativeExecutiveForTier(assignedExecutive);
+      }
+
+      // Ensure we have a valid executive
+      if (!assignedExecutive) {
+        assignedExecutive = 'sovren-ai'; // Fallback to SOVREN AI
+      }
+
       // Validate executive availability
       const executive = this.executives.get(assignedExecutive);
       if (!executive || !this.isExecutiveAvailable(executive)) {
         assignedExecutive = this.findAlternativeExecutive(assignedExecutive, callContext);
       }
-      
+
       // Update executive load
       this.updateExecutiveLoad(assignedExecutive, 1);
-      
+
       // Store call context
       this.storeCallContext(callerUri, callContext);
-      
-      console.log(`Call from ${callerUri} assigned to ${assignedExecutive}`);
+
+      console.log(`📞 Call from ${callerUri} assigned to ${assignedExecutive} (${this.subscriptionTier} tier)`);
       this.emit('executiveAssigned', { callerUri, executive: assignedExecutive, context: callContext });
-      
+
       return assignedExecutive;
-      
+
     } catch (error) {
       console.error('Failed to assign executive:', error);
       this.emit('routingFailed', { callerUri, error });
-      
-      // Fallback to CEO
-      return 'ceo';
+
+      // Fallback to SOVREN AI (always available)
+      return 'sovren-ai';
     }
   }
 
@@ -610,5 +680,46 @@ export class ExecutiveVoiceRouter {
     if (listeners) {
       listeners.forEach(callback => callback(data));
     }
+  }
+
+  // NEW: Subscription tier validation methods
+  private validateExecutiveAccess(executiveId: string): boolean {
+    const executive = this.executives.get(executiveId);
+    if (!executive) return false;
+
+    // SOVREN AI is always available
+    if (executive.subscriptionTier === 'all') return true;
+
+    // Check if executive is allowed in current tier
+    return this.tierConfig.allowedExecutiveIds.includes(executiveId);
+  }
+
+  private getAlternativeExecutiveForTier(requestedExecutive: string): string {
+    // If requested executive is not available, find best alternative from allowed executives
+    const availableExecutives = Array.from(this.executives.values())
+      .filter(exec => this.isExecutiveAvailable(exec))
+      .sort((a, b) => b.priority - a.priority);
+
+    if (availableExecutives.length === 0) {
+      return 'sovren-ai'; // Always fallback to SOVREN AI
+    }
+
+    return availableExecutives[0].id;
+  }
+
+  public getSubscriptionTier(): string {
+    return this.subscriptionTier;
+  }
+
+  public getTierConfig(): SubscriptionTierConfig {
+    return this.tierConfig;
+  }
+
+  public getExecutiveCount(): number {
+    return this.executives.size;
+  }
+
+  public isExecutiveAllowed(executiveId: string): boolean {
+    return this.validateExecutiveAccess(executiveId);
   }
 }

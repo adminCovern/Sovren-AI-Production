@@ -48,11 +48,14 @@ export class VoiceSynthesizer {
   private maxWorkers: number = 4;
   private styleTTS2Engine: StyleTTS2Engine | null = null;
 
-  constructor(private config: {
-    enabled: boolean;
-    modelsPath: string;
-    cacheSize: number;
-  }) {
+  constructor(
+    private config: {
+      enabled: boolean;
+      modelsPath: string;
+      cacheSize: number;
+    },
+    private subscriptionTier: 'sovren_proof' | 'sovren_proof_plus' = 'sovren_proof'
+  ) {
     this.initializeEventListeners();
     this.initializeVoiceModels();
   }
@@ -67,7 +70,8 @@ export class VoiceSynthesizer {
   }
 
   private initializeVoiceModels(): void {
-    const models: VoiceModel[] = [
+    // Define all available voice models with tier requirements
+    const allModels: (VoiceModel & { subscriptionTier: 'sovren_proof' | 'sovren_proof_plus' | 'all' })[] = [
       {
         id: 'sovren-ai-neural',
         name: 'SOVREN AI Neural Core Voice',
@@ -80,21 +84,8 @@ export class VoiceSynthesizer {
           accent: 'neural-synthetic'
         },
         modelPath: `${this.config.modelsPath}/sovren-ai-neural.onnx`,
-        isLoaded: false
-      },
-      {
-        id: 'ceo-authoritative',
-        name: 'CEO Executive Voice',
-        language: 'en-US',
-        gender: 'male',
-        characteristics: {
-          pitch: 0.8,
-          speed: 0.9,
-          tone: 'authoritative',
-          accent: 'american-executive'
-        },
-        modelPath: `${this.config.modelsPath}/ceo-authoritative.onnx`,
-        isLoaded: false
+        isLoaded: false,
+        subscriptionTier: 'all' // Always available
       },
       {
         id: 'cfo-analytical',
@@ -108,21 +99,38 @@ export class VoiceSynthesizer {
           accent: 'professional-precise'
         },
         modelPath: `${this.config.modelsPath}/cfo-analytical.onnx`,
-        isLoaded: false
+        isLoaded: false,
+        subscriptionTier: 'sovren_proof' // Core executive
       },
       {
-        id: 'cmo-charismatic',
-        name: 'CMO Charismatic Voice',
+        id: 'cmo-persuasive',
+        name: 'CMO Persuasive Voice',
         language: 'en-US',
         gender: 'male',
         characteristics: {
           pitch: 0.85,
           speed: 1.05,
-          tone: 'charismatic',
-          accent: 'engaging-persuasive'
+          tone: 'persuasive',
+          accent: 'engaging-charismatic'
         },
-        modelPath: `${this.config.modelsPath}/cmo-charismatic.onnx`,
-        isLoaded: false
+        modelPath: `${this.config.modelsPath}/cmo-persuasive.onnx`,
+        isLoaded: false,
+        subscriptionTier: 'sovren_proof' // Core executive
+      },
+      {
+        id: 'clo-precise',
+        name: 'CLO Precise Voice',
+        language: 'en-US',
+        gender: 'female',
+        characteristics: {
+          pitch: 0.85,
+          speed: 0.9,
+          tone: 'precise',
+          accent: 'legal-authoritative'
+        },
+        modelPath: `${this.config.modelsPath}/clo-precise.onnx`,
+        isLoaded: false,
+        subscriptionTier: 'sovren_proof' // Core executive
       },
       {
         id: 'cto-technical',
@@ -136,35 +144,24 @@ export class VoiceSynthesizer {
           accent: 'clear-methodical'
         },
         modelPath: `${this.config.modelsPath}/cto-technical.onnx`,
-        isLoaded: false
+        isLoaded: false,
+        subscriptionTier: 'sovren_proof' // Core executive
       },
+      // Premium executives - only available in Plus tier
       {
-        id: 'legal-authoritative',
-        name: 'Legal Counsel Voice',
-        language: 'en-US',
-        gender: 'female',
-        characteristics: {
-          pitch: 0.85,
-          speed: 0.9,
-          tone: 'formal',
-          accent: 'legal-precise'
-        },
-        modelPath: `${this.config.modelsPath}/legal-authoritative.onnx`,
-        isLoaded: false
-      },
-      {
-        id: 'coo-efficient',
-        name: 'COO Efficient Voice',
+        id: 'coo-operational',
+        name: 'COO Operational Voice',
         language: 'en-US',
         gender: 'male',
         characteristics: {
           pitch: 0.88,
           speed: 1.1,
-          tone: 'efficient',
+          tone: 'operational',
           accent: 'results-focused'
         },
-        modelPath: `${this.config.modelsPath}/coo-efficient.onnx`,
-        isLoaded: false
+        modelPath: `${this.config.modelsPath}/coo-operational.onnx`,
+        isLoaded: false,
+        subscriptionTier: 'sovren_proof_plus' // Premium executive
       },
       {
         id: 'chro-empathetic',
@@ -178,7 +175,8 @@ export class VoiceSynthesizer {
           accent: 'warm-professional'
         },
         modelPath: `${this.config.modelsPath}/chro-empathetic.onnx`,
-        isLoaded: false
+        isLoaded: false,
+        subscriptionTier: 'sovren_proof_plus' // Premium executive
       },
       {
         id: 'cso-strategic',
@@ -192,111 +190,52 @@ export class VoiceSynthesizer {
           accent: 'visionary-commanding'
         },
         modelPath: `${this.config.modelsPath}/cso-strategic.onnx`,
-        isLoaded: false
+        isLoaded: false,
+        subscriptionTier: 'sovren_proof_plus' // Premium executive
       },
       {
-        id: 'cfo-analytical',
-        name: 'CFO Analytical Voice',
+        id: 'cio-analytical',
+        name: 'CIO Analytical Voice',
         language: 'en-US',
-        gender: 'female',
-        characteristics: {
-          pitch: 1.1,
-          speed: 0.95,
-          tone: 'analytical',
-          accent: 'american-professional'
-        },
-        modelPath: `${this.config.modelsPath}/cfo-analytical.onnx`,
-        isLoaded: false
-      },
-      {
-        id: 'cto-technical',
-        name: 'CTO Technical Voice',
-        language: 'en-US',
-        gender: 'male',
+        gender: 'neutral',
         characteristics: {
           pitch: 0.9,
-          speed: 1.0,
-          tone: 'technical',
-          accent: 'american-tech'
-        },
-        modelPath: `${this.config.modelsPath}/cto-technical.onnx`,
-        isLoaded: false
-      },
-      {
-        id: 'cmo-persuasive',
-        name: 'CMO Persuasive Voice',
-        language: 'en-US',
-        gender: 'female',
-        characteristics: {
-          pitch: 1.2,
-          speed: 1.05,
-          tone: 'persuasive',
-          accent: 'american-marketing'
-        },
-        modelPath: `${this.config.modelsPath}/cmo-persuasive.onnx`,
-        isLoaded: false
-      },
-      {
-        id: 'coo-operational',
-        name: 'COO Operational Voice',
-        language: 'en-US',
-        gender: 'male',
-        characteristics: {
-          pitch: 0.85,
           speed: 0.98,
-          tone: 'operational',
-          accent: 'american-business'
+          tone: 'analytical',
+          accent: 'data-driven'
         },
-        modelPath: `${this.config.modelsPath}/coo-operational.onnx`,
-        isLoaded: false
-      },
-      {
-        id: 'chro-empathetic',
-        name: 'CHRO Empathetic Voice',
-        language: 'en-US',
-        gender: 'female',
-        characteristics: {
-          pitch: 1.15,
-          speed: 0.92,
-          tone: 'empathetic',
-          accent: 'american-caring'
-        },
-        modelPath: `${this.config.modelsPath}/chro-empathetic.onnx`,
-        isLoaded: false
-      },
-      {
-        id: 'clo-precise',
-        name: 'CLO Precise Voice',
-        language: 'en-US',
-        gender: 'male',
-        characteristics: {
-          pitch: 0.88,
-          speed: 0.88,
-          tone: 'precise',
-          accent: 'american-legal'
-        },
-        modelPath: `${this.config.modelsPath}/clo-precise.onnx`,
-        isLoaded: false
-      },
-      {
-        id: 'cso-strategic',
-        name: 'CSO Strategic Voice',
-        language: 'en-US',
-        gender: 'female',
-        characteristics: {
-          pitch: 1.05,
-          speed: 0.93,
-          tone: 'strategic',
-          accent: 'american-strategic'
-        },
-        modelPath: `${this.config.modelsPath}/cso-strategic.onnx`,
-        isLoaded: false
+        modelPath: `${this.config.modelsPath}/cio-analytical.onnx`,
+        isLoaded: false,
+        subscriptionTier: 'sovren_proof_plus' // Premium executive
       }
     ];
 
-    models.forEach(model => {
-      this.voiceModels.set(model.id, model);
+    // Filter voice models based on subscription tier
+    const allowedModels = allModels.filter(model => {
+      // SOVREN AI is always available
+      if (model.subscriptionTier === 'all') return true;
+
+      // Basic tier models
+      if (model.subscriptionTier === 'sovren_proof') return true;
+
+      // Premium tier models - only available in Plus tier
+      if (model.subscriptionTier === 'sovren_proof_plus') {
+        return this.subscriptionTier === 'sovren_proof_plus';
+      }
+
+      return false;
     });
+
+    // Initialize only allowed voice models
+    allowedModels.forEach(model => {
+      const { subscriptionTier, ...voiceModel } = model; // Remove subscriptionTier from the model
+      this.voiceModels.set(voiceModel.id, voiceModel);
+    });
+
+    console.log(`🎤 Initialized ${allowedModels.length} voice models for ${this.subscriptionTier} tier`);
+    console.log(`🔊 Available voices: ${allowedModels.map(m => m.id).join(', ')}`);
+
+    // All duplicate models removed - handled by filtering above
   }
 
   public async initialize(): Promise<void> {

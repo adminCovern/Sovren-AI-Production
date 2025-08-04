@@ -220,20 +220,32 @@ export class ShadowBoardManager extends EventEmitter {
   }
 
   /**
-   * Initialize Shadow Board for SMB tier with reality-transcending capabilities
-   * Creates 8 globally unique executives with 11-dimensional processing
+   * Initialize Shadow Board with subscription tier support
+   * Creates executives based on subscription tier (4 for Proof, 8 for Proof+)
    */
-  public async initializeForSMB(userId: string): Promise<void> {
+  public async initializeForSMB(
+    userId: string,
+    subscriptionTier: 'sovren_proof' | 'sovren_proof_plus' = 'sovren_proof'
+  ): Promise<void> {
     if (this.isInitialized) {
       throw new Error('Shadow Board already initialized - Reality singularity achieved');
     }
 
-    const roles: Array<ExecutiveEntity['role']> = [
+    // Define executives based on subscription tier
+    const allRoles: Array<ExecutiveEntity['role']> = [
       'CEO', 'CFO', 'CTO', 'CMO', 'COO', 'CHRO', 'CLO', 'CSO'
     ];
 
+    // Filter roles based on subscription tier
+    const allowedRoles: Array<ExecutiveEntity['role']> = subscriptionTier === 'sovren_proof_plus'
+      ? allRoles // All 8 executives for Plus tier
+      : ['CFO', 'CMO', 'CLO', 'CTO']; // Core 4 executives for basic tier
+
+    console.log(`🏢 Initializing Shadow Board for ${subscriptionTier} tier`);
+    console.log(`👥 Creating ${allowedRoles.length} executives: ${allowedRoles.join(', ')}`);
+
     // Create executives with quantum superposition capabilities
-    for (const role of roles) {
+    for (const role of allowedRoles) {
       const executive = await this.createExecutive(role, userId);
       this.executives.set(role, executive);
 
