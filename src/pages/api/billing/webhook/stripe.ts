@@ -8,7 +8,6 @@
  */
 
 import { NextApiRequest, NextApiResponse } from 'next';
-import { buffer } from 'micro';
 import { SubscriptionBillingSystem } from '../../../../lib/billing/SubscriptionBillingSystem';
 import { WebhookHandler } from '../../../../lib/billing/webhooks/WebhookHandler';
 
@@ -31,6 +30,25 @@ function initializeBillingSystem() {
   }
 }
 
+// Helper function to read raw body from Next.js request
+async function getRawBody(req: NextApiRequest): Promise<Buffer> {
+  const chunks: Buffer[] = [];
+
+  return new Promise((resolve, reject) => {
+    req.on('data', (chunk: Buffer) => {
+      chunks.push(chunk);
+    });
+
+    req.on('end', () => {
+      resolve(Buffer.concat(chunks));
+    });
+
+    req.on('error', (error) => {
+      reject(error);
+    });
+  });
+}
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -49,7 +67,7 @@ export default async function handler(
     initializeBillingSystem();
 
     // Get raw body and signature
-    const buf = await buffer(req);
+    const buf = await getRawBody(req);
     const signature = req.headers['stripe-signature'] as string;
 
     if (!signature) {

@@ -46,10 +46,10 @@ export interface MemoryOptimization {
 export class BareMetalOptimizer extends EventEmitter {
   private optimizations: Map<string, any> = new Map();
   private performanceBaseline: PerformanceMetrics | null = null;
-  private cpuOptimizer: CPUOptimizer;
-  private memoryOptimizer: MemoryOptimizer;
-  private networkOptimizer: NetworkOptimizer;
-  private cacheOptimizer: CacheOptimizer;
+  private cpuOptimizer!: CPUOptimizer;
+  private memoryOptimizer!: MemoryOptimizer;
+  private networkOptimizer!: NetworkOptimizer;
+  private cacheOptimizer!: CacheOptimizer;
 
   constructor() {
     super();

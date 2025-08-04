@@ -1,163 +1,13 @@
 (globalThis.TURBOPACK = globalThis.TURBOPACK || []).push(["chunks/ssr/src_97c151._.js", {
 
-"[project]/src/middleware/rateLimit.ts [middleware] (ecmascript)": (({ r: __turbopack_require__, f: __turbopack_module_context__, i: __turbopack_import__, s: __turbopack_esm__, v: __turbopack_export_value__, n: __turbopack_export_namespace__, c: __turbopack_cache__, M: __turbopack_modules__, l: __turbopack_load__, j: __turbopack_dynamic__, P: __turbopack_resolve_absolute_path__, U: __turbopack_relative_url__, R: __turbopack_resolve_module_id_path__, g: global, __dirname, x: __turbopack_external_require__, y: __turbopack_external_import__, k: __turbopack_refresh__ }) => (() => {
-"use strict";
+"[project]/src/middleware/rateLimit.ts [middleware] (ecmascript)": (function({ r: __turbopack_require__, f: __turbopack_module_context__, i: __turbopack_import__, s: __turbopack_esm__, v: __turbopack_export_value__, n: __turbopack_export_namespace__, c: __turbopack_cache__, M: __turbopack_modules__, l: __turbopack_load__, j: __turbopack_dynamic__, P: __turbopack_resolve_absolute_path__, U: __turbopack_relative_url__, R: __turbopack_resolve_module_id_path__, g: global, __dirname, x: __turbopack_external_require__, y: __turbopack_external_import__, k: __turbopack_refresh__, m: module, e: exports, t: require }) { !function() {
 
-/**
- * SOVREN AI RATE LIMITING SYSTEM
- * Production-grade rate limiting with Redis support
- */ __turbopack_esm__({
-    "RateLimiter": ()=>RateLimiter,
-    "getClientId": ()=>getClientId,
-    "rateLimit": ()=>rateLimit,
-    "rateLimiters": ()=>rateLimiters
-});
-class RateLimiter {
-    config;
-    store = new Map();
-    constructor(config){
-        this.config = config;
-        // Clean up expired entries every minute
-        setInterval(()=>{
-            this.cleanup();
-        }, 60000);
-    }
-    /**
-   * Check if request should be rate limited
-   */ async checkLimit(key) {
-        const now = Date.now();
-        const windowStart = now - this.config.windowMs;
-        // Get or create entry
-        let entry = this.store.get(key);
-        if (!entry || entry.resetTime <= now) {
-            // Create new window
-            entry = {
-                count: 0,
-                resetTime: now + this.config.windowMs
-            };
-            this.store.set(key, entry);
-        }
-        const info = {
-            limit: this.config.max,
-            current: entry.count,
-            remaining: Math.max(0, this.config.max - entry.count),
-            resetTime: new Date(entry.resetTime)
-        };
-        if (entry.count >= this.config.max) {
-            return {
-                allowed: false,
-                info
-            };
-        }
-        // Increment counter
-        entry.count++;
-        this.store.set(key, entry);
-        info.current = entry.count;
-        info.remaining = Math.max(0, this.config.max - entry.count);
-        return {
-            allowed: true,
-            info
-        };
-    }
-    /**
-   * Clean up expired entries
-   */ cleanup() {
-        const now = Date.now();
-        for (const [key, entry] of this.store.entries()){
-            if (entry.resetTime <= now) {
-                this.store.delete(key);
-            }
-        }
-    }
-    /**
-   * Reset rate limit for a key
-   */ reset(key) {
-        this.store.delete(key);
-    }
-    /**
-   * Get current rate limit info
-   */ async getInfo(key) {
-        const entry = this.store.get(key);
-        if (!entry) {
-            return {
-                limit: this.config.max,
-                current: 0,
-                remaining: this.config.max,
-                resetTime: new Date(Date.now() + this.config.windowMs)
-            };
-        }
-        return {
-            limit: this.config.max,
-            current: entry.count,
-            remaining: Math.max(0, this.config.max - entry.count),
-            resetTime: new Date(entry.resetTime)
-        };
-    }
-}
-function rateLimit(config) {
-    return new RateLimiter(config);
-}
-const rateLimiters = {
-    // General API rate limit
-    api: rateLimit({
-        windowMs: 15 * 60 * 1000,
-        max: 100,
-        message: 'Too many API requests, please try again later.',
-        standardHeaders: true,
-        legacyHeaders: false
-    }),
-    // TTS synthesis rate limit (more restrictive)
-    tts: rateLimit({
-        windowMs: 60 * 1000,
-        max: 10,
-        message: 'Too many TTS requests, please try again later.',
-        standardHeaders: true,
-        legacyHeaders: false
-    }),
-    // Authentication rate limit
-    auth: rateLimit({
-        windowMs: 15 * 60 * 1000,
-        max: 5,
-        message: 'Too many authentication attempts, please try again later.',
-        standardHeaders: true,
-        legacyHeaders: false
-    }),
-    // Email rate limit
-    email: rateLimit({
-        windowMs: 60 * 1000,
-        max: 5,
-        message: 'Too many email requests, please try again later.',
-        standardHeaders: true,
-        legacyHeaders: false
-    }),
-    // CRM sync rate limit
-    crm: rateLimit({
-        windowMs: 5 * 60 * 1000,
-        max: 20,
-        message: 'Too many CRM requests, please try again later.',
-        standardHeaders: true,
-        legacyHeaders: false
-    })
-};
-function getClientId(request) {
-    // Try to get user ID from authenticated request
-    const userId = request.headers.get('x-user-id');
-    if (userId) {
-        return `user:${userId}`;
-    }
-    // Fall back to IP address
-    const forwarded = request.headers.get('x-forwarded-for');
-    const realIP = request.headers.get('x-real-ip');
-    if (forwarded) {
-        return `ip:${forwarded.split(',')[0].trim()}`;
-    }
-    if (realIP) {
-        return `ip:${realIP}`;
-    }
-    return `ip:${request.ip || 'unknown'}`;
-}
+const e = new Error(`Could not parse module '[project]/src/middleware/rateLimit.ts'
 
-})()),
+Unexpected token `(`. Expected yield, an identifier, [ or {`);
+e.code = 'MODULE_UNPARSEABLE';
+throw e;
+}.call(this) }),
 "[project]/src/lib/auth/AuthenticationSystem.ts [middleware] (ecmascript)": (({ r: __turbopack_require__, f: __turbopack_module_context__, i: __turbopack_import__, s: __turbopack_esm__, v: __turbopack_export_value__, n: __turbopack_export_namespace__, c: __turbopack_cache__, M: __turbopack_modules__, l: __turbopack_load__, j: __turbopack_dynamic__, P: __turbopack_resolve_absolute_path__, U: __turbopack_relative_url__, R: __turbopack_resolve_module_id_path__, g: global, __dirname, x: __turbopack_external_require__, y: __turbopack_external_import__, k: __turbopack_refresh__ }) => (() => {
 "use strict";
 
@@ -173,21 +23,48 @@ function getClientId(request) {
     e.code = 'MODULE_NOT_FOUND';
     throw e;
 })();
-(()=>{
-    const e = new Error("Cannot find module 'jsonwebtoken'");
-    e.code = 'MODULE_NOT_FOUND';
-    throw e;
-})();
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$jsonwebtoken$2f$index$2e$js__$5b$middleware$5d$__$28$ecmascript$29$__ = __turbopack_import__("[project]/node_modules/jsonwebtoken/index.js [middleware] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$bcrypt$2f$bcrypt$2e$js__$5b$middleware$5d$__$28$ecmascript$29$__ = __turbopack_import__("[project]/node_modules/bcrypt/bcrypt.js [middleware] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$redis$2f$dist$2f$index$2e$js__$5b$middleware$5d$__$28$ecmascript$29$__ = __turbopack_import__("[project]/node_modules/redis/dist/index.js [middleware] (ecmascript)");
 "__TURBOPACK__ecmascript__hoisting__location__";
+;
+;
 ;
 ;
 class AuthenticationSystem {
     JWT_SECRET;
     sessions = new Map();
     users = new Map();
+    redisClient = null;
+    SALT_ROUNDS = 12;
+    MAX_LOGIN_ATTEMPTS = 5;
+    LOCKOUT_DURATION = 15 * 60 * 1000;
     constructor(){
         this.JWT_SECRET = process.env.JWT_SECRET || this.generateSecureSecret();
-        this.initializeDefaultUsers();
+        this.initialize();
+    }
+    /**
+   * Initialize authentication system
+   */ async initialize() {
+        await this.initializeRedis();
+        await this.initializeDefaultUsers();
+    }
+    /**
+   * Initialize Redis connection for session management
+   */ async initializeRedis() {
+        try {
+            this.redisClient = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$redis$2f$dist$2f$index$2e$js__$5b$middleware$5d$__$28$ecmascript$29$__["createClient"])({
+                url: process.env.REDIS_URL || 'redis://localhost:6379'
+            });
+            this.redisClient.on('error', (err)=>{
+                console.error('Redis Client Error:', err);
+            });
+            await this.redisClient.connect();
+            console.log('✅ Redis connected for session management');
+        } catch (error) {
+            console.warn('⚠️ Redis connection failed, falling back to in-memory sessions:', error);
+            this.redisClient = null;
+        }
     }
     /**
    * Generate secure JWT secret if not provided
@@ -195,28 +72,83 @@ class AuthenticationSystem {
         return randomBytes(64).toString('hex');
     }
     /**
+   * Hash password with bcrypt
+   */ async hashPassword(password) {
+        const salt = await __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$bcrypt$2f$bcrypt$2e$js__$5b$middleware$5d$__$28$ecmascript$29$__["default"].genSalt(this.SALT_ROUNDS);
+        const hash = await __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$bcrypt$2f$bcrypt$2e$js__$5b$middleware$5d$__$28$ecmascript$29$__["default"].hash(password, salt);
+        return {
+            hash,
+            salt
+        };
+    }
+    /**
+   * Verify password against hash
+   */ async verifyPassword(password, hash) {
+        return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$bcrypt$2f$bcrypt$2e$js__$5b$middleware$5d$__$28$ecmascript$29$__["default"].compare(password, hash);
+    }
+    /**
+   * Store session in Redis or memory fallback
+   */ async storeSession(userId, sessionData) {
+        if (this.redisClient) {
+            try {
+                await this.redisClient.setEx(`session:${userId}`, 24 * 60 * 60, JSON.stringify(sessionData));
+            } catch (error) {
+                console.warn('Redis session storage failed, using memory fallback:', error);
+                this.sessions.set(userId, sessionData);
+            }
+        } else {
+            this.sessions.set(userId, sessionData);
+        }
+    }
+    /**
+   * Get session from Redis or memory
+   */ async getSession(userId) {
+        if (this.redisClient) {
+            try {
+                const sessionStr = await this.redisClient.get(`session:${userId}`);
+                return sessionStr ? JSON.parse(sessionStr) : null;
+            } catch (error) {
+                console.warn('Redis session retrieval failed, checking memory:', error);
+                return this.sessions.get(userId) || null;
+            }
+        } else {
+            return this.sessions.get(userId) || null;
+        }
+    }
+    /**
    * Initialize default users for immediate deployment
-   */ initializeDefaultUsers() {
+   */ async initializeDefaultUsers() {
         // Demo SMB user
+        const smbPasswordData = await this.hashPassword('SecureDemo123!');
         const smbUser = {
             id: 'user_smb_demo',
             email: 'demo@company.com',
             name: 'Demo User',
+            passwordHash: smbPasswordData.hash,
+            salt: smbPasswordData.salt,
             tier: 'SMB',
             neuralFingerprint: this.generateNeuralFingerprint('demo@company.com'),
-            createdAt: new Date()
+            createdAt: new Date(),
+            failedLoginAttempts: 0
         };
         // Demo Enterprise user
+        const enterprisePasswordData = await this.hashPassword('EnterpriseSecure456!');
         const enterpriseUser = {
             id: 'user_enterprise_demo',
             email: 'admin@enterprise.com',
             name: 'Enterprise Admin',
+            passwordHash: enterprisePasswordData.hash,
+            salt: enterprisePasswordData.salt,
             tier: 'ENTERPRISE',
             neuralFingerprint: this.generateNeuralFingerprint('admin@enterprise.com'),
-            createdAt: new Date()
+            createdAt: new Date(),
+            failedLoginAttempts: 0
         };
         this.users.set(smbUser.email, smbUser);
         this.users.set(enterpriseUser.email, enterpriseUser);
+        console.log('✅ Default users initialized with secure passwords');
+        console.log('📧 Demo SMB: demo@company.com / SecureDemo123!');
+        console.log('📧 Demo Enterprise: admin@enterprise.com / EnterpriseSecure456!');
     }
     /**
    * Generate neural fingerprint for user
@@ -229,15 +161,37 @@ class AuthenticationSystem {
    * Authenticate user with email/password
    */ async authenticate(email, password) {
         try {
-            // For demo purposes, accept any password for existing users
             const user = this.users.get(email);
             if (!user) {
                 return {
                     success: false,
-                    error: 'User not found'
+                    error: 'Invalid credentials'
                 };
             }
-            // Update last login
+            // Check if account is locked
+            if (user.lockedUntil && user.lockedUntil > new Date()) {
+                return {
+                    success: false,
+                    error: 'Account temporarily locked due to too many failed attempts'
+                };
+            }
+            // Verify password
+            const isValidPassword = await this.verifyPassword(password, user.passwordHash);
+            if (!isValidPassword) {
+                // Increment failed attempts
+                user.failedLoginAttempts += 1;
+                // Lock account if too many failed attempts
+                if (user.failedLoginAttempts >= this.MAX_LOGIN_ATTEMPTS) {
+                    user.lockedUntil = new Date(Date.now() + this.LOCKOUT_DURATION);
+                }
+                return {
+                    success: false,
+                    error: 'Invalid credentials'
+                };
+            }
+            // Reset failed attempts on successful login
+            user.failedLoginAttempts = 0;
+            user.lockedUntil = undefined;
             user.lastLogin = new Date();
             // Generate JWT token
             const token = this.generateToken(user);
@@ -248,13 +202,15 @@ class AuthenticationSystem {
                 permissions: this.getUserPermissions(user.tier),
                 expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
             };
-            this.sessions.set(user.id, sessionData);
+            // Store session in Redis or memory
+            await this.storeSession(user.id, sessionData);
             return {
                 success: true,
                 user,
                 token
             };
         } catch (error) {
+            console.error('Authentication error:', error);
             return {
                 success: false,
                 error: 'Authentication failed'
@@ -270,7 +226,7 @@ class AuthenticationSystem {
             tier: user.tier,
             neuralFingerprint: user.neuralFingerprint
         };
-        return jwt.sign(payload, this.JWT_SECRET, {
+        return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$jsonwebtoken$2f$index$2e$js__$5b$middleware$5d$__$28$ecmascript$29$__["default"].sign(payload, this.JWT_SECRET, {
             expiresIn: '24h',
             issuer: 'sovren-ai',
             audience: 'sovren-command-center'
@@ -280,7 +236,7 @@ class AuthenticationSystem {
    * Verify JWT token
    */ async verifyToken(token) {
         try {
-            const decoded = jwt.verify(token, this.JWT_SECRET);
+            const decoded = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$jsonwebtoken$2f$index$2e$js__$5b$middleware$5d$__$28$ecmascript$29$__["default"].verify(token, this.JWT_SECRET);
             const user = this.users.get(decoded.email);
             if (!user) {
                 return {
@@ -288,8 +244,8 @@ class AuthenticationSystem {
                     error: 'User not found'
                 };
             }
-            // Check session validity
-            const session = this.sessions.get(user.id);
+            // Check session validity using Redis/memory
+            const session = await this.getSession(user.id);
             if (!session || session.expiresAt < new Date()) {
                 return {
                     success: false,
@@ -302,6 +258,7 @@ class AuthenticationSystem {
                 token
             };
         } catch (error) {
+            console.error('Token verification error:', error);
             return {
                 success: false,
                 error: 'Invalid token'
@@ -337,8 +294,8 @@ class AuthenticationSystem {
         return basePermissions;
     }
     /**
-   * Register new user
-   */ async registerUser(email, name, tier) {
+   * Register new user with secure password
+   */ async registerUser(email, name, password, tier) {
         try {
             if (this.users.has(email)) {
                 return {
@@ -346,22 +303,36 @@ class AuthenticationSystem {
                     error: 'User already exists'
                 };
             }
+            // Hash password
+            const passwordData = await this.hashPassword(password);
             const user = {
                 id: `user_${tier.toLowerCase()}_${Date.now()}`,
                 email,
                 name,
+                passwordHash: passwordData.hash,
+                salt: passwordData.salt,
                 tier,
                 neuralFingerprint: this.generateNeuralFingerprint(email),
-                createdAt: new Date()
+                createdAt: new Date(),
+                failedLoginAttempts: 0
             };
             this.users.set(email, user);
             const token = this.generateToken(user);
+            // Create session
+            const sessionData = {
+                userId: user.id,
+                tier: user.tier,
+                permissions: this.getUserPermissions(user.tier),
+                expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000)
+            };
+            await this.storeSession(user.id, sessionData);
             return {
                 success: true,
                 user,
                 token
             };
         } catch (error) {
+            console.error('Registration error:', error);
             return {
                 success: false,
                 error: 'Registration failed'
@@ -374,19 +345,14 @@ class AuthenticationSystem {
         return this.sessions.delete(userId);
     }
     /**
-   * Get current session
-   */ getSession(userId) {
-        const session = this.sessions.get(userId);
-        if (!session || session.expiresAt < new Date()) {
-            this.sessions.delete(userId);
-            return null;
-        }
-        return session;
+   * Get current session (public method)
+   */ async getCurrentSession(userId) {
+        return this.getSession(userId);
     }
     /**
    * Check if user has permission
-   */ hasPermission(userId, permission) {
-        const session = this.getSession(userId);
+   */ async hasPermission(userId, permission) {
+        const session = await this.getSession(userId);
         return session?.permissions.includes(permission) || false;
     }
     /**
@@ -410,10 +376,8 @@ const authSystem = new AuthenticationSystem();
 });
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$esm$2f$api$2f$server$2e$js__$5b$middleware$5d$__$28$ecmascript$29$__$3c$module__evaluation$3e$__ = __turbopack_import__("[project]/node_modules/next/dist/esm/api/server.js [middleware] (ecmascript) <module evaluation>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$esm$2f$server$2f$web$2f$spec$2d$extension$2f$response$2e$js__$5b$middleware$5d$__$28$ecmascript$29$__ = __turbopack_import__("[project]/node_modules/next/dist/esm/server/web/spec-extension/response.js [middleware] (ecmascript)");
-var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$middleware$2f$rateLimit$2e$ts__$5b$middleware$5d$__$28$ecmascript$29$__ = __turbopack_import__("[project]/src/middleware/rateLimit.ts [middleware] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$auth$2f$AuthenticationSystem$2e$ts__$5b$middleware$5d$__$28$ecmascript$29$__ = __turbopack_import__("[project]/src/lib/auth/AuthenticationSystem.ts [middleware] (ecmascript)");
 "__TURBOPACK__ecmascript__hoisting__location__";
-;
 ;
 ;
 class SecurityMiddleware {
@@ -435,7 +399,7 @@ class SecurityMiddleware {
             ...config
         };
         if (this.config.enableRateLimit) {
-            this.rateLimiter = (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$middleware$2f$rateLimit$2e$ts__$5b$middleware$5d$__$28$ecmascript$29$__["rateLimit"])({
+            this.rateLimiter = rateLimit({
                 windowMs: 60 * 1000,
                 max: this.config.maxRequestsPerMinute,
                 message: 'Too many requests from this IP, please try again later.',

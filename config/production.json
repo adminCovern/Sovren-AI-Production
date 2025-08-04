@@ -1,0 +1,175 @@
+{
+  "environment": "production",
+  "port": 3000,
+  "host": "0.0.0.0",
+  "baseUrl": "https://api.sovren.ai",
+  
+  "database": {
+    "host": "localhost",
+    "port": 5432,
+    "database": "sovren_ai_prod",
+    "username": "sovren_prod",
+    "password": "CHANGE_IN_PRODUCTION",
+    "ssl": true,
+    "maxConnections": 100,
+    "connectionTimeout": 30000,
+    "queryTimeout": 60000,
+    "poolMin": 10,
+    "poolMax": 50,
+    "idleTimeoutMillis": 30000
+  },
+  
+  "redis": {
+    "url": "redis://localhost:6379",
+    "host": "localhost",
+    "port": 6379,
+    "db": 0,
+    "maxRetries": 5,
+    "retryDelay": 2000,
+    "connectTimeout": 10000,
+    "lazyConnect": true,
+    "keepAlive": 30000,
+    "family": 4
+  },
+  
+  "security": {
+    "jwt": {
+      "secret": "PRODUCTION_JWT_SECRET_MUST_BE_SET_VIA_ENVIRONMENT_VARIABLE_MINIMUM_32_CHARACTERS_REQUIRED"
+    },
+    "rateLimiting": {
+      "windowMs": 900000,
+      "max": 5000
+    },
+    "cors": {
+      "origin": ["https://sovren.ai", "https://app.sovren.ai"]
+    },
+    "csp": {
+      "enabled": true,
+      "reportOnly": false,
+      "directives": {
+        "default-src": ["'self'"],
+        "script-src": ["'self'"],
+        "style-src": ["'self'", "'unsafe-inline'"],
+        "img-src": ["'self'", "data:", "https:"],
+        "font-src": ["'self'"],
+        "connect-src": ["'self'", "https://api.sovren.ai"],
+        "media-src": ["'self'"],
+        "object-src": ["'none'"],
+        "frame-src": ["'none'"],
+        "base-uri": ["'self'"],
+        "form-action": ["'self'"]
+      }
+    }
+  },
+  
+  "tts": {
+    "modelsPath": "/opt/sovren/models/styletts2",
+    "outputPath": "/var/www/sovren/public/audio/generated",
+    "pythonPath": "/usr/bin/python3",
+    "styleTTS2Path": "/opt/styletts2",
+    "maxConcurrentSynthesis": 10,
+    "cacheMaxSize": 5000
+  },
+  
+  "shadowBoard": {
+    "voiceModelsPath": "/opt/sovren/models/executives",
+    "personalityConfigPath": "/opt/sovren/config/personalities"
+  },
+  
+  "email": {
+    "provider": "smtp",
+    "smtp": {
+      "host": "smtp.sovren.ai",
+      "port": 587,
+      "secure": false,
+      "auth": {
+        "user": "SMTP_USER",
+        "pass": "SMTP_PASSWORD"
+      }
+    },
+    "from": "noreply@sovren.ai"
+  },
+  
+  "storage": {
+    "provider": "s3",
+    "s3": {
+      "bucket": "sovren-ai-storage",
+      "region": "us-east-1",
+      "accessKeyId": "AWS_ACCESS_KEY_ID",
+      "secretAccessKey": "AWS_SECRET_ACCESS_KEY",
+      "publicUrl": "https://cdn.sovren.ai"
+    }
+  },
+  
+  "monitoring": {
+    "enabled": true,
+    "metricsPort": 9090,
+    "alerting": {
+      "enabled": true,
+      "email": "alerts@sovren.ai",
+      "webhookUrl": "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK",
+      "thresholds": {
+        "cpuUsage": 70,
+        "memoryUsage": 80,
+        "responseTime": 500,
+        "errorRate": 2
+      }
+    },
+    "logging": {
+      "level": "info",
+      "format": "json",
+      "file": {
+        "enabled": true,
+        "path": "/var/log/sovren",
+        "maxSize": "100m",
+        "maxFiles": 10
+      },
+      "console": {
+        "enabled": false,
+        "colorize": false
+      }
+    }
+  },
+  
+  "performance": {
+    "optimization": {
+      "enabled": true,
+      "cacheMaxSize": 10000,
+      "maxConcurrentRequests": 1000,
+      "requestTimeout": 30000,
+      "keepAliveTimeout": 5000
+    },
+    "clustering": {
+      "enabled": true,
+      "workers": "auto"
+    },
+    "compression": {
+      "enabled": true,
+      "level": 6,
+      "threshold": 1024
+    },
+    "staticFiles": {
+      "maxAge": 31536000,
+      "etag": true,
+      "lastModified": true
+    }
+  },
+  
+  "limits": {
+    "maxConcurrentUsers": 10000,
+    "maxRequestsPerMinute": 100000,
+    "maxFileSize": 52428800,
+    "maxAudioDuration": 600,
+    "maxExecutivesPerUser": 8,
+    "maxIntegrationsPerUser": 20,
+    "maxSessionDuration": 86400000,
+    "maxUploadSize": 104857600
+  },
+  
+  "features": {
+    "quantumDecisionMaking": false,
+    "multiTenant": true,
+    "performanceOptimization": true,
+    "advancedSecurity": true
+  }
+}

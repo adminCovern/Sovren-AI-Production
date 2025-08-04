@@ -1,4 +1,46 @@
 import { StyleTTS2Engine, StyleTTS2Config, SynthesisParameters } from './StyleTTS2Engine';
+import { ErrorHandler, ErrorCategory, ErrorSeverity } from '../errors/ErrorHandler';
+import { container, SERVICE_IDENTIFIERS } from '../di/DIContainer';
+import { Logger } from '../di/ServiceRegistry';
+
+// Event data types
+export interface ModelLoadedEventData {
+  modelId: string;
+  modelPath: string;
+  loadTime: number;
+  characteristics: VoiceModel['characteristics'];
+}
+
+export interface SynthesisProgressEventData {
+  requestId: string;
+  progress: number; // 0-100
+  stage: 'preprocessing' | 'synthesis' | 'postprocessing';
+  estimatedTimeRemaining: number;
+}
+
+export interface SynthesisCompleteEventData {
+  requestId: string;
+  audioUrl: string;
+  duration: number;
+  fileSize: number;
+  processingTime: number;
+}
+
+export interface SynthesisErrorEventData {
+  requestId: string;
+  error: Error;
+  stage: 'preprocessing' | 'synthesis' | 'postprocessing' | 'unknown';
+  retryable: boolean;
+}
+
+export interface VoiceSystemStatus {
+  status: 'not_initialized' | 'initializing' | 'ready' | 'error';
+  modelsLoaded: number;
+  totalModels: number;
+  memoryUsage: number;
+  activeRequests: number;
+  lastError?: Error;
+}
 
 export interface VoiceModel {
   id: string;
@@ -47,6 +89,8 @@ export class VoiceSynthesizer {
   private workerPool: Worker[] = [];
   private maxWorkers: number = 4;
   private styleTTS2Engine: StyleTTS2Engine | null = null;
+  private errorHandler: ErrorHandler;
+  private logger: Logger;
 
   constructor(
     private config: {
@@ -56,6 +100,8 @@ export class VoiceSynthesizer {
     },
     private subscriptionTier: 'sovren_proof' | 'sovren_proof_plus' = 'sovren_proof'
   ) {
+    this.errorHandler = container.resolve<ErrorHandler>(SERVICE_IDENTIFIERS.ERROR_HANDLER);
+    this.logger = container.resolve<Logger>(SERVICE_IDENTIFIERS.LOGGER);
     this.initializeEventListeners();
     this.initializeVoiceModels();
   }
@@ -240,18 +286,42 @@ export class VoiceSynthesizer {
 
   public async initialize(): Promise<void> {
     if (!this.config.enabled) {
-      console.log('Voice synthesis is disabled');
+      this.logger.info('Voice synthesis is disabled');
       return;
     }
 
-    try {
-      // Initialize audio context
-      this.audioContext = new AudioContext({
-        sampleRate: 22050, // Optimal for voice synthesis
-        latencyHint: 'interactive'
-      });
+    this.logger.info('🎤 Initializing Voice Synthesis System...');
 
-      // Initialize StyleTTS2 Engine
+    try {
+      // Initialize audio context with error handling
+      await this.errorHandler.handleAsync(
+        async () => {
+          this.audioContext = new AudioContext({
+            sampleRate: 22050, // Optimal for voice synthesis
+            latencyHint: 'interactive'
+          });
+        },
+        { additionalData: { component: 'AudioContext' } },
+        {
+          retries: 1,
+          retryDelay: 1000,
+          fallback: async () => {
+            throw this.errorHandler.createError(
+              'AUDIO_CONTEXT_INIT_FAILED',
+              'Failed to initialize Web Audio API context',
+              ErrorCategory.SYSTEM,
+              ErrorSeverity.CRITICAL,
+              {},
+              {
+                userMessage: 'Your browser does not support audio synthesis.',
+                suggestedActions: ['Use a modern browser', 'Enable audio permissions']
+              }
+            );
+          }
+        }
+      );
+
+      // Initialize StyleTTS2 Engine with comprehensive error handling
       const styleTTS2Config: StyleTTS2Config = {
         modelPath: this.config.modelsPath,
         vocoder: 'hifigan',
@@ -264,29 +334,53 @@ export class VoiceSynthesizer {
         enableWebAssembly: true
       };
 
-      this.styleTTS2Engine = new StyleTTS2Engine(styleTTS2Config);
+      await this.errorHandler.handleAsync(
+        async () => {
+          this.styleTTS2Engine = new StyleTTS2Engine(styleTTS2Config);
+        },
+        { additionalData: { component: 'StyleTTS2Engine', config: styleTTS2Config } },
+        {
+          retries: 2,
+          retryDelay: 2000,
+          fallback: async () => {
+            throw this.errorHandler.createError(
+              'STYLETTS2_ENGINE_INIT_FAILED',
+              'Failed to initialize StyleTTS2 synthesis engine',
+              ErrorCategory.SYSTEM,
+              ErrorSeverity.CRITICAL,
+              {},
+              {
+                userMessage: 'Voice synthesis engine failed to initialize.',
+                suggestedActions: ['Refresh the page', 'Contact support']
+              }
+            );
+          }
+        }
+      );
 
-      // Set up StyleTTS2 event handlers
-      this.styleTTS2Engine.on('engineReady', () => {
-        console.log('✓ StyleTTS2 Engine ready');
-      });
+      // Set up StyleTTS2 event handlers with null check
+      if (this.styleTTS2Engine) {
+        this.styleTTS2Engine.on('engineReady', () => {
+          this.logger.info('✓ StyleTTS2 Engine ready');
+        });
 
-      this.styleTTS2Engine.on('modelLoaded', (data: any) => {
-        console.log(`✓ StyleTTS2 model loaded: ${data.modelId}`);
-        this.emit('modelLoaded', data);
-      });
+        this.styleTTS2Engine.on('modelLoaded', (data: ModelLoadedEventData) => {
+          this.logger.info(`✓ StyleTTS2 model loaded: ${data.modelId}`);
+          this.emit('modelLoaded', data);
+        });
 
-      this.styleTTS2Engine.on('synthesisProgress', (data: any) => {
-        this.emit('synthesisProgress', data);
-      });
+        this.styleTTS2Engine.on('synthesisProgress', (data: SynthesisProgressEventData) => {
+          this.emit('synthesisProgress', data);
+        });
 
-      this.styleTTS2Engine.on('error', (error: any) => {
-        console.error('StyleTTS2 Engine error:', error);
-        this.emit('error', error);
-      });
+        this.styleTTS2Engine.on('error', (error: SynthesisErrorEventData) => {
+          this.logger.error('StyleTTS2 Engine error:', error);
+          this.emit('error', error);
+        });
 
-      // Initialize StyleTTS2 Engine
-      await this.styleTTS2Engine.initialize();
+        // Initialize StyleTTS2 Engine
+        await this.styleTTS2Engine.initialize();
+      }
 
       // Initialize worker pool for fallback processing
       await this.initializeWorkerPool();
@@ -309,7 +403,8 @@ export class VoiceSynthesizer {
    * Check browser compatibility for voice synthesis
    */
   private async checkBrowserCompatibility(): Promise<void> {
-    if (!window.AudioContext && !(window as any).webkitAudioContext) {
+    const windowWithWebkit = window as Window & { webkitAudioContext?: typeof AudioContext };
+    if (!window.AudioContext && !windowWithWebkit.webkitAudioContext) {
       throw new Error('Web Audio API not supported');
     }
 
@@ -326,8 +421,9 @@ export class VoiceSynthesizer {
   private async detectOptimalDevice(): Promise<string> {
     try {
       // Check for WebGPU support
-      if ((navigator as any).gpu) {
-        const adapter = await (navigator as any).gpu.requestAdapter();
+      const navigatorWithGPU = navigator as Navigator & { gpu?: { requestAdapter(): Promise<unknown> } };
+      if (navigatorWithGPU.gpu) {
+        const adapter = await navigatorWithGPU.gpu.requestAdapter();
         if (adapter) {
           console.log('🚀 WebGPU detected, using GPU acceleration');
           return 'gpu';
@@ -344,24 +440,29 @@ export class VoiceSynthesizer {
    * Setup comprehensive StyleTTS2 event handlers
    */
   private setupStyleTTS2EventHandlers(): void {
+    if (!this.styleTTS2Engine) {
+      console.warn('StyleTTS2 engine not initialized, skipping event handler setup');
+      return;
+    }
+
     this.styleTTS2Engine.on('engineReady', () => {
       console.log('✓ StyleTTS2 Engine ready');
     });
 
-    this.styleTTS2Engine.on('modelLoaded', (data: any) => {
+    this.styleTTS2Engine.on('modelLoaded', (data: ModelLoadedEventData) => {
       console.log(`✓ StyleTTS2 model loaded: ${data.modelId}`);
       this.emit('modelLoaded', data);
     });
 
-    this.styleTTS2Engine.on('synthesisProgress', (data: any) => {
+    this.styleTTS2Engine.on('synthesisProgress', (data: SynthesisProgressEventData) => {
       this.emit('synthesisProgress', data);
     });
 
-    this.styleTTS2Engine.on('synthesisComplete', (result: any) => {
+    this.styleTTS2Engine.on('synthesisComplete', (result: SynthesisCompleteEventData) => {
       this.emit('synthesisComplete', result);
     });
 
-    this.styleTTS2Engine.on('error', (error: any) => {
+    this.styleTTS2Engine.on('error', (error: SynthesisErrorEventData) => {
       console.error('StyleTTS2 Engine error:', error);
       this.emit('error', error);
     });
@@ -396,10 +497,10 @@ export class VoiceSynthesizer {
       // Test synthesis with a simple phrase
       const testResult = await this.synthesize('System health check', 'sovren-ai-neural', 'high');
 
-      if (testResult.audioBuffer && testResult.audioBuffer.byteLength > 0) {
+      if (testResult && typeof testResult === 'string' && testResult.length > 0) {
         console.log('✅ Voice synthesis health check passed');
       } else {
-        throw new Error('Health check produced empty audio');
+        throw new Error('Health check produced empty result');
       }
     } catch (error) {
       console.warn('⚠️ Voice synthesis health check failed:', error);
@@ -639,7 +740,8 @@ export class VoiceSynthesizer {
 
     } catch (error) {
       console.error('Synthesis failed, falling back to basic synthesis:', error);
-      this.handleSynthesisError(request.id, error);
+      const errorObj = error instanceof Error ? error : new Error(String(error));
+      this.handleSynthesisError(request.id, errorObj);
     }
   }
 
@@ -655,9 +757,24 @@ export class VoiceSynthesizer {
     this.emit('synthesisComplete', { requestId, result });
   }
 
-  private handleSynthesisError(requestId: string, error: any): void {
-    console.error(`Synthesis error for request ${requestId}:`, error);
-    this.emit('synthesisError', { requestId, error });
+  private handleSynthesisError(requestId: string, error: Error): void {
+    const sovrenError = this.errorHandler.handleError(error, {
+      requestId,
+      additionalData: {
+        synthesisRequestId: requestId,
+        stage: 'synthesis'
+      }
+    });
+
+    this.logger.error(`Synthesis error for request ${requestId}:`, sovrenError);
+
+    const errorData: SynthesisErrorEventData = {
+      requestId,
+      error: sovrenError.originalError || error,
+      stage: 'synthesis',
+      retryable: sovrenError.isRetryable
+    };
+    this.emit('synthesisError', errorData);
   }
 
   private handleModelLoaded(modelId: string): void {
@@ -669,7 +786,7 @@ export class VoiceSynthesizer {
   }
 
   private generateRequestId(): string {
-    return `synthesis_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return `synthesis_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
   }
 
   private generateCacheKey(request: SynthesisRequest): string {
@@ -722,22 +839,30 @@ export class VoiceSynthesizer {
     }
   }
 
-  private emit(event: string, data?: any): void {
+  private emit(event: string, data?: unknown): void {
     const listeners = this.eventListeners.get(event);
     if (listeners) {
       listeners.forEach(callback => callback(data));
     }
   }
 
-  public getStyleTTS2Status(): any {
+  public getStyleTTS2Status(): VoiceSystemStatus {
     if (!this.styleTTS2Engine) {
-      return { status: 'not_initialized' };
+      return {
+        status: 'not_initialized',
+        modelsLoaded: 0,
+        totalModels: 0,
+        memoryUsage: 0,
+        activeRequests: 0
+      };
     }
 
     return {
       status: 'ready',
-      loadedModels: this.styleTTS2Engine.getLoadedModels().length,
-      memoryUsage: this.styleTTS2Engine.getMemoryUsage()
+      modelsLoaded: this.styleTTS2Engine.getLoadedModels().length,
+      totalModels: this.voiceModels.size,
+      memoryUsage: this.styleTTS2Engine.getMemoryUsage(),
+      activeRequests: this.synthesisQueue.length
     };
   }
 

@@ -191,7 +191,18 @@ export class PhDDigitalDoppelganger extends EventEmitter {
     await timeMachineMemorySystem.recordEvent(
       'milestone',
       `PhD Digital Doppelganger initialized for ${userProfile.name}`,
-      { userProfile, enhancement: this.enhancement },
+      {
+        metadata: {
+          userId: userProfile.id,
+          userName: userProfile.name,
+          enhancementLevel: this.enhancement.academicLevel,
+          negotiationEnhancement: this.enhancement.enhancementAreas.negotiation,
+          strategyEnhancement: this.enhancement.enhancementAreas.strategy,
+          communicationEnhancement: this.enhancement.enhancementAreas.communication,
+          analysisEnhancement: this.enhancement.enhancementAreas.analysis,
+          leadershipEnhancement: this.enhancement.enhancementAreas.leadership
+        }
+      },
       'strategic',
       [userProfile.id]
     );
@@ -524,10 +535,15 @@ export class PhDDigitalDoppelganger extends EventEmitter {
       constraints
     );
 
+    // Consider context importance and timeframe
+    const urgencyModifier = context.importance === 'critical' ? 'accelerated' : 'standard';
+    const timeframeConsideration = context.timeframe ? ` within ${context.timeframe}` : '';
+
     // Generate strategy
-    const strategy = `${framework.name} approach with ${gameTheoryAnalysis.optimalStrategy}. ` +
+    const strategy = `${framework.name} approach with ${gameTheoryAnalysis.optimalStrategy} execution (${urgencyModifier} pace). ` +
                     `Focus on ${objectives[0]} while maintaining ${this.userProfile.values.core[0]}. ` +
-                    `Adapt to ${counterpartyAnalysis.dominantStyle} counterparty style.`;
+                    `Adapt to ${counterpartyAnalysis.dominantStyle} counterparty style${timeframeConsideration}. ` +
+                    `Cultural context: ${context.culturalContext}.`;
 
     return strategy;
   }
@@ -559,6 +575,16 @@ export class PhDDigitalDoppelganger extends EventEmitter {
 
     // Maintain user authenticity
     enhanced = await this.maintainAuthenticity(enhanced, userStyle);
+
+    // Apply context-specific enhancements
+    if (context.importance === 'critical') {
+      enhanced = `[URGENT] ${enhanced}`;
+    }
+
+    // Add cultural context considerations
+    if (context.culturalContext && context.culturalContext !== 'default') {
+      enhanced = `${enhanced}\n\nNote: This message has been adapted for ${context.culturalContext} cultural context.`;
+    }
 
     return enhanced;
   }
@@ -603,16 +629,58 @@ export class PhDDigitalDoppelganger extends EventEmitter {
   }
 
   private async selectNegotiationFrameworks(profile: UserProfile): Promise<NegotiationFramework[]> {
-    // Return appropriate frameworks based on profile
-    return []; // Simplified for now
+    // Return appropriate frameworks based on profile characteristics
+    const frameworks: NegotiationFramework[] = [];
+
+    // Select frameworks based on user's negotiation style and industry
+    if (profile.negotiationStyle.approach === 'collaborative') {
+      frameworks.push({
+        name: 'Harvard Negotiation Method',
+        principles: ['Separate people from problems', 'Focus on interests, not positions'],
+        tactics: ['Active listening', 'Interest-based questioning'],
+        psychologyFactors: ['Reciprocity principle', 'Commitment consistency'],
+        culturalAdaptations: { default: 'Collaborative approach' }
+      });
+    }
+    if (profile.industry === 'finance' || profile.industry === 'legal') {
+      frameworks.push({
+        name: 'BATNA Analysis',
+        principles: ['Know your alternatives', 'Assess counterparty alternatives'],
+        tactics: ['Alternative development', 'Leverage assessment'],
+        psychologyFactors: ['Authority establishment', 'Scarcity principle'],
+        culturalAdaptations: { default: 'Analytical approach' }
+      });
+    }
+
+    return frameworks;
   }
 
   private async selectStrategicFrameworks(profile: UserProfile): Promise<string[]> {
-    return ['Porter Five Forces', 'Blue Ocean Strategy', 'SWOT Analysis'];
+    const frameworks = ['Porter Five Forces', 'Blue Ocean Strategy', 'SWOT Analysis'];
+
+    // Add industry-specific frameworks
+    if (profile.industry === 'technology') {
+      frameworks.push('Technology Adoption Lifecycle', 'Platform Strategy');
+    }
+    if (profile.role.includes('CEO') || profile.role.includes('Director')) {
+      frameworks.push('Balanced Scorecard', 'OKRs');
+    }
+
+    return frameworks;
   }
 
   private async selectAnalyticalFrameworks(profile: UserProfile): Promise<string[]> {
-    return ['Decision Trees', 'Monte Carlo Analysis', 'Sensitivity Analysis'];
+    const frameworks = ['Decision Trees', 'Monte Carlo Analysis', 'Sensitivity Analysis'];
+
+    // Add frameworks based on user's analytical background
+    if (profile.expertise.domains.includes('finance')) {
+      frameworks.push('NPV Analysis', 'Risk Assessment Models');
+    }
+    if (profile.expertise.domains.includes('data') || profile.expertise.domains.includes('analytics')) {
+      frameworks.push('Statistical Modeling', 'Predictive Analytics');
+    }
+
+    return frameworks;
   }
 
   private async analyzeUserPatterns(profile: UserProfile): Promise<void> {
@@ -631,13 +699,13 @@ export class PhDDigitalDoppelganger extends EventEmitter {
   }
 
   private async planNegotiationPhases(strategy: string, objectives: string[], duration: number): Promise<NegotiationPhase[]> {
-    // Plan negotiation phases
-    return [
+    // Plan negotiation phases based on strategy and objectives
+    const phases: NegotiationPhase[] = [
       {
         id: 'phase_1',
         name: 'Opening and Rapport Building',
-        objectives: ['Establish trust', 'Set agenda'],
-        tactics: ['Active listening', 'Common ground identification'],
+        objectives: ['Establish trust', 'Set agenda', ...(objectives.length > 0 ? [`Introduce primary objective: ${objectives[0]}`] : [])],
+        tactics: strategy.includes('collaborative') ? ['Active listening', 'Common ground identification'] : ['Authority establishment', 'Agenda control'],
         duration: duration * 0.2,
         status: 'pending',
         outcome: ''
@@ -645,8 +713,8 @@ export class PhDDigitalDoppelganger extends EventEmitter {
       {
         id: 'phase_2',
         name: 'Information Exchange',
-        objectives: ['Understand positions', 'Identify interests'],
-        tactics: ['Strategic questioning', 'Information sharing'],
+        objectives: ['Understand positions', 'Identify interests', ...(objectives.length > 1 ? [`Explore ${objectives[1]}`] : [])],
+        tactics: strategy.includes('analytical') ? ['Data-driven questioning', 'Evidence presentation'] : ['Strategic questioning', 'Information sharing'],
         duration: duration * 0.3,
         status: 'pending',
         outcome: ''
@@ -654,8 +722,8 @@ export class PhDDigitalDoppelganger extends EventEmitter {
       {
         id: 'phase_3',
         name: 'Bargaining and Problem Solving',
-        objectives: ['Generate options', 'Create value'],
-        tactics: ['Brainstorming', 'Trade-off analysis'],
+        objectives: ['Generate options', 'Create value', ...objectives.slice(0, 2).map(obj => `Address ${obj}`)],
+        tactics: strategy.includes('cooperative') ? ['Brainstorming', 'Win-win solutions'] : ['Trade-off analysis', 'Concession management'],
         duration: duration * 0.4,
         status: 'pending',
         outcome: ''
@@ -663,31 +731,68 @@ export class PhDDigitalDoppelganger extends EventEmitter {
       {
         id: 'phase_4',
         name: 'Agreement and Closing',
-        objectives: ['Finalize terms', 'Confirm understanding'],
-        tactics: ['Summarization', 'Commitment securing'],
+        objectives: ['Finalize terms', 'Confirm understanding', 'Secure commitment to primary objectives'],
+        tactics: ['Summarization', 'Commitment securing', 'Next steps planning'],
         duration: duration * 0.1,
         status: 'pending',
         outcome: ''
       }
     ];
+
+    return phases;
   }
 
   private async applyCulturalAdaptations(culturalContext: string, counterparties: string[]): Promise<string[]> {
-    return [`Adapt communication style for ${culturalContext}`, 'Respect cultural norms', 'Use appropriate formality level'];
+    const adaptations = [`Adapt communication style for ${culturalContext}`, 'Respect cultural norms', 'Use appropriate formality level'];
+
+    // Add counterparty-specific adaptations
+    if (counterparties.length > 0) {
+      adaptations.push(`Tailor approach for ${counterparties.length} counterparties`);
+      adaptations.push('Consider individual cultural backgrounds');
+    }
+
+    return adaptations;
   }
 
   private async generateNegotiationTactics(strategy: string, frameworks: NegotiationFramework[]): Promise<string[]> {
-    return ['Build rapport first', 'Use objective criteria', 'Focus on interests not positions', 'Generate multiple options'];
+    const baseTactics = ['Build rapport first', 'Use objective criteria', 'Focus on interests not positions', 'Generate multiple options'];
+
+    // Add strategy-specific tactics
+    if (strategy.includes('collaborative')) {
+      baseTactics.push('Emphasize mutual benefits', 'Seek win-win solutions');
+    }
+    if (strategy.includes('analytical')) {
+      baseTactics.push('Present data-driven arguments', 'Use quantitative analysis');
+    }
+
+    // Add framework-specific tactics
+    frameworks.forEach(framework => {
+      if (framework.tactics && framework.tactics.length > 0) {
+        baseTactics.push(...framework.tactics.slice(0, 2)); // Add first 2 tactics from each framework
+      }
+    });
+
+    return [...new Set(baseTactics)]; // Remove duplicates
   }
 
   private async executeNegotiation(session: NegotiationSession, context: RepresentationContext): Promise<any> {
-    // Simulate negotiation execution
+    // Simulate negotiation execution with context consideration
     session.status = 'completed';
-    session.outcome.agreement = Math.random() > 0.3; // 70% success rate
-    session.outcome.terms = { agreed: session.outcome.agreement };
+
+    // Success rate influenced by context importance and timeframe
+    let successRate = 0.7; // Base 70% success rate
+    if (context.importance === 'critical') successRate += 0.1;
+    if (context.timeframe === 'immediate') successRate -= 0.1;
+
+    session.outcome.agreement = Math.random() < successRate;
+    session.outcome.terms = {
+      agreed: session.outcome.agreement,
+      contextConsidered: context.importance,
+      timeframeMet: context.timeframe
+    };
     session.outcome.satisfaction = { user: 0.8, counterparty: 0.7 };
-    session.outcome.futureRelationship = 'positive';
-    
+    session.outcome.futureRelationship = session.outcome.agreement ? 'positive' : 'neutral';
+
     return session.outcome;
   }
 
@@ -714,117 +819,397 @@ export class PhDDigitalDoppelganger extends EventEmitter {
 
   // Additional helper methods would be implemented here...
   private async analyzeRecipients(recipients: string[]): Promise<any> {
-    return { dominantStyle: 'professional', preferences: ['direct', 'data-driven'] };
+    const analysis = { dominantStyle: 'professional', preferences: ['direct', 'data-driven'] };
+
+    // Analyze recipient characteristics
+    if (recipients.length > 5) {
+      analysis.dominantStyle = 'formal';
+      analysis.preferences.push('structured communication');
+    }
+    if (recipients.some(r => r.includes('CEO') || r.includes('Director'))) {
+      analysis.dominantStyle = 'executive';
+      analysis.preferences.push('concise', 'strategic');
+    }
+
+    return analysis;
   }
 
   private async developDeliveryStrategy(type: string, analysis: any, context: RepresentationContext): Promise<string> {
-    return `Deliver ${type} with ${analysis.dominantStyle} approach, emphasizing ${context.objectives[0]}`;
+    const baseStrategy = `Deliver ${type} with ${analysis.dominantStyle} approach, emphasizing ${context.objectives[0]}`;
+
+    // Add context-specific delivery considerations
+    if (context.importance === 'critical') {
+      return `${baseStrategy}. Use urgent delivery channels and request immediate acknowledgment.`;
+    }
+    if (context.timeframe === 'immediate') {
+      return `${baseStrategy}. Prioritize speed while maintaining quality.`;
+    }
+
+    return baseStrategy;
   }
 
   private async predictCommunicationImpact(message: string, recipients: string[], context: RepresentationContext): Promise<Record<string, number>> {
     const impact: Record<string, number> = {};
+
+    // Base impact calculation
     recipients.forEach(recipient => {
-      impact[recipient] = 0.8; // High predicted impact
+      let baseImpact = 0.8; // High predicted impact
+
+      // Adjust based on message characteristics
+      if (message.length > 500) baseImpact -= 0.1; // Longer messages may have less impact
+      if (message.includes('urgent') || message.includes('critical')) baseImpact += 0.1;
+
+      // Adjust based on context
+      if (context.importance === 'critical') baseImpact += 0.1;
+      if (context.stakeholders.includes(recipient)) baseImpact += 0.1;
+
+      impact[recipient] = Math.min(baseImpact, 1.0);
     });
+
     return impact;
   }
 
   private async generateFollowUpActions(context: RepresentationContext, impact: Record<string, number>, style: any): Promise<string[]> {
-    return ['Schedule follow-up meeting', 'Send supporting documentation', 'Monitor stakeholder responses'];
+    const actions = ['Schedule follow-up meeting', 'Send supporting documentation', 'Monitor stakeholder responses'];
+
+    // Add context-specific follow-up actions
+    if (context.importance === 'critical') {
+      actions.unshift('Request immediate confirmation of receipt');
+    }
+
+    // Add impact-based actions
+    const lowImpactRecipients = Object.entries(impact).filter(([_, score]) => score < 0.6);
+    if (lowImpactRecipients.length > 0) {
+      actions.push('Follow up with low-impact recipients using alternative channels');
+    }
+
+    // Add style-specific actions
+    if (style?.formality === 'formal') {
+      actions.push('Prepare formal documentation for record-keeping');
+    }
+
+    return actions;
   }
 
   private async applyBayesianDecisionMaking(options: string[], criteria: string[], values: any, context: RepresentationContext): Promise<any> {
-    return { optimalChoice: options[0], confidence: 0.85, alternatives: options.slice(1) };
+    // Score options based on criteria and values
+    const scoredOptions = options.map((option, index) => {
+      let score = 0.5; // Base score
+
+      // Apply criteria weighting
+      criteria.forEach(criterion => {
+        if (values[criterion]) {
+          score += values[criterion] * 0.1;
+        }
+      });
+
+      // Context adjustments
+      if (context.importance === 'critical' && index === 0) score += 0.2;
+      if (context.timeframe === 'immediate' && option.includes('quick')) score += 0.15;
+
+      return { option, score };
+    });
+
+    // Sort by score and select optimal
+    scoredOptions.sort((a, b) => b.score - a.score);
+
+    return {
+      optimalChoice: scoredOptions[0].option,
+      confidence: Math.min(scoredOptions[0].score, 0.95),
+      alternatives: scoredOptions.slice(1).map(s => s.option),
+      criteriaUsed: criteria,
+      contextConsidered: context.importance
+    };
   }
 
   private async enhanceDecisionAnalysis(analysis: any, frameworks: string[], input: Record<string, string>): Promise<any> {
-    return { ...analysis, frameworks, stakeholderInput: input };
+    const enhanced = { ...analysis, frameworks, stakeholderInput: input };
+
+    // Add framework-specific enhancements
+    if (frameworks.includes('SWOT Analysis')) {
+      enhanced.swotFactors = ['Strengths leveraged', 'Weaknesses mitigated'];
+    }
+    if (frameworks.includes('Porter Five Forces')) {
+      enhanced.competitiveFactors = ['Market position considered', 'Competitive dynamics analyzed'];
+    }
+
+    return enhanced;
   }
 
   private async generateDecisionReasoning(decision: string, analysis: any, expertise: any): Promise<string[]> {
-    return [
-      `Decision based on comprehensive analysis using ${analysis.frameworks?.join(', ')}`,
+    const reasoning = [
+      `Decision "${decision}" based on comprehensive analysis using ${analysis.frameworks?.join(', ')}`,
       `Aligns with expertise in ${expertise.domains.join(', ')}`,
       `Confidence level: ${analysis.confidence}`
     ];
+
+    // Add decision-specific reasoning
+    if (decision.includes('invest')) {
+      reasoning.push('Investment decision supported by financial analysis');
+    }
+    if (decision.includes('expand')) {
+      reasoning.push('Expansion decision based on market opportunity assessment');
+    }
+
+    return reasoning;
   }
 
   private async assessDecisionRisks(decision: string, context: RepresentationContext, riskTolerance: number): Promise<any> {
-    return {
+    const baseRisk = {
       overall: 'medium',
       factors: ['Market volatility', 'Implementation complexity'],
       mitigation: ['Phased approach', 'Contingency planning']
     };
+
+    // Adjust risk assessment based on decision type
+    if (decision.includes('major') || decision.includes('significant')) {
+      baseRisk.overall = 'high';
+      baseRisk.factors.push('High financial exposure');
+    }
+
+    // Adjust based on context
+    if (context.importance === 'critical') {
+      baseRisk.factors.push('Critical business impact');
+      baseRisk.mitigation.push('Executive oversight required');
+    }
+
+    // Adjust based on risk tolerance
+    if (riskTolerance < 0.3) {
+      baseRisk.mitigation.push('Conservative implementation approach');
+    }
+
+    return baseRisk;
   }
 
   private async createImplementationPlan(decision: string, context: RepresentationContext, expertise: any): Promise<string[]> {
-    return [
+    const basePlan = [
       'Phase 1: Planning and resource allocation',
       'Phase 2: Initial implementation',
       'Phase 3: Monitoring and adjustment',
       'Phase 4: Full deployment and evaluation'
     ];
+
+    // Customize plan based on decision type
+    if (decision.includes('technology') || decision.includes('system')) {
+      basePlan.splice(1, 0, 'Phase 1.5: Technical architecture and testing');
+    }
+
+    // Adjust based on context urgency
+    if (context.importance === 'critical') {
+      basePlan[0] = 'Phase 1: Accelerated planning and immediate resource allocation';
+    }
+
+    // Add expertise-specific considerations
+    if (expertise.domains.includes('project_management')) {
+      basePlan.push('Phase 5: Post-implementation optimization and lessons learned');
+    }
+
+    return basePlan;
   }
 
   private async prepareStakeholderCommunications(decision: string, reasoning: string[], stakeholders: Stakeholder[]): Promise<Record<string, string>> {
     const communications: Record<string, string> = {};
+
     stakeholders.forEach(stakeholder => {
-      communications[stakeholder.id] = `Tailored communication for ${stakeholder.role} regarding ${decision}`;
+      let message = `Tailored communication for ${stakeholder.role} regarding ${decision}`;
+
+      // Customize based on stakeholder relationship
+      if (stakeholder.relationship === 'superior') {
+        message = `Executive briefing on ${decision} decision. Key reasoning: ${reasoning[0]}`;
+      } else if (stakeholder.relationship === 'peer') {
+        message = `Collaborative update on ${decision}. Impact on your area: ${reasoning.slice(0, 2).join(', ')}`;
+      } else if (stakeholder.relationship === 'subordinate') {
+        message = `Implementation guidance for ${decision}. Your role: ${reasoning.join(', ')}`;
+      }
+
+      communications[stakeholder.id] = message;
     });
+
     return communications;
   }
 
   private async analyzeInteractionOutcome(interaction: any, outcome: any, feedback: Record<string, string>): Promise<any> {
-    return { success: true, improvements: ['Better timing', 'More data'], feedback };
+    const analysis = { success: true, improvements: ['Better timing', 'More data'], feedback };
+
+    // Analyze interaction effectiveness
+    if (interaction.type === 'negotiation' && outcome.agreement === false) {
+      analysis.success = false;
+      analysis.improvements.push('Revise negotiation strategy', 'Better counterparty analysis');
+    }
+
+    // Incorporate feedback analysis
+    const negativeFeedback = Object.values(feedback).filter(f => f.includes('poor') || f.includes('bad'));
+    if (negativeFeedback.length > 0) {
+      analysis.improvements.push('Address communication style concerns');
+    }
+
+    return analysis;
   }
 
   private async updateUserProfile(analysis: any): Promise<void> {
-    // Update user profile based on learnings
-    console.log('Updating user profile with new insights');
+    // Update user profile based on learnings from analysis
+    if (this.userProfile && analysis.improvements) {
+      console.log(`Updating user profile with new insights: ${analysis.improvements.join(', ')}`);
+
+      // Update communication style based on feedback
+      if (analysis.improvements.includes('Better timing')) {
+        // Adjust user's decision speed preference
+        this.userProfile.negotiationStyle.decisionSpeed = 'deliberate';
+      }
+    }
   }
 
   private async refineEnhancement(analysis: any): Promise<void> {
-    // Refine enhancement parameters
-    console.log('Refining PhD enhancement based on outcomes');
+    // Refine enhancement parameters based on analysis outcomes
+    if (this.enhancement && analysis.success !== undefined) {
+      console.log(`Refining PhD enhancement based on outcomes: success=${analysis.success}`);
+
+      // Adjust enhancement levels based on performance
+      if (!analysis.success && this.enhancement.enhancementAreas.negotiation < 0.9) {
+        this.enhancement.enhancementAreas.negotiation += 0.05;
+      }
+    }
   }
 
   private async updateStakeholderProfiles(feedback: Record<string, string>): Promise<void> {
-    // Update stakeholder profiles
-    console.log('Updating stakeholder profiles with feedback');
+    // Update stakeholder profiles based on feedback
+    console.log(`Updating stakeholder profiles with feedback from ${Object.keys(feedback).length} stakeholders`);
+
+    Object.entries(feedback).forEach(([stakeholderId, feedbackText]) => {
+      const stakeholder = this.stakeholderProfiles.get(stakeholderId);
+      if (stakeholder) {
+        // Update trust level based on feedback sentiment
+        if (feedbackText.includes('excellent') || feedbackText.includes('great')) {
+          stakeholder.trustLevel = Math.min(stakeholder.trustLevel + 0.1, 1.0);
+        } else if (feedbackText.includes('poor') || feedbackText.includes('bad')) {
+          stakeholder.trustLevel = Math.max(stakeholder.trustLevel - 0.1, 0.0);
+        }
+        stakeholder.lastInteraction = new Date();
+      }
+    });
   }
 
   private initializeLearningModel(): void {
-    // Initialize learning model
+    // Initialize learning model for continuous improvement
     console.log('Initializing learning model for continuous improvement');
+    this.learningModel.set('initialization_timestamp', Date.now());
+    this.learningModel.set('learning_rate', 0.1);
+    this.learningModel.set('adaptation_threshold', 0.7);
   }
 
   // Additional methods for framework applications...
   private async enhanceVocabulary(text: string, level: string): Promise<string> {
-    return text; // Simplified
+    if (level === 'academic') {
+      // Replace simple words with more sophisticated alternatives
+      return text
+        .replace(/\bgood\b/g, 'exemplary')
+        .replace(/\bbad\b/g, 'suboptimal')
+        .replace(/\bshow\b/g, 'demonstrate')
+        .replace(/\buse\b/g, 'utilize');
+    }
+    return text;
   }
 
   private async applyStrategicFrameworks(text: string, frameworks: string[]): Promise<string> {
-    return text; // Simplified
+    let enhanced = text;
+
+    frameworks.forEach(framework => {
+      if (framework === 'SWOT Analysis') {
+        enhanced += ' (Considering strengths, weaknesses, opportunities, and threats)';
+      } else if (framework === 'Porter Five Forces') {
+        enhanced += ' (Analyzing competitive dynamics and market forces)';
+      }
+    });
+
+    return enhanced;
   }
 
   private async adaptForRecipients(text: string, analysis: any): Promise<string> {
-    return text; // Simplified
+    if (analysis.dominantStyle === 'executive') {
+      return `Executive Summary: ${text}`;
+    } else if (analysis.dominantStyle === 'technical') {
+      return `Technical Analysis: ${text}`;
+    }
+    return text;
   }
 
   private async maintainAuthenticity(text: string, userStyle: any): Promise<string> {
-    return text; // Simplified
+    if (userStyle?.formality === 'casual') {
+      // Keep some casual elements
+      return text.replace(/utilize/g, 'use').replace(/demonstrate/g, 'show');
+    }
+    return text;
   }
 
   private async analyzeCounterparties(counterparties: string[]): Promise<any> {
-    return { dominantStyle: 'analytical', riskTolerance: 0.6 };
+    const analysis = { dominantStyle: 'analytical', riskTolerance: 0.6 };
+
+    // Analyze counterparty characteristics
+    if (counterparties.length > 3) {
+      analysis.dominantStyle = 'committee-based';
+      analysis.riskTolerance = 0.4; // More conservative with larger groups
+    }
+
+    // Check for known patterns in counterparty names/roles
+    const hasExecutives = counterparties.some(cp => cp.includes('CEO') || cp.includes('President'));
+    if (hasExecutives) {
+      analysis.dominantStyle = 'executive';
+      analysis.riskTolerance = 0.8; // Executives typically more risk-tolerant
+    }
+
+    return analysis;
   }
 
   private async selectOptimalFramework(analysis: any, objectives: string[], style: any): Promise<any> {
-    return { name: 'Harvard Negotiation Method' };
+    let frameworkName = 'Harvard Negotiation Method'; // Default
+
+    // Select based on counterparty analysis
+    if (analysis.dominantStyle === 'analytical') {
+      frameworkName = 'BATNA Analysis Framework';
+    } else if (analysis.dominantStyle === 'executive') {
+      frameworkName = 'Executive Decision Framework';
+    }
+
+    // Adjust based on objectives
+    if (objectives.some(obj => obj.includes('price') || obj.includes('cost'))) {
+      frameworkName = 'Value-Based Negotiation Framework';
+    }
+
+    // Consider user's negotiation style
+    if (style.approach === 'competitive') {
+      frameworkName = 'Competitive Advantage Framework';
+    }
+
+    return { name: frameworkName, approach: style.approach };
   }
 
   private async applyGameTheory(objectives: string[], analysis: any, constraints: string[]): Promise<any> {
-    return { optimalStrategy: 'cooperative' };
+    let strategy = 'cooperative'; // Default
+
+    // Analyze objectives for competitive elements
+    const competitiveObjectives = objectives.filter(obj =>
+      obj.includes('win') || obj.includes('beat') || obj.includes('dominate')
+    );
+
+    if (competitiveObjectives.length > 0) {
+      strategy = 'competitive';
+    }
+
+    // Consider counterparty risk tolerance
+    if (analysis.riskTolerance < 0.4) {
+      strategy = 'conservative';
+    }
+
+    // Factor in constraints
+    if (constraints.includes('time') || constraints.includes('urgent')) {
+      strategy = 'aggressive';
+    }
+
+    return {
+      optimalStrategy: strategy,
+      reasoning: `Based on ${objectives.length} objectives and ${constraints.length} constraints`,
+      riskLevel: analysis.riskTolerance
+    };
   }
 
   /**

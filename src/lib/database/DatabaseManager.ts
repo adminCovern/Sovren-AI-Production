@@ -19,15 +19,61 @@ export interface QueryResult<T = any> {
   command: string;
 }
 
+export interface ExecutivePersonality {
+  communicationStyle: 'direct' | 'diplomatic' | 'analytical' | 'creative';
+  decisionApproach: 'data_driven' | 'intuitive' | 'collaborative' | 'authoritative';
+  expertise: string[];
+  catchphrases: string[];
+  backgroundCredentials: string[];
+  voiceCharacteristics: {
+    pace: 'slow' | 'moderate' | 'fast';
+    pitch: 'low' | 'medium' | 'high';
+    tone: 'formal' | 'casual' | 'authoritative' | 'friendly';
+  };
+}
+
 export interface ExecutiveData {
   id: string;
   name: string;
   role: string;
   tier: 'SMB' | 'ENTERPRISE';
   voiceModel: string;
-  personality: any;
+  personality: ExecutivePersonality;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface UserPreferences {
+  theme: 'light' | 'dark' | 'auto';
+  language: string;
+  timezone: string;
+  notifications: {
+    email: boolean;
+    push: boolean;
+    sms: boolean;
+  };
+  voiceSettings: {
+    preferredVoice: string;
+    speechRate: number;
+    volume: number;
+  };
+  executivePreferences: {
+    defaultExecutives: string[];
+    communicationStyle: 'formal' | 'casual' | 'mixed';
+  };
+  privacy: {
+    dataRetention: number; // days
+    analyticsOptOut: boolean;
+    shareUsageData: boolean;
+  };
+  // Company and business context
+  company?: string;
+  industry?: string;
+  companySize?: 'startup' | 'small' | 'medium' | 'large';
+  geography?: string;
+  // Additional onboarding preferences
+  autoExecutiveSummoning?: boolean;
+  voiceEnabled?: boolean;
 }
 
 export interface UserData {
@@ -35,23 +81,64 @@ export interface UserData {
   email: string;
   name: string;
   tier: 'SMB' | 'ENTERPRISE';
-  preferences: any;
+  preferences: UserPreferences;
   createdAt: Date;
   lastLogin?: Date;
+}
+
+export interface CRMAuthData {
+  accessToken?: string;
+  refreshToken?: string;
+  apiKey?: string;
+  clientId?: string;
+  clientSecret?: string;
+  instanceUrl?: string;
+  domain?: string;
+  expiresAt?: Date;
+  scopes?: string[];
+  additionalConfig?: Record<string, string>;
 }
 
 export interface CRMIntegration {
   id: string;
   userId: string;
   crmType: string;
-  authData: any;
+  authData: CRMAuthData;
   connectionStatus: 'connected' | 'disconnected' | 'error';
   lastSync?: Date;
 }
 
+export interface ConversationData {
+  id: string;
+  userId: string;
+  messages: Array<{
+    id: string;
+    role: 'user' | 'assistant' | 'system';
+    content: string;
+    timestamp: Date;
+    metadata?: Record<string, unknown>;
+  }>;
+  context?: Record<string, unknown>;
+  executivesInvolved?: string[];
+  status: 'active' | 'completed' | 'archived';
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface DatabaseConnectionPool {
+  connect(): Promise<void>;
+  disconnect(): Promise<void>;
+  query(sql: string, params?: unknown[]): Promise<unknown>;
+  getConnection(): Promise<unknown>;
+  releaseConnection(connection: unknown): void;
+  totalCount: number;
+  idleCount: number;
+  waitingCount: number;
+}
+
 export class DatabaseManager {
   private isConnected: boolean = false;
-  private connectionPool: any = null;
+  private connectionPool: DatabaseConnectionPool | null = null;
   private config: DatabaseConfig;
 
   // In-memory storage for immediate deployment (will be replaced with actual DB)
@@ -59,6 +146,10 @@ export class DatabaseManager {
   private executives: Map<string, ExecutiveData> = new Map();
   private crmIntegrations: Map<string, CRMIntegration> = new Map();
   private conversations: Map<string, any> = new Map();
+
+  // Performance optimization indexes
+  private emailIndex: Map<string, string> = new Map(); // email -> userId
+  private sessionIndex: Map<string, string> = new Map(); // sessionId -> userId
 
   constructor(config?: DatabaseConfig) {
     this.config = config || this.getDefaultConfig();
@@ -69,14 +160,21 @@ export class DatabaseManager {
    * Get default database configuration
    */
   private getDefaultConfig(): DatabaseConfig {
+    // SECURITY: Require password via environment variable
+    if (!process.env.DATABASE_URL && !process.env.DB_PASSWORD) {
+      throw new Error('DATABASE_URL or DB_PASSWORD environment variable is required for security - no default passwords allowed');
+    }
+
     return {
       host: process.env.DB_HOST || 'localhost',
       port: parseInt(process.env.DB_PORT || '5432'),
       database: process.env.DB_NAME || 'sovren_ai',
       username: process.env.DB_USER || 'sovren',
-      password: process.env.DB_PASSWORD || 'quantum_secure',
-      ssl: process.env.NODE_ENV === 'production',
-      maxConnections: 100
+      password: process.env.DB_PASSWORD || (() => {
+        throw new Error('DB_PASSWORD environment variable is required - no default password allowed');
+      })(),
+      ssl: process.env.NODE_ENV === 'production' || process.env.DB_SSL === 'true',
+      maxConnections: parseInt(process.env.DB_MAX_CONNECTIONS || '100')
     };
   }
 
@@ -92,7 +190,18 @@ export class DatabaseManager {
         role: 'CFO',
         tier: 'SMB',
         voiceModel: 'female_professional_confident',
-        personality: { style: 'analytical', confidence: 0.9 },
+        personality: {
+          communicationStyle: 'analytical',
+          decisionApproach: 'data_driven',
+          expertise: ['Financial Analysis', 'Strategic Planning', 'Risk Management'],
+          catchphrases: ['Let me walk you through the numbers...', 'From a financial perspective...'],
+          backgroundCredentials: ['Harvard MBA', 'Former Goldman Sachs VP'],
+          voiceCharacteristics: {
+            pace: 'moderate',
+            pitch: 'medium',
+            tone: 'authoritative'
+          }
+        },
         createdAt: new Date(),
         updatedAt: new Date()
       },
@@ -102,7 +211,18 @@ export class DatabaseManager {
         role: 'CMO',
         tier: 'SMB',
         voiceModel: 'male_energetic_innovative',
-        personality: { style: 'creative', confidence: 0.85 },
+        personality: {
+          communicationStyle: 'creative',
+          decisionApproach: 'intuitive',
+          expertise: ['Brand Strategy', 'Digital Marketing', 'Growth Hacking'],
+          catchphrases: ['Let\'s think outside the box...', 'The market is telling us...'],
+          backgroundCredentials: ['Stanford MBA', 'Former Apple Product Marketing'],
+          voiceCharacteristics: {
+            pace: 'fast',
+            pitch: 'medium',
+            tone: 'friendly'
+          }
+        },
         createdAt: new Date(),
         updatedAt: new Date()
       },
@@ -112,7 +232,18 @@ export class DatabaseManager {
         role: 'Legal Counsel',
         tier: 'SMB',
         voiceModel: 'female_authoritative_careful',
-        personality: { style: 'precise', confidence: 0.95 },
+        personality: {
+          communicationStyle: 'diplomatic',
+          decisionApproach: 'collaborative',
+          expertise: ['Corporate Law', 'Contract Negotiation', 'Compliance'],
+          catchphrases: ['From a legal standpoint...', 'We need to consider the risks...'],
+          backgroundCredentials: ['Harvard Law', 'Wilson Sonsini Partner'],
+          voiceCharacteristics: {
+            pace: 'slow',
+            pitch: 'low',
+            tone: 'formal'
+          }
+        },
         createdAt: new Date(),
         updatedAt: new Date()
       },
@@ -122,7 +253,18 @@ export class DatabaseManager {
         role: 'CTO',
         tier: 'SMB',
         voiceModel: 'neutral_technical_accessible',
-        personality: { style: 'technical', confidence: 0.88 },
+        personality: {
+          communicationStyle: 'direct',
+          decisionApproach: 'data_driven',
+          expertise: ['Software Architecture', 'AI/ML', 'Cloud Infrastructure'],
+          catchphrases: ['Technically speaking...', 'The data shows...'],
+          backgroundCredentials: ['MIT Computer Science', 'Former Google Principal Engineer'],
+          voiceCharacteristics: {
+            pace: 'moderate',
+            pitch: 'medium',
+            tone: 'casual'
+          }
+        },
         createdAt: new Date(),
         updatedAt: new Date()
       }
@@ -139,7 +281,30 @@ export class DatabaseManager {
         email: 'demo@company.com',
         name: 'Demo User',
         tier: 'SMB',
-        preferences: { theme: 'dark', notifications: true },
+        preferences: {
+          theme: 'dark',
+          language: 'en',
+          timezone: 'UTC',
+          notifications: {
+            email: true,
+            push: true,
+            sms: false
+          },
+          voiceSettings: {
+            preferredVoice: 'female_professional_confident',
+            speechRate: 1.0,
+            volume: 0.8
+          },
+          executivePreferences: {
+            defaultExecutives: ['exec_cfo_sarah', 'exec_cmo_marcus'],
+            communicationStyle: 'mixed'
+          },
+          privacy: {
+            dataRetention: 30,
+            analyticsOptOut: false,
+            shareUsageData: true
+          }
+        },
         createdAt: new Date()
       },
       {
@@ -147,7 +312,30 @@ export class DatabaseManager {
         email: 'admin@enterprise.com',
         name: 'Enterprise Admin',
         tier: 'ENTERPRISE',
-        preferences: { theme: 'dark', notifications: true },
+        preferences: {
+          theme: 'dark',
+          language: 'en',
+          timezone: 'UTC',
+          notifications: {
+            email: true,
+            push: true,
+            sms: true
+          },
+          voiceSettings: {
+            preferredVoice: 'male_energetic_innovative',
+            speechRate: 1.1,
+            volume: 0.9
+          },
+          executivePreferences: {
+            defaultExecutives: ['exec_cfo_sarah', 'exec_cmo_marcus', 'exec_legal_diana', 'exec_cto_alex'],
+            communicationStyle: 'formal'
+          },
+          privacy: {
+            dataRetention: 90,
+            analyticsOptOut: false,
+            shareUsageData: true
+          }
+        },
         createdAt: new Date()
       }
     ];
@@ -194,19 +382,63 @@ export class DatabaseManager {
   /**
    * Execute raw query
    */
-  async query<T = any>(sql: string, params: any[] = []): Promise<QueryResult<T>> {
+  async query<T = Record<string, unknown>>(sql: string, params: unknown[] = []): Promise<QueryResult<T>> {
     if (!this.isConnected) {
       throw new Error('Database not connected');
     }
 
+    // SECURITY: Validate SQL query to prevent injection attacks
+    this.validateSQLQuery(sql, params);
+
     // Simulate query execution
     console.log(`📊 Executing query: ${sql}`);
-    
+
     return {
       rows: [] as T[],
       rowCount: 0,
       command: 'SELECT'
     };
+  }
+
+  /**
+   * Validate SQL query to prevent injection attacks
+   */
+  private validateSQLQuery(sql: string, params: unknown[]): void {
+    // Check for dangerous SQL patterns
+    const dangerousPatterns = [
+      /;\s*(drop|delete|truncate|alter|create|insert|update)\s+/i,
+      /union\s+select/i,
+      /exec\s*\(/i,
+      /script\s*>/i,
+      /javascript:/i,
+      /vbscript:/i,
+      /onload\s*=/i,
+      /onerror\s*=/i,
+      /--\s*$/m,
+      /\/\*.*\*\//s
+    ];
+
+    for (const pattern of dangerousPatterns) {
+      if (pattern.test(sql)) {
+        throw new Error(`Potentially dangerous SQL pattern detected: ${pattern.source}`);
+      }
+    }
+
+    // Ensure parameterized queries are used
+    const parameterCount = (sql.match(/\$\d+|\?/g) || []).length;
+    if (parameterCount !== params.length) {
+      throw new Error(`Parameter count mismatch: expected ${parameterCount}, got ${params.length}`);
+    }
+
+    // Validate parameters
+    for (const param of params) {
+      if (typeof param === 'string') {
+        // Check for SQL injection patterns in parameters
+        if (param.includes("'") || param.includes('"') || param.includes(';')) {
+          console.warn('⚠️ Potentially dangerous characters in parameter:', param);
+        }
+      }
+    }
   }
 
   /**
@@ -217,19 +449,19 @@ export class DatabaseManager {
   }
 
   /**
-   * Get user by email
+   * Get user by email (optimized with email index)
    */
   async getUserByEmail(email: string): Promise<UserData | null> {
-    for (const user of this.users.values()) {
-      if (user.email === email) {
-        return user;
-      }
+    // Use email index for O(1) lookup instead of O(n) iteration
+    const userId = this.emailIndex.get(email);
+    if (userId) {
+      return this.users.get(userId) || null;
     }
     return null;
   }
 
   /**
-   * Create new user
+   * Create new user (optimized with index maintenance)
    */
   async createUser(userData: Omit<UserData, 'id' | 'createdAt'>): Promise<UserData> {
     const user: UserData = {
@@ -238,7 +470,10 @@ export class DatabaseManager {
       createdAt: new Date()
     };
 
+    // Store user and maintain email index for O(1) lookups
     this.users.set(user.id, user);
+    this.emailIndex.set(user.email, user.id);
+
     return user;
   }
 
@@ -267,6 +502,69 @@ export class DatabaseManager {
    */
   async getExecutiveById(executiveId: string): Promise<ExecutiveData | null> {
     return this.executives.get(executiveId) || null;
+  }
+
+  /**
+   * Store executive data
+   */
+  async storeExecutiveData(executiveData: any): Promise<void> {
+    // Convert the incoming data to match ExecutiveData interface
+    const execData: ExecutiveData = {
+      id: executiveData.id,
+      name: executiveData.name,
+      role: executiveData.role,
+      tier: executiveData.tier as 'SMB' | 'ENTERPRISE',
+      voiceModel: executiveData.voiceModel,
+      personality: this.convertToExecutivePersonality(executiveData.personality),
+      createdAt: executiveData.createdAt,
+      updatedAt: executiveData.updatedAt
+    };
+
+    // Store executive data in the executives map
+    this.executives.set(execData.id, execData);
+
+    console.log(`💾 Stored executive ${execData.name} (${execData.role}) in database`);
+  }
+
+  /**
+   * Convert PsychologicalProfile to ExecutivePersonality
+   */
+  private convertToExecutivePersonality(psychProfile: any): ExecutivePersonality {
+    // Map PsychologicalProfile to ExecutivePersonality interface
+    return {
+      communicationStyle: this.mapCommunicationStyle(psychProfile.leadershipStyle),
+      decisionApproach: this.mapDecisionApproach(psychProfile.decisionSpeed),
+      expertise: [], // Will be populated based on role
+      catchphrases: [], // Will be populated based on role
+      backgroundCredentials: [], // Will be populated based on role
+      voiceCharacteristics: {
+        pace: 'moderate',
+        pitch: 'medium',
+        tone: 'authoritative'
+      }
+    };
+  }
+
+  /**
+   * Map leadership style to communication style
+   */
+  private mapCommunicationStyle(leadershipStyle: string): 'direct' | 'diplomatic' | 'analytical' | 'creative' {
+    switch (leadershipStyle) {
+      case 'authoritative': return 'direct';
+      case 'collaborative': return 'diplomatic';
+      case 'analytical': return 'analytical';
+      case 'visionary': return 'creative';
+      default: return 'analytical';
+    }
+  }
+
+  /**
+   * Map decision speed to decision approach
+   */
+  private mapDecisionApproach(decisionSpeed: number): 'data_driven' | 'intuitive' | 'collaborative' | 'authoritative' {
+    if (decisionSpeed < 100) return 'intuitive'; // Fast decisions
+    if (decisionSpeed < 200) return 'data_driven'; // Moderate speed
+    return 'collaborative'; // Slower, more deliberate
   }
 
   /**
@@ -305,7 +603,7 @@ export class DatabaseManager {
   /**
    * Store conversation data
    */
-  async storeConversation(conversationId: string, data: any): Promise<void> {
+  async storeConversation(conversationId: string, data: ConversationData): Promise<void> {
     this.conversations.set(conversationId, {
       ...data,
       timestamp: new Date()

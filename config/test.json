@@ -1,0 +1,162 @@
+{
+  "environment": "test",
+  "port": 3001,
+  "host": "localhost",
+  "baseUrl": "http://localhost:3001",
+  
+  "database": {
+    "host": "localhost",
+    "port": 5432,
+    "database": "sovren_ai_test",
+    "username": "sovren_test",
+    "password": "test_password",
+    "ssl": false,
+    "maxConnections": 5,
+    "connectionTimeout": 10000,
+    "queryTimeout": 30000,
+    "poolMin": 1,
+    "poolMax": 5,
+    "idleTimeoutMillis": 10000
+  },
+  
+  "redis": {
+    "url": "redis://localhost:6380",
+    "host": "localhost",
+    "port": 6380,
+    "db": 1,
+    "maxRetries": 1,
+    "retryDelay": 500,
+    "connectTimeout": 5000,
+    "lazyConnect": true,
+    "keepAlive": 10000,
+    "family": 4
+  },
+  
+  "security": {
+    "jwt": {
+      "secret": "test-jwt-secret-32-characters-minimum-for-security-compliance-testing",
+      "expiresIn": "1h"
+    },
+    "bcrypt": {
+      "rounds": 4
+    },
+    "rateLimiting": {
+      "enabled": false,
+      "windowMs": 60000,
+      "max": 1000
+    },
+    "cors": {
+      "origin": true
+    },
+    "csp": {
+      "enabled": false,
+      "reportOnly": true
+    }
+  },
+  
+  "tts": {
+    "enabled": false,
+    "modelsPath": "./test/fixtures/models",
+    "outputPath": "./test/fixtures/audio",
+    "pythonPath": "/usr/bin/python3",
+    "styleTTS2Path": "./test/fixtures/styletts2",
+    "maxConcurrentSynthesis": 1,
+    "cacheEnabled": false,
+    "maxTextLength": 1000
+  },
+  
+  "shadowBoard": {
+    "enabled": false,
+    "maxExecutives": 2,
+    "voiceModelsPath": "./test/fixtures/executives",
+    "personalityConfigPath": "./test/fixtures/personalities"
+  },
+  
+  "email": {
+    "provider": "smtp",
+    "smtp": {
+      "host": "localhost",
+      "port": 1025,
+      "secure": false,
+      "auth": {
+        "user": "test",
+        "pass": "test"
+      }
+    },
+    "from": "test@sovren.ai"
+  },
+  
+  "storage": {
+    "provider": "local",
+    "local": {
+      "basePath": "./test/fixtures/storage",
+      "publicUrl": "/test-storage"
+    }
+  },
+  
+  "monitoring": {
+    "enabled": false,
+    "metricsPort": 9091,
+    "alerting": {
+      "enabled": false
+    },
+    "logging": {
+      "level": "error",
+      "format": "text",
+      "file": {
+        "enabled": false
+      },
+      "console": {
+        "enabled": false,
+        "colorize": false
+      }
+    }
+  },
+  
+  "performance": {
+    "optimization": {
+      "enabled": false,
+      "cacheMaxSize": 10,
+      "maxConcurrentRequests": 10,
+      "requestTimeout": 5000,
+      "keepAliveTimeout": 1000
+    },
+    "clustering": {
+      "enabled": false
+    },
+    "compression": {
+      "enabled": false
+    },
+    "staticFiles": {
+      "maxAge": 0,
+      "etag": false,
+      "lastModified": false
+    }
+  },
+  
+  "limits": {
+    "maxConcurrentUsers": 10,
+    "maxRequestsPerMinute": 1000,
+    "maxFileSize": 1048576,
+    "maxAudioDuration": 30,
+    "maxExecutivesPerUser": 2,
+    "maxIntegrationsPerUser": 3,
+    "maxSessionDuration": 3600000,
+    "maxUploadSize": 5242880
+  },
+  
+  "features": {
+    "voiceSynthesis": false,
+    "shadowBoard": false,
+    "crmIntegration": false,
+    "emailOrchestration": false,
+    "realTimeAnalysis": false,
+    "quantumDecisionMaking": false,
+    "memoryPersistence": false,
+    "learningAdaptation": false,
+    "performanceOptimization": false,
+    "advancedSecurity": false,
+    "multiTenant": false,
+    "apiVersioning": true
+  }
+}

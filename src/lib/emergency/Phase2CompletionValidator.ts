@@ -244,7 +244,7 @@ export class Phase2CompletionValidator extends EventEmitter {
         criterion: 'validation_passed',
         description: 'All validation tests passed with acceptable thresholds',
         required: true,
-        status: validationReport.deploymentApproved ? 'met' : 
+        status: validationReport.deploymentApproval ? 'met' :
                 validationReport.summary.criticalFailures === 0 ? 'partial' : 'not_met',
         evidence: [
           `Overall pass rate: ${validationReport.summary.passRate.toFixed(1)}%`,

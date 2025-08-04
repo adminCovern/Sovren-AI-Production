@@ -8,7 +8,7 @@ import { EventEmitter } from 'events';
 import { comprehensiveVerificationSystem } from '../verification/ComprehensiveVerification';
 import { tlaSpecificationEngine } from '../formal_verification/TLASpecifications';
 import { coqProofEngine } from '../formal_verification/CoqProofs';
-import { quantumResistantSOVREN } from '../security/QuantumResistantSecurity';
+import { quantumResistantSOVREN } from '@/lib/security/QuantumResistantSecurity';
 import { bareMetalOptimizer } from '../performance/BareMetalOptimization';
 import { adaptiveImmuneSystem } from '../biology/AdaptiveImmuneSystem';
 import { shadowBoardCoordinator } from '../shadowboard/ShadowBoardCoordinator';

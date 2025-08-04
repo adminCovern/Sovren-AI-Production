@@ -507,7 +507,10 @@ export class OnboardingPaymentFlow extends EventEmitter {
           break;
       }
 
-      return result;
+      return {
+        success: result.success,
+        action: result.action || 'processed'
+      };
     } catch (error) {
       console.error('❌ Error processing webhook:', error);
       return {

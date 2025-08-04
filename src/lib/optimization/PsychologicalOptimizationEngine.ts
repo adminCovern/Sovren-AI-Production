@@ -416,7 +416,7 @@ export class PsychologicalOptimizationEngine extends EventEmitter {
     industryExperience: string[];
     achievements: string[];
   } {
-    const roleTemplates = {
+    const roleTemplates: Record<string, string[]> = {
       content: ['Content Marketing Manager', 'Creative Director', 'Brand Strategist'],
       analytics: ['Data Scientist', 'Marketing Analytics Manager', 'Business Intelligence Director'],
       engagement: ['Community Manager', 'Social Media Director', 'Customer Experience Manager'],
@@ -438,6 +438,59 @@ export class PsychologicalOptimizationEngine extends EventEmitter {
       industryExperience,
       achievements
     };
+  }
+
+  /**
+   * Generate personality profile optimized for specialization and culture
+   */
+  private generatePersonalityProfile(specialization: string, culturalProfile: any, userContext: UserSocialContext): any {
+    const basePersonality = {
+      communicationStyle: culturalProfile.communicationStyle || 'professional_friendly',
+      decisionMaking: culturalProfile.decisionMaking || 'data_driven',
+      formalityLevel: culturalProfile.formalityLevel || 'business_casual',
+      confidence: 'high',
+      empathy: 'moderate',
+      innovation: 'high'
+    };
+
+    // Specialization-specific personality adjustments
+    const specializationAdjustments: Record<string, any> = {
+      content: { creativity: 'very_high', empathy: 'high', innovation: 'very_high' },
+      analytics: { analytical: 'very_high', precision: 'very_high', confidence: 'very_high' },
+      engagement: { empathy: 'very_high', communication: 'very_high', patience: 'high' },
+      strategy: { vision: 'very_high', leadership: 'high', analytical: 'high' },
+      crisis: { calm: 'very_high', decisive: 'very_high', empathy: 'high' },
+      influencer: { charisma: 'very_high', networking: 'very_high', persuasion: 'high' }
+    };
+
+    const adjustments = specializationAdjustments[specialization] || {};
+    return { ...basePersonality, ...adjustments };
+  }
+
+  /**
+   * Generate voice profile optimized for personality and context
+   */
+  private generateVoiceProfile(specialization: string, personality: any, userContext: UserSocialContext): any {
+    const baseVoice = {
+      pace: 'moderate',
+      pitch: 'medium',
+      tone: 'professional_warm',
+      accent: 'neutral',
+      confidence: personality.confidence || 'high'
+    };
+
+    // Specialization-specific voice adjustments
+    const voiceAdjustments: Record<string, any> = {
+      content: { tone: 'creative_enthusiastic', pace: 'energetic' },
+      analytics: { tone: 'analytical_precise', pace: 'measured' },
+      engagement: { tone: 'warm_empathetic', pace: 'conversational' },
+      strategy: { tone: 'authoritative_visionary', pace: 'deliberate' },
+      crisis: { tone: 'calm_reassuring', pace: 'steady' },
+      influencer: { tone: 'charismatic_persuasive', pace: 'dynamic' }
+    };
+
+    const adjustments = voiceAdjustments[specialization] || {};
+    return { ...baseVoice, ...adjustments };
   }
 
   /**

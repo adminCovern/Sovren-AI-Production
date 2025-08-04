@@ -4,7 +4,7 @@
  */
 
 import { EventEmitter } from 'events';
-import { ExecutiveEntity } from './ShadowBoardManager';
+import { ExecutiveEntity, PsychologicalProfile } from './ShadowBoardManager';
 import { VoiceSynthesizer } from '../voice/VoiceSynthesizer';
 import { EmailOrchestrationExecutives } from '../integrations/EmailOrchestrationExecutives';
 
@@ -227,10 +227,14 @@ export class ExecutiveInteractionEngine extends EventEmitter {
     const baseResponse = this.selectBaseResponse(roleResponses, interaction.content);
     const personalizedResponse = this.applyPersonalityModifiers(baseResponse, personalityModifiers);
 
+    // Derive communication style and confidence from existing psychological profile
+    const communicationStyle = this.deriveCommunicationStyle(executive.psychologicalProfile);
+    const confidence = this.deriveConfidenceLevel(executive.psychologicalProfile);
+
     return {
       content: personalizedResponse,
-      tone: executive.psychologicalProfile.communicationStyle,
-      confidence: executive.psychologicalProfile.confidence,
+      tone: communicationStyle,
+      confidence: confidence,
       reasoning: `Based on my ${executive.role} expertise and analysis of the situation`,
       actionItems: this.generateActionItems(executive, interaction),
       followUpRequired: this.assessFollowUpNeed(interaction),
@@ -263,8 +267,23 @@ export class ExecutiveInteractionEngine extends EventEmitter {
     response: ExecutiveResponse,
     context: InteractionContext
   ): Promise<void> {
-    // This would integrate with the email orchestrator
-    console.log(`📧 Email response generated for ${executive.name}`);
+    // Integrate with the email orchestrator using all parameters
+    const emailContent = {
+      from: `${executive.name} <${executive.role.toLowerCase()}@company.com>`,
+      subject: `Re: ${context.topic || 'Executive Response'}`,
+      body: response.content,
+      tone: response.tone,
+      urgency: context.urgency,
+      confidenceLevel: response.confidence,
+      businessContext: context.businessContext
+    };
+
+    console.log(`📧 Email response generated for ${executive.name} with ${response.tone} tone (confidence: ${response.confidence})`);
+    console.log(`📧 Context: ${context.topic} - Urgency: ${context.urgency}`);
+    console.log(`📧 Email content prepared:`, emailContent);
+
+    // Would send via EmailOrchestrationExecutives in production
+    // await this.emailOrchestrator.sendExecutiveEmail(emailContent);
   }
 
   /**
@@ -341,21 +360,68 @@ export class ExecutiveInteractionEngine extends EventEmitter {
   }
 
   private selectBaseResponse(responses: string[], content: string): string {
-    // Simple selection logic - in production this would be more sophisticated
-    return responses[Math.floor(Math.random() * responses.length)];
+    // Content-aware response selection - analyze content for keywords and context
+    const contentLower = content.toLowerCase();
+
+    // Filter responses based on content relevance
+    const relevantResponses = responses.filter(response => {
+      const responseLower = response.toLowerCase();
+      // Check for keyword overlap
+      const contentWords = contentLower.split(' ').filter(word => word.length > 3);
+      return contentWords.some(word => responseLower.includes(word));
+    });
+
+    // Use relevant responses if found, otherwise fall back to all responses
+    const selectedResponses = relevantResponses.length > 0 ? relevantResponses : responses;
+    return selectedResponses[Math.floor(Math.random() * selectedResponses.length)];
   }
 
   private applyPersonalityModifiers(response: string, modifiers: any): string {
-    // Apply personality modifications to the response
-    return response; // Simplified for now
+    // Apply personality modifications to the response based on modifiers
+    let modifiedResponse = response;
+
+    if (modifiers.dominance > 0.7) {
+      modifiedResponse = modifiedResponse.replace(/I think/g, 'I know');
+      modifiedResponse = modifiedResponse.replace(/maybe/g, 'definitely');
+    }
+
+    if (modifiers.empathy > 0.7) {
+      modifiedResponse = `I understand your perspective. ${modifiedResponse}`;
+    }
+
+    if (modifiers.analytical > 0.8) {
+      modifiedResponse = `Based on my analysis, ${modifiedResponse}`;
+    }
+
+    if (modifiers.urgency === 'high') {
+      modifiedResponse = `This requires immediate attention. ${modifiedResponse}`;
+    }
+
+    return modifiedResponse;
   }
 
   private generateActionItems(executive: ExecutiveEntity, interaction: ExecutiveInteraction): string[] {
-    return [
+    // Generate role-specific action items based on executive and interaction
+    const baseActions = [
       `Follow up on ${interaction.context.topic}`,
       `Review related documentation`,
       `Schedule follow-up meeting if needed`
     ];
+
+    // Add role-specific actions
+    const roleSpecificActions: Record<string, string[]> = {
+      'CEO': [`Review strategic implications with board`, `Assess company-wide impact`],
+      'CFO': [`Analyze financial impact`, `Update budget forecasts`],
+      'CTO': [`Evaluate technical requirements`, `Assess technology roadmap impact`],
+      'CMO': [`Review marketing implications`, `Assess customer impact`],
+      'COO': [`Evaluate operational changes needed`, `Review process implications`],
+      'CHRO': [`Assess talent implications`, `Review organizational impact`],
+      'CLO': [`Review legal compliance`, `Assess regulatory requirements`],
+      'CSO': [`Analyze competitive implications`, `Review strategic alignment`]
+    };
+
+    const executiveActions = roleSpecificActions[executive.role] || [];
+    return [...baseActions, ...executiveActions];
   }
 
   private assessFollowUpNeed(interaction: ExecutiveInteraction): boolean {
@@ -406,5 +472,49 @@ export class ExecutiveInteractionEngine extends EventEmitter {
    */
   public getActiveInteractions(): ExecutiveInteraction[] {
     return Array.from(this.activeInteractions.values());
+  }
+
+  /**
+   * Derive communication style from psychological profile
+   */
+  private deriveCommunicationStyle(profile: PsychologicalProfile): string {
+    // Map leadership style and other traits to communication style
+    if (profile.leadershipStyle === 'authoritative' && profile.dominanceIndex > 0.7) {
+      return 'commanding';
+    } else if (profile.leadershipStyle === 'collaborative' && profile.empathyLevel > 0.7) {
+      return 'collaborative';
+    } else if (profile.leadershipStyle === 'analytical' && profile.strategicThinking > 0.8) {
+      return 'analytical';
+    } else if (profile.leadershipStyle === 'visionary' && profile.innovationDrive > 0.7) {
+      return 'inspirational';
+    } else if (profile.emotionalIntelligence > 0.8) {
+      return 'empathetic';
+    } else if (profile.competitiveInstinct > 0.7) {
+      return 'assertive';
+    } else {
+      return 'professional';
+    }
+  }
+
+  /**
+   * Derive confidence level from psychological profile
+   */
+  private deriveConfidenceLevel(profile: PsychologicalProfile): number {
+    // Calculate confidence based on multiple psychological factors
+    const baseConfidence = (
+      profile.dominanceIndex * 0.3 +
+      profile.strategicThinking * 0.2 +
+      profile.leadershipStyle === 'authoritative' ? 0.2 : 0.1 +
+      profile.emotionalIntelligence * 0.15 +
+      profile.competitiveInstinct * 0.15
+    );
+
+    // Adjust for stress response
+    const stressAdjustment = profile.stressResponse === 'calm' ? 0.1 :
+                           profile.stressResponse === 'focused' ? 0.05 :
+                           profile.stressResponse === 'adaptive' ? 0.0 : -0.05;
+
+    // Ensure confidence is between 0 and 1
+    return Math.max(0, Math.min(1, baseConfidence + stressAdjustment));
   }
 }

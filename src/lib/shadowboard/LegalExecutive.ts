@@ -73,7 +73,7 @@ export class LegalExecutive extends EventEmitter {
   ];
 
   // AI-powered legal models
-  private legalModels: {
+  private legalModels!: {
     contractRiskAssessment: any;
     litigationPredictor: any;
     regulatoryCompliance: any;

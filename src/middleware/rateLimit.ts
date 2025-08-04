@@ -3,6 +3,10 @@
  * Production-grade rate limiting with Redis support
  */
 
+import { createClient, RedisClientType } from 'redis';
+import { createHash } from 'crypto';
+import { NextRequest } from 'next/server';
+
 export interface RateLimitConfig {
   windowMs: number;
   max: number;
@@ -21,12 +25,43 @@ export interface RateLimitInfo {
   resetTime: Date;
 }
 
-export class RateLimiter {
+export class RedisRateLimiter {
   private config: RateLimitConfig;
-  private store: Map<string, { count: number; resetTime: number }> = new Map();
+  private redisClient: RedisClientType | null = null;
+  private fallbackStore: Map<string, { count: number; resetTime: number }> = new Map();
+  private isRedisConnected: boolean = false;
 
   constructor(config: RateLimitConfig) {
     this.config = config;
+    this.initializeRedis();
+  }
+
+  /**
+   * Initialize Redis connection
+   */
+  private async initializeRedis(): Promise<void> {
+    try {
+      this.redisClient = createClient({
+        url: process.env.REDIS_URL || 'redis://localhost:6379'
+      });
+
+      this.redisClient.on('error', (err) => {
+        console.error('Redis Rate Limiter Error:', err);
+        this.isRedisConnected = false;
+      });
+
+      this.redisClient.on('connect', () => {
+        console.log('✅ Redis Rate Limiter connected');
+        this.isRedisConnected = true;
+      });
+
+      await this.redisClient.connect();
+    } catch (error) {
+      console.warn('⚠️ Redis Rate Limiter connection failed, using memory fallback:', error);
+      this.redisClient = null;
+      this.isRedisConnected = false;
+    }
+  }
     
     // Clean up expired entries every minute
     setInterval(() => {

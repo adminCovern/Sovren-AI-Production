@@ -430,10 +430,11 @@ export class SystemIntegrationTesting extends EventEmitter {
       test.status = result.success ? 'passed' : 'failed';
 
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       test.result = {
         success: false,
-        message: `Test execution failed: ${error.message}`,
-        errors: [error.message]
+        message: `Test execution failed: ${errorMessage}`,
+        errors: [errorMessage]
       };
       test.status = 'failed';
     }
@@ -445,7 +446,7 @@ export class SystemIntegrationTesting extends EventEmitter {
   /**
    * Test SOVREN Score component
    */
-  private async testSOVRENScoreComponent(test: TestCase): Promise<TestResult> {
+  private async testSOVRENScoreComponent(_test: TestCase): Promise<TestResult> {
     const startTime = Date.now();
 
     // Test score calculation

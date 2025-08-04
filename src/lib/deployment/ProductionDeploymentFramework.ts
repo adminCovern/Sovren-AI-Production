@@ -260,12 +260,15 @@ export class ProductionDeploymentFramework extends EventEmitter {
     } catch (error) {
       console.error('Production deployment failed:', error);
 
+      // Type-safe error handling
+      const errorMessage = error instanceof Error ? error.message : String(error);
+
       // Execute rollback
-      await this.executeRollback(deploymentId, error.message);
+      await this.executeRollback(deploymentId, errorMessage);
 
       this.emit('deploymentFailed', {
         deploymentId,
-        error: error.message,
+        error: errorMessage,
         duration: Date.now() - startTime
       });
 
@@ -620,7 +623,8 @@ export class ProductionDeploymentFramework extends EventEmitter {
       action.output = `Action ${action.name} completed successfully`;
     } catch (error) {
       action.status = 'failed';
-      action.output = `Action ${action.name} failed: ${error.message}`;
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      action.output = `Action ${action.name} failed: ${errorMessage}`;
       throw error;
     }
 

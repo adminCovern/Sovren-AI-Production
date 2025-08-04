@@ -6,12 +6,62 @@
 
 import { EventEmitter } from 'events';
 
+export interface TemporalEventData {
+  // Financial data
+  revenue?: number;
+  cost?: number;
+  profit?: number;
+  cashFlow?: number;
+
+  // Strategic data
+  marketShare?: number;
+  customerCount?: number;
+  employeeCount?: number;
+
+  // Decision data
+  decisionMaker?: string;
+  alternatives?: string[];
+  criteria?: string[];
+
+  // Outcome data
+  actualResult?: number;
+  expectedResult?: number;
+  variance?: number;
+
+  // External data
+  marketCondition?: 'bull' | 'bear' | 'stable' | 'volatile';
+  competitorAction?: string;
+  regulatoryChange?: string;
+
+  // Simulation and analysis data
+  counterfactual?: string;
+  pattern?: string;
+  prediction?: boolean;
+  causalChain?: string;
+  simulated?: boolean;
+  timeline?: string;
+
+  // Impact and magnitude data
+  magnitude?: number;
+  value?: number;
+  impact?: number;
+
+  // Additional structured data
+  tags?: string[];
+  metadata?: Record<string, string | number | boolean>;
+
+  // Analysis and pattern data
+  basedOnPatterns?: boolean;
+  analysisDepth?: number;
+  confidenceLevel?: number;
+}
+
 export interface TemporalEvent {
   id: string;
   timestamp: Date;
   type: 'decision' | 'outcome' | 'external' | 'milestone' | 'crisis';
   description: string;
-  data: Record<string, any>;
+  data: TemporalEventData;
   causedBy: string[]; // IDs of causal events
   consequences: string[]; // IDs of consequence events
   probability: number; // Probability this event occurred
@@ -122,7 +172,7 @@ export class TimeMachineMemorySystem extends EventEmitter {
   public async recordEvent(
     type: TemporalEvent['type'],
     description: string,
-    data: Record<string, any>,
+    data: TemporalEventData,
     domain: string = 'general',
     stakeholders: string[] = []
   ): Promise<TemporalEvent> {
@@ -343,10 +393,19 @@ export class TimeMachineMemorySystem extends EventEmitter {
 
     const predictions: TemporalEvent[] = [];
 
+    // Use historical events for pattern-based predictions
+    const eventFrequency = historicalEvents.length > 0 ? historicalEvents.length / 365 : 0.1; // Events per day
+
     // Use patterns to predict future events
     for (const pattern of patterns) {
       if (pattern.confidence >= confidence && pattern.actionable) {
         const futureEvents = await this.extrapolatePattern(pattern, timeHorizon);
+
+        // Adjust prediction probabilities based on historical event frequency
+        futureEvents.forEach(event => {
+          event.probability *= Math.min(1.0, eventFrequency * 10); // Scale by frequency
+        });
+
         predictions.push(...futureEvents);
       }
     }
@@ -458,11 +517,24 @@ export class TimeMachineMemorySystem extends EventEmitter {
    */
   private async calculateEventImpact(
     type: TemporalEvent['type'],
-    data: Record<string, any>,
+    data: TemporalEventData,
     domain: string
   ): Promise<number> {
-    
+
     let baseImpact = 0;
+
+    // Domain-specific impact multipliers
+    const domainMultipliers = {
+      'financial': 1.2,
+      'strategic': 1.1,
+      'operational': 1.0,
+      'marketing': 0.9,
+      'technology': 1.0,
+      'legal': 1.3,
+      'hr': 0.8
+    };
+
+    const domainMultiplier = domainMultipliers[domain as keyof typeof domainMultipliers] || 1.0;
 
     switch (type) {
       case 'decision':
@@ -486,7 +558,10 @@ export class TimeMachineMemorySystem extends EventEmitter {
     const magnitude = data.magnitude || data.value || data.impact || 1;
     const adjustedImpact = baseImpact * Math.log(1 + Math.abs(magnitude));
 
-    return Math.min(adjustedImpact, 100);
+    // Apply domain-specific multiplier
+    const finalImpact = adjustedImpact * domainMultiplier;
+
+    return Math.min(finalImpact, 100);
   }
 
   /**
@@ -888,18 +963,105 @@ export class TimeMachineMemorySystem extends EventEmitter {
   }
 
   private async generateSimulatedEvent(timeline: Timeline, currentTime: number): Promise<TemporalEvent> {
+    // Generate realistic counterfactual events based on timeline analysis
+    const recentEvents = timeline.events.filter(e =>
+      currentTime - e.timestamp.getTime() < 90 * 24 * 60 * 60 * 1000 // Last 90 days
+    );
+
+    // Analyze patterns in recent events
+    const eventTypes = recentEvents.map(e => e.type);
+    const domains = recentEvents.map(e => e.domain);
+    const avgImpact = recentEvents.reduce((sum, e) => sum + e.impact, 0) / recentEvents.length || 50;
+
+    // Determine most likely event type based on patterns
+    const eventTypeFrequency = eventTypes.reduce((acc, type) => {
+      acc[type] = (acc[type] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const mostCommonType = Object.keys(eventTypeFrequency).reduce((a, b) =>
+      eventTypeFrequency[a] > eventTypeFrequency[b] ? a : b, 'outcome'
+    );
+
+    // Determine most relevant domain
+    const domainFrequency = domains.reduce((acc, domain) => {
+      acc[domain] = (acc[domain] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const mostRelevantDomain = Object.keys(domainFrequency).reduce((a, b) =>
+      domainFrequency[a] > domainFrequency[b] ? a : b, 'business'
+    );
+
+    // Calculate realistic impact based on historical patterns
+    const impactVariation = Math.min(20, avgImpact * 0.3); // 30% variation, max 20 points
+    const baseImpact = Math.max(10, Math.min(90, avgImpact));
+    const calculatedImpact = baseImpact + (Math.random() - 0.5) * impactVariation;
+
+    // Generate realistic probability based on event frequency
+    const eventFrequency = recentEvents.length / 90; // Events per day
+    const baseProbability = Math.min(0.8, eventFrequency * 0.1);
+    const probability = Math.max(0.1, baseProbability + (Math.random() - 0.5) * 0.2);
+
+    // Create realistic description based on domain and type
+    const descriptions = {
+      business: [
+        'Strategic partnership opportunity emerges',
+        'Market expansion potential identified',
+        'Operational efficiency improvement discovered',
+        'Customer acquisition channel optimization'
+      ],
+      financial: [
+        'Investment opportunity assessment',
+        'Cost reduction initiative implementation',
+        'Revenue stream diversification',
+        'Financial risk mitigation strategy'
+      ],
+      technology: [
+        'System performance optimization',
+        'Security enhancement implementation',
+        'Feature development completion',
+        'Integration capability expansion'
+      ],
+      marketing: [
+        'Campaign performance optimization',
+        'Brand awareness initiative launch',
+        'Customer engagement strategy',
+        'Market positioning adjustment'
+      ]
+    };
+
+    const domainDescriptions = descriptions[mostRelevantDomain as keyof typeof descriptions] || descriptions.business;
+    const description = domainDescriptions[Math.floor(Math.random() * domainDescriptions.length)];
+
+    // Identify potential stakeholders based on domain
+    const stakeholderMap = {
+      business: ['CEO', 'COO', 'Business Development'],
+      financial: ['CFO', 'Finance Team', 'Investors'],
+      technology: ['CTO', 'Engineering Team', 'IT Department'],
+      marketing: ['CMO', 'Marketing Team', 'Sales Team']
+    };
+
+    const relevantStakeholders = stakeholderMap[mostRelevantDomain as keyof typeof stakeholderMap] || ['Management Team'];
+
     return {
       id: this.generateEventId(),
       timestamp: new Date(currentTime),
-      type: 'outcome',
-      description: 'Simulated counterfactual event',
-      data: { simulated: true, timeline: timeline.id },
-      causedBy: [],
+      type: mostCommonType as TemporalEvent['type'],
+      description,
+      data: {
+        simulated: true,
+        timeline: timeline.id,
+        basedOnPatterns: true,
+        analysisDepth: recentEvents.length,
+        confidenceLevel: probability
+      },
+      causedBy: recentEvents.slice(-2).map(e => e.id), // Last 2 events as potential causes
       consequences: [],
-      probability: 0.5,
-      impact: Math.random() * 50 + 25, // 25-75 impact
-      domain: 'simulation',
-      stakeholders: []
+      probability,
+      impact: Math.round(calculatedImpact),
+      domain: mostRelevantDomain,
+      stakeholders: relevantStakeholders
     };
   }
 

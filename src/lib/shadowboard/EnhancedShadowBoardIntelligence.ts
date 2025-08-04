@@ -127,7 +127,15 @@ export class EnhancedShadowBoardIntelligence extends EventEmitter {
     await timeMachineMemorySystem.recordEvent(
       'decision',
       `${executiveRole} strategic decision: ${query}`,
-      { executive: executiveRole, context, query },
+      {
+        decisionMaker: executiveRole,
+        metadata: {
+          executive: executiveRole,
+          query: query,
+          industry: context.industry,
+          riskTolerance: context.riskTolerance
+        }
+      },
       'strategic',
       [executiveRole]
     );
@@ -207,7 +215,15 @@ export class EnhancedShadowBoardIntelligence extends EventEmitter {
     await timeMachineMemorySystem.recordEvent(
       'milestone',
       `Created specialized agent: ${agent.name}`,
-      { agent, purpose, capabilities: requiredCapabilities },
+      {
+        metadata: {
+          agentId: agent.id,
+          agentName: agent.name,
+          purpose: purpose,
+          capabilities: requiredCapabilities.join(', '),
+          reportingExecutive: reportingExecutive
+        }
+      },
       'operational',
       [reportingExecutive]
     );
@@ -276,7 +292,15 @@ export class EnhancedShadowBoardIntelligence extends EventEmitter {
     await timeMachineMemorySystem.recordEvent(
       'milestone',
       `Strategic initiative launched: ${name}`,
-      { initiative, budget, timeline },
+      {
+        timeline: `${timeline.months} months with ${timeline.milestones.length} milestones`,
+        metadata: {
+          initiative: initiative.id,
+          budget: budget.toString(),
+          timelineMonths: timeline.months,
+          milestoneCount: timeline.milestones.length
+        }
+      },
       'strategic',
       [executiveOwner]
     );
@@ -375,10 +399,10 @@ export class EnhancedShadowBoardIntelligence extends EventEmitter {
     opportunities: string[];
   }> {
 
-    console.log(`📊 Analyzing business performance${domain ? ` for ${domain}` : ''}`);
+    console.log(`📊 Analyzing business performance${domain ? ` for ${domain}` : ''}${timeframe ? ` from ${timeframe.start.toISOString()} to ${timeframe.end.toISOString()}` : ''}`);
 
-    // Get current business metrics
-    const businessMetrics = await this.generateBusinessMetrics();
+    // Get current business metrics (filtered by timeframe if provided)
+    const businessMetrics = await this.generateBusinessMetrics(timeframe);
 
     // Calculate SOVREN Score
     const sovrenScore = await sovrenScoreEngine.calculateScore('system', businessMetrics, domain || 'technology');
@@ -386,7 +410,7 @@ export class EnhancedShadowBoardIntelligence extends EventEmitter {
     // Get insights from each executive
     const executiveInsights: Record<string, string> = {};
     
-    for (const [role, executive] of this.enhancedExecutives) {
+    for (const [role] of this.enhancedExecutives) {
       const insight = await this.getExecutivePerformanceInsight(role, businessMetrics, sovrenScore);
       executiveInsights[role] = insight;
     }
@@ -457,19 +481,24 @@ export class EnhancedShadowBoardIntelligence extends EventEmitter {
       throw new Error(`Executive ${executiveRole} not found`);
     }
 
-    // Generate role-specific response
+    // Generate context-aware role-specific response
+    const industryContext = context.industry ? ` in the ${context.industry} industry` : '';
+    const timeframeContext = context.timeframe ? ` within ${context.timeframe}` : '';
+    const riskContext = ` with ${context.riskTolerance} risk tolerance`;
+    const stakeholderContext = context.stakeholders.length > 0 ? ` considering ${context.stakeholders.join(', ')}` : '';
+
     const roleResponses: Record<string, string> = {
-      'CEO': `As CEO, I need to consider the strategic implications of ${query} across all business functions...`,
-      'CFO': `From a financial perspective, ${query} requires careful analysis of costs, benefits, and ROI...`,
-      'CTO': `The technical aspects of ${query} involve evaluating our current capabilities and future needs...`,
-      'CMO': `Marketing-wise, ${query} presents opportunities to enhance our brand and customer engagement...`,
-      'COO': `Operationally, ${query} needs to be assessed for implementation feasibility and resource requirements...`,
-      'CHRO': `From a human resources standpoint, ${query} impacts our talent strategy and organizational culture...`,
-      'CLO': `Legally, ${query} requires compliance review and risk assessment...`,
-      'CSO': `Strategically, ${query} aligns with our long-term vision and competitive positioning...`
+      'CEO': `As CEO${industryContext}, I need to consider the strategic implications of ${query} across all business functions${timeframeContext}${riskContext}${stakeholderContext}...`,
+      'CFO': `From a financial perspective${industryContext}, ${query} requires careful analysis of costs, benefits, and ROI${timeframeContext}${riskContext}...`,
+      'CTO': `The technical aspects of ${query}${industryContext} involve evaluating our current capabilities and future needs${timeframeContext}${riskContext}...`,
+      'CMO': `Marketing-wise${industryContext}, ${query} presents opportunities to enhance our brand and customer engagement${timeframeContext}${riskContext}...`,
+      'COO': `Operationally${industryContext}, ${query} needs to be assessed for implementation feasibility and resource requirements${timeframeContext}${riskContext}...`,
+      'CHRO': `From a human resources standpoint${industryContext}, ${query} impacts our talent strategy and organizational culture${timeframeContext}${riskContext}...`,
+      'CLO': `Legally${industryContext}, ${query} requires compliance review and risk assessment${timeframeContext}${riskContext}...`,
+      'CSO': `Strategically${industryContext}, ${query} aligns with our long-term vision and competitive positioning${timeframeContext}${riskContext}...`
     };
 
-    return roleResponses[executiveRole] || `As ${executiveRole}, I will analyze ${query} comprehensively...`;
+    return roleResponses[executiveRole] || `As ${executiveRole}${industryContext}, I will analyze ${query} comprehensively${timeframeContext}${riskContext}...`;
   }
 
   /**
@@ -604,24 +633,63 @@ export class EnhancedShadowBoardIntelligence extends EventEmitter {
     budget: number
   ): Promise<{ level: 'low' | 'medium' | 'high'; factors: string[]; mitigation: string[] }> {
     
-    // Simplified risk assessment
+    // Comprehensive risk assessment based on description, objectives, and budget
     let riskLevel: 'low' | 'medium' | 'high' = 'low';
-    
-    if (budget > 1000000) riskLevel = 'high';
-    else if (budget > 100000) riskLevel = 'medium';
-    
-    if (objectives.length > 5) riskLevel = 'high';
+    const factors: string[] = [];
+    const mitigation: string[] = [];
+
+    // Budget-based risk assessment
+    if (budget > 1000000) {
+      riskLevel = 'high';
+      factors.push('High budget exposure');
+      mitigation.push('Phased budget release', 'Financial milestone gates');
+    } else if (budget > 100000) {
+      riskLevel = 'medium';
+      factors.push('Moderate budget risk');
+      mitigation.push('Regular budget reviews');
+    }
+
+    // Objectives complexity assessment
+    if (objectives.length > 5) {
+      riskLevel = 'high';
+      factors.push('Complex multi-objective initiative');
+      mitigation.push('Objective prioritization', 'Phased delivery approach');
+    }
+
+    // Description-based risk factors
+    const highRiskKeywords = ['transformation', 'disruption', 'innovation', 'new market', 'untested'];
+    const mediumRiskKeywords = ['expansion', 'optimization', 'integration', 'upgrade'];
+
+    const descriptionLower = description.toLowerCase();
+    if (highRiskKeywords.some(keyword => descriptionLower.includes(keyword))) {
+      riskLevel = riskLevel === 'low' ? 'medium' : 'high';
+      factors.push('High-impact strategic initiative');
+      mitigation.push('Pilot testing', 'Expert consultation', 'Risk monitoring dashboard');
+    } else if (mediumRiskKeywords.some(keyword => descriptionLower.includes(keyword))) {
+      if (riskLevel === 'low') riskLevel = 'medium';
+      factors.push('Moderate complexity initiative');
+      mitigation.push('Best practice implementation', 'Regular progress reviews');
+    }
+
+    // Default factors and mitigation if none identified
+    if (factors.length === 0) {
+      factors.push('Standard implementation risks', 'Resource availability', 'Timeline adherence');
+    }
+    if (mitigation.length === 0) {
+      mitigation.push('Regular monitoring', 'Contingency planning', 'Stakeholder communication');
+    }
 
     return {
       level: riskLevel,
-      factors: ['Budget constraints', 'Timeline pressure', 'Resource availability'],
-      mitigation: ['Regular monitoring', 'Contingency planning', 'Stakeholder communication']
+      factors,
+      mitigation
     };
   }
 
   private determineRelevantExecutives(context: StrategicContext, topic: string): string[] {
     const relevantExecutives: string[] = [];
-    
+
+    // Topic-based executive selection
     if (topic.includes('financial') || topic.includes('budget')) {
       relevantExecutives.push('CFO');
     }
@@ -637,7 +705,22 @@ export class EnhancedShadowBoardIntelligence extends EventEmitter {
     if (topic.includes('strategic') || topic.includes('vision')) {
       relevantExecutives.push('CEO', 'CSO');
     }
-    
+
+    // Context-based executive selection
+    if (context.riskTolerance === 'high' && !relevantExecutives.includes('CEO')) {
+      relevantExecutives.push('CEO'); // High-risk decisions need CEO involvement
+    }
+    if (context.stakeholders.some(s => s.includes('investor') || s.includes('board'))) {
+      if (!relevantExecutives.includes('CFO')) relevantExecutives.push('CFO');
+      if (!relevantExecutives.includes('CEO')) relevantExecutives.push('CEO');
+    }
+    if (context.industry === 'technology' && !relevantExecutives.includes('CTO')) {
+      relevantExecutives.push('CTO');
+    }
+    if (context.constraints.some(c => c.includes('legal') || c.includes('compliance'))) {
+      relevantExecutives.push('CLO');
+    }
+
     return relevantExecutives.length > 0 ? relevantExecutives : ['CEO', 'CFO', 'CTO'];
   }
 
@@ -645,6 +728,7 @@ export class EnhancedShadowBoardIntelligence extends EventEmitter {
     context: StrategicContext,
     topic: string
   ): ExecutiveCollaboration['type'] {
+    // Topic-based collaboration type
     if (topic.includes('crisis') || topic.includes('emergency')) {
       return 'crisis_response';
     }
@@ -654,6 +738,18 @@ export class EnhancedShadowBoardIntelligence extends EventEmitter {
     if (topic.includes('resource') || topic.includes('budget')) {
       return 'resource_allocation';
     }
+
+    // Context-based collaboration type
+    if (context.riskTolerance === 'high' || context.constraints.some(c => c.includes('urgent'))) {
+      return 'crisis_response';
+    }
+    if (context.objectives.some(o => o.includes('growth') || o.includes('expansion'))) {
+      return 'opportunity_analysis';
+    }
+    if (context.constraints.some(c => c.includes('budget') || c.includes('resource'))) {
+      return 'resource_allocation';
+    }
+
     return 'strategic_planning';
   }
 
@@ -667,19 +763,27 @@ export class EnhancedShadowBoardIntelligence extends EventEmitter {
     const executive = this.enhancedExecutives.get(executiveRole);
     if (!executive) return '';
 
-    // Generate executive-specific input
+    // Generate context-aware executive-specific input
+    const industryContext = context.industry ? ` in ${context.industry}` : '';
+    const riskContext = ` with ${context.riskTolerance} risk tolerance`;
+    const timeContext = context.timeframe ? ` within ${context.timeframe}` : '';
+
+    // Build on initial response insights
+    const responseInsights = initialResponse.reasoning.length > 0 ?
+      ` Building on: ${initialResponse.reasoning[0]}` : '';
+
     const inputs: Record<string, string> = {
-      'CEO': `Strategic alignment and long-term vision considerations`,
-      'CFO': `Financial implications and ROI analysis`,
-      'CTO': `Technical feasibility and innovation opportunities`,
-      'CMO': `Market impact and customer value proposition`,
-      'COO': `Operational implementation and resource requirements`,
-      'CHRO': `Talent and organizational impact`,
-      'CLO': `Legal and compliance considerations`,
-      'CSO': `Competitive positioning and strategic advantage`
+      'CEO': `Strategic alignment and long-term vision considerations${industryContext}${riskContext}${timeContext}${responseInsights}`,
+      'CFO': `Financial implications and ROI analysis${industryContext}${riskContext}${responseInsights}`,
+      'CTO': `Technical feasibility and innovation opportunities${industryContext}${riskContext}${responseInsights}`,
+      'CMO': `Market impact and customer value proposition${industryContext}${riskContext}${responseInsights}`,
+      'COO': `Operational implementation and resource requirements${industryContext}${riskContext}${responseInsights}`,
+      'CHRO': `Talent and organizational impact${industryContext}${riskContext}${responseInsights}`,
+      'CLO': `Legal and compliance considerations${industryContext}${riskContext}${responseInsights}`,
+      'CSO': `Competitive positioning and strategic advantage${industryContext}${riskContext}${responseInsights}`
     };
 
-    return inputs[executiveRole] || `${executiveRole} perspective on ${topic}`;
+    return inputs[executiveRole] || `${executiveRole} perspective on ${topic}${industryContext}${riskContext}`;
   }
 
   private async synthesizeCollaborativeDecision(
@@ -689,12 +793,20 @@ export class EnhancedShadowBoardIntelligence extends EventEmitter {
     initialResponse: PhDEnhancedResponse
   ): Promise<string> {
     
-    return `Collaborative decision incorporating insights from ${participants.join(', ')}: ${initialResponse.content} Enhanced with multi-executive perspective considering ${insights.length} key factors.`;
+    // Synthesize comprehensive collaborative decision with context awareness
+    const industryContext = context.industry ? ` for ${context.industry} industry` : '';
+    const riskContext = ` with ${context.riskTolerance} risk tolerance`;
+    const stakeholderContext = context.stakeholders.length > 0 ?
+      ` considering stakeholders: ${context.stakeholders.join(', ')}` : '';
+    const constraintContext = context.constraints.length > 0 ?
+      ` addressing constraints: ${context.constraints.join(', ')}` : '';
+
+    return `Collaborative decision incorporating insights from ${participants.join(', ')}${industryContext}${riskContext}: ${initialResponse.content} Enhanced with multi-executive perspective considering ${insights.length} key factors${stakeholderContext}${constraintContext}. Strategic alignment achieved across all participating executives.`;
   }
 
-  private async generateBusinessMetrics(): Promise<BusinessMetrics> {
-    // Generate realistic business metrics
-    return {
+  private async generateBusinessMetrics(timeframe?: { start: Date; end: Date }): Promise<BusinessMetrics> {
+    // Generate realistic business metrics (adjusted for timeframe if provided)
+    const baseMetrics = {
       automationRate: 75,
       errorReduction: 85,
       decisionVelocity: 8,
@@ -712,6 +824,20 @@ export class EnhancedShadowBoardIntelligence extends EventEmitter {
       stakeholderSatisfaction: 87,
       continuousImprovement: 80
     };
+
+    // Adjust metrics based on timeframe if provided
+    if (timeframe) {
+      const daysDiff = Math.ceil((timeframe.end.getTime() - timeframe.start.getTime()) / (1000 * 60 * 60 * 24));
+      const timeframeFactor = Math.min(1.2, Math.max(0.8, daysDiff / 365)); // Scale based on timeframe length
+
+      Object.keys(baseMetrics).forEach(key => {
+        if (typeof baseMetrics[key as keyof BusinessMetrics] === 'number') {
+          (baseMetrics as any)[key] = Math.round((baseMetrics as any)[key] * timeframeFactor);
+        }
+      });
+    }
+
+    return baseMetrics;
   }
 
   private async getExecutivePerformanceInsight(

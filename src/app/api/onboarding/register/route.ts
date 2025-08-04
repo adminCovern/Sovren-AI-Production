@@ -8,28 +8,30 @@ import { authSystem } from '@/lib/auth/AuthenticationSystem';
 import { dbManager } from '@/lib/database/DatabaseManager';
 import { shadowBoardInitializer } from '@/lib/shadowboard/ShadowBoardInitializer';
 import { rateLimiters, getClientId } from '@/middleware/rateLimit';
+import { randomBytes } from 'crypto';
 
 export interface RegistrationRequest {
   // Basic info
   email: string;
   name: string;
   company: string;
-  
+  password: string; // Add password field
+
   // Tier selection
   tier: 'SMB' | 'ENTERPRISE';
-  
+
   // Company details
   industry: string;
   companySize: 'startup' | 'small' | 'medium' | 'large';
   geography: string;
-  
+
   // Executive customization (optional)
   executiveCustomization?: {
     executiveNames?: Record<string, string>;
     voicePreferences?: Record<string, string>;
     personalityAdjustments?: Record<string, any>;
   };
-  
+
   // Preferences
   preferences: {
     theme: 'dark' | 'light';
@@ -80,7 +82,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const body: RegistrationRequest = await request.json();
     
     // Validate required fields
-    const requiredFields = ['email', 'name', 'company', 'tier', 'industry', 'companySize', 'geography'];
+    const requiredFields = ['email', 'name', 'company', 'password', 'tier', 'industry', 'companySize', 'geography'];
     for (const field of requiredFields) {
       if (!body[field as keyof RegistrationRequest]) {
         return NextResponse.json({
@@ -119,7 +121,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     // Register user
-    const authResult = await authSystem.registerUser(body.email, body.name, body.tier);
+    const authResult = await authSystem.registerUser(body.email, body.name, body.password, body.tier);
     
     if (!authResult.success) {
       console.error(`❌ Registration failed for ${body.email}:`, authResult.error);
@@ -135,11 +137,37 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       name: body.name,
       tier: body.tier,
       preferences: {
-        ...body.preferences,
+        // Basic preferences from request
+        theme: body.preferences.theme === 'dark' ? 'dark' : body.preferences.theme === 'light' ? 'light' : 'auto',
+        language: 'en',
+        timezone: 'UTC',
+        notifications: {
+          email: body.preferences.notifications,
+          push: body.preferences.notifications,
+          sms: false
+        },
+        voiceSettings: {
+          preferredVoice: 'default',
+          speechRate: 1.0,
+          volume: 0.8
+        },
+        executivePreferences: {
+          defaultExecutives: [],
+          communicationStyle: 'mixed' as const
+        },
+        privacy: {
+          dataRetention: 365,
+          analyticsOptOut: false,
+          shareUsageData: true
+        },
+        // Company and business context
         company: body.company,
         industry: body.industry,
         companySize: body.companySize,
-        geography: body.geography
+        geography: body.geography,
+        // Additional onboarding preferences
+        autoExecutiveSummoning: body.preferences.autoExecutiveSummoning,
+        voiceEnabled: body.preferences.voiceEnabled
       }
     });
 
@@ -231,8 +259,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
  */
 function generateOnboardingToken(userId: string): string {
   const timestamp = Date.now();
-  const random = Math.random().toString(36).substring(2, 15);
-  return `onboard_${userId}_${timestamp}_${random}`;
+  const randomSuffix = randomBytes(8).toString('hex').substring(0, 13);
+  return `onboard_${userId}_${timestamp}_${randomSuffix}`;
 }
 
 /**
@@ -269,7 +297,7 @@ function getNextSteps(tier: 'SMB' | 'ENTERPRISE', shadowBoardSuccess: boolean): 
   }
 }
 
-export async function OPTIONS(request: NextRequest): Promise<NextResponse> {
+export async function OPTIONS(_request: NextRequest): Promise<NextResponse> {
   return new NextResponse(null, {
     status: 200,
     headers: {

@@ -213,7 +213,7 @@ export class SOVRENLaunchOrchestrator extends EventEmitter {
 
       this.emit('launchFailed', {
         launchId,
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
         phase: this.launchExecution?.phase,
         timeElapsed: Date.now() - startTime
       });

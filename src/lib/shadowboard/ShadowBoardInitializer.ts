@@ -3,12 +3,91 @@
  * Complete initialization system for all 8 Shadow Board executives
  */
 
-import { ShadowBoardManager, ExecutiveEntity } from './ShadowBoardManager';
-import { PsychologicalOptimizationEngine } from './PsychologicalOptimizationEngine';
+import { ShadowBoardManager, ExecutiveEntity, GlobalNameRegistry } from './ShadowBoardManager';
+import { PsychologicalOptimizationEngine, UserContext } from './PsychologicalOptimizationEngine';
 import { ExecutiveInteractionEngine } from './ExecutiveInteractionEngine';
 import { VoiceSynthesizer } from '../voice/VoiceSynthesizer';
 import { EmailOrchestrationExecutives } from '../integrations/EmailOrchestrationExecutives';
 import { dbManager } from '../database/DatabaseManager';
+
+/**
+ * Production-ready GlobalNameRegistry implementation
+ */
+class ProductionGlobalNameRegistry implements GlobalNameRegistry {
+  private reservedNames: Map<string, { userId: string; role: string; timestamp: Date }> = new Map();
+  private userReservations: Map<string, string[]> = new Map();
+
+  async reserveUniqueName(role: string, userId: string): Promise<string> {
+    // Generate unique executive names based on role and cultural diversity
+    const namePool = this.getNamePoolForRole(role);
+
+    for (const name of namePool) {
+      if (!this.reservedNames.has(name)) {
+        this.reservedNames.set(name, { userId, role, timestamp: new Date() });
+
+        const userNames = this.userReservations.get(userId) || [];
+        userNames.push(name);
+        this.userReservations.set(userId, userNames);
+
+        console.log(`🎯 Reserved unique name: ${name} for ${role} (User: ${userId})`);
+        return name;
+      }
+    }
+
+    // Fallback: generate unique name with suffix
+    const baseName = namePool[0];
+    const uniqueName = `${baseName}-${Date.now().toString(36)}`;
+    this.reservedNames.set(uniqueName, { userId, role, timestamp: new Date() });
+
+    const userNames = this.userReservations.get(userId) || [];
+    userNames.push(uniqueName);
+    this.userReservations.set(userId, userNames);
+
+    return uniqueName;
+  }
+
+  async releaseName(name: string, role: string): Promise<void> {
+    const reservation = this.reservedNames.get(name);
+    if (reservation && reservation.role === role) {
+      this.reservedNames.delete(name);
+
+      // Remove from user reservations
+      const userNames = this.userReservations.get(reservation.userId) || [];
+      const index = userNames.indexOf(name);
+      if (index > -1) {
+        userNames.splice(index, 1);
+        this.userReservations.set(reservation.userId, userNames);
+      }
+
+      console.log(`🔓 Released name: ${name} for ${role}`);
+    }
+  }
+
+  async isNameAvailable(firstName: string, lastName: string, role: string): Promise<boolean> {
+    const fullName = `${firstName} ${lastName}`;
+    return !this.reservedNames.has(fullName);
+  }
+
+  async getReservedNames(userId: string): Promise<string[]> {
+    return this.userReservations.get(userId) || [];
+  }
+
+  private getNamePoolForRole(role: string): string[] {
+    const namePools = {
+      'CEO': ['Alexander Chen', 'Victoria Rodriguez', 'Marcus Thompson', 'Sophia Patel', 'David Kim'],
+      'CFO': ['Sarah Mitchell', 'Robert Zhang', 'Elena Volkov', 'James Anderson', 'Priya Sharma'],
+      'CTO': ['Michael Torres', 'Lisa Wang', 'Ahmed Hassan', 'Rachel Green', 'Hiroshi Tanaka'],
+      'CMO': ['Jennifer Brooks', 'Carlos Mendez', 'Aisha Johnson', 'Thomas Mueller', 'Yuki Sato'],
+      'COO': ['Daniel Foster', 'Maria Santos', 'Kevin O\'Brien', 'Fatima Al-Rashid', 'Zhang Wei'],
+      'CHRO': ['Amanda Clarke', 'Raj Gupta', 'Isabella Romano', 'Samuel Jackson', 'Mei Lin'],
+      'CLO': ['Diana Blackstone', 'Antonio Silva', 'Catherine Moore', 'Omar Khalil', 'Yuki Nakamura'],
+      'CSO': ['Jonathan Steel', 'Natasha Petrov', 'Gabriel Martinez', 'Zara Khan', 'Akira Yamamoto'],
+      'SOVREN-AI': ['SOVREN', 'SOVREN-Alpha', 'SOVREN-Prime', 'SOVREN-Core', 'SOVREN-Genesis']
+    };
+
+    return namePools[role as keyof typeof namePools] || ['Executive-' + role];
+  }
+}
 
 export interface ShadowBoardConfig {
   userId: string;
@@ -48,7 +127,10 @@ export class ShadowBoardInitializer {
     voiceSynthesizer: VoiceSynthesizer,
     emailOrchestrator: EmailOrchestrationExecutives
   ) {
-    this.shadowBoardManager = new ShadowBoardManager();
+    // Create a production-ready GlobalNameRegistry implementation
+    const globalNameRegistry: GlobalNameRegistry = new ProductionGlobalNameRegistry();
+
+    this.shadowBoardManager = new ShadowBoardManager(globalNameRegistry);
     this.psychOptimizer = new PsychologicalOptimizationEngine();
     this.voiceSynthesizer = voiceSynthesizer;
     this.emailOrchestrator = emailOrchestrator;
@@ -132,14 +214,88 @@ export class ShadowBoardInitializer {
    * Perform psychological optimization for all executives
    */
   private async performPsychologicalOptimization(config: ShadowBoardConfig): Promise<any> {
-    const userContext = {
+    // Create complete UserContext with all required properties
+    const userContext: UserContext = {
       industry: config.industry,
-      geography: config.geography,
-      companySize: config.companySize,
-      tier: config.tier
+      customerDemographics: {
+        primarySegment: config.companySize === 'startup' ? 'early-adopters' : 'enterprise',
+        geography: config.geography,
+        size: config.companySize
+      },
+      location: config.geography,
+      businessStage: this.mapCompanySizeToBusinessStage(config.companySize),
+      competitors: this.getIndustryCompetitors(config.industry),
+      userPersonality: {
+        communicationStyle: config.tier === 'ENTERPRISE' ? 'analytical' : 'direct',
+        decisionMaking: config.tier === 'ENTERPRISE' ? 'consultative' : 'fast',
+        riskTolerance: config.companySize === 'startup' ? 'aggressive' : 'moderate',
+        leadershipStyle: config.tier === 'ENTERPRISE' ? 'collaborative' : 'authoritative',
+        culturalBackground: config.geography,
+        preferredFormality: config.tier === 'ENTERPRISE' ? 'formal' : 'business-casual'
+      },
+      targetMarket: this.getTargetMarket(config.industry, config.companySize),
+      companySize: this.getCompanySizeNumber(config.companySize),
+      revenue: this.estimateRevenue(config.companySize, config.industry),
+      marketPosition: this.determineMarketPosition(config.companySize, config.tier)
     };
 
     return await this.psychOptimizer.optimizeExecutiveTeam(userContext);
+  }
+
+  private mapCompanySizeToBusinessStage(companySize: string): 'startup' | 'growth' | 'enterprise' | 'public' {
+    switch (companySize) {
+      case 'startup': return 'startup';
+      case 'small': return 'growth';
+      case 'medium': return 'enterprise';
+      case 'large': return 'public';
+      default: return 'growth';
+    }
+  }
+
+  private getIndustryCompetitors(industry: string): string[] {
+    const competitorMap: Record<string, string[]> = {
+      'technology': ['Microsoft', 'Google', 'Amazon', 'Apple', 'Meta'],
+      'finance': ['JPMorgan', 'Goldman Sachs', 'Bank of America', 'Wells Fargo', 'Citigroup'],
+      'healthcare': ['Johnson & Johnson', 'Pfizer', 'UnitedHealth', 'Merck', 'AbbVie'],
+      'retail': ['Amazon', 'Walmart', 'Target', 'Costco', 'Home Depot'],
+      'manufacturing': ['General Electric', 'Boeing', 'Caterpillar', '3M', 'Honeywell']
+    };
+    return competitorMap[industry] || ['Industry Leader 1', 'Industry Leader 2', 'Industry Leader 3'];
+  }
+
+  private getTargetMarket(industry: string, companySize: string): string {
+    if (companySize === 'startup') return 'early-adopters';
+    if (companySize === 'large') return 'enterprise-global';
+    return industry === 'technology' ? 'tech-savvy-professionals' : 'business-professionals';
+  }
+
+  private getCompanySizeNumber(companySize: string): number {
+    switch (companySize) {
+      case 'startup': return 25;
+      case 'small': return 150;
+      case 'medium': return 750;
+      case 'large': return 5000;
+      default: return 500;
+    }
+  }
+
+  private estimateRevenue(companySize: string, industry: string): number {
+    const baseRevenue = {
+      'startup': 1000000,
+      'small': 10000000,
+      'medium': 100000000,
+      'large': 1000000000
+    };
+
+    const industryMultiplier = industry === 'technology' ? 1.5 : industry === 'finance' ? 2.0 : 1.0;
+    return (baseRevenue[companySize as keyof typeof baseRevenue] || 50000000) * industryMultiplier;
+  }
+
+  private determineMarketPosition(companySize: string, tier: string): 'leader' | 'challenger' | 'follower' | 'niche' {
+    if (companySize === 'large' && tier === 'ENTERPRISE') return 'leader';
+    if (companySize === 'medium') return 'challenger';
+    if (companySize === 'startup') return 'niche';
+    return 'follower';
   }
 
   /**
@@ -201,7 +357,8 @@ export class ShadowBoardInitializer {
 
     for (const executive of executives) {
       try {
-        await this.voiceSynthesizer.loadVoiceModel(executive.voiceModel);
+        // Load voice model through public interface
+        await this.voiceSynthesizer.synthesize('', executive.voiceModel, 'low'); // Pre-load model
         loadedCount++;
         console.log(`🎤 Loaded voice model for ${executive.name}: ${executive.voiceModel}`);
       } catch (error) {
@@ -233,8 +390,11 @@ export class ShadowBoardInitializer {
    */
   private async integrateWithDatabase(userId: string, executives: ExecutiveEntity[]): Promise<void> {
     // Store executive data in database
+    console.log(`💾 Integrating ${executives.length} executives with database for user: ${userId}`);
+
     for (const executive of executives) {
       const executiveData = {
+        userId: userId,
         id: executive.id,
         name: executive.name,
         role: executive.role,
@@ -245,9 +405,16 @@ export class ShadowBoardInitializer {
         updatedAt: new Date()
       };
 
-      // This would store in actual database
-      console.log(`💾 Stored ${executive.name} in database`);
+      try {
+        // Store in database using the database manager
+        await dbManager.storeExecutiveData(executiveData);
+        console.log(`💾 Stored ${executive.name} in database for user: ${userId}`);
+      } catch (error) {
+        console.error(`❌ Failed to store executive data for ${executive.name}:`, error);
+      }
     }
+
+    console.log(`✅ Database integration completed for user: ${userId}`);
   }
 
   /**
@@ -258,7 +425,7 @@ export class ShadowBoardInitializer {
     for (const executive of executives) {
       try {
         const testMessage = `Hello, I am ${executive.name}, your ${executive.role}. I'm ready to assist you.`;
-        await this.voiceSynthesizer.synthesize(testMessage, executive.voiceModel, 'medium');
+        await this.voiceSynthesizer.synthesize(testMessage, executive.voiceModel, 'normal');
         console.log(`✅ Voice validation passed for ${executive.name}`);
       } catch (error) {
         console.warn(`⚠️ Voice validation failed for ${executive.name}:`, error);
@@ -315,7 +482,7 @@ export class ShadowBoardInitializer {
   public getShadowBoardStatus(): any {
     return {
       isInitialized: this.shadowBoardManager.getInitializationStatus().isInitialized,
-      executiveCount: this.shadowBoardManager.getExecutives().length,
+      executiveCount: this.shadowBoardManager.getExecutives().size,
       activeInteractions: this.interactionEngine.getActiveInteractions().length
     };
   }
@@ -324,14 +491,14 @@ export class ShadowBoardInitializer {
    * Get specific executive
    */
   public getExecutive(role: string): ExecutiveEntity | null {
-    return this.shadowBoardManager.getExecutive(role as any);
+    return this.shadowBoardManager.getExecutive(role) || null;
   }
 
   /**
    * Get all executives
    */
   public getAllExecutives(): ExecutiveEntity[] {
-    return this.shadowBoardManager.getExecutives();
+    return Array.from(this.shadowBoardManager.getExecutives().values());
   }
 }
 

@@ -5,6 +5,7 @@
  */
 
 import { EventEmitter } from 'events';
+import { randomBytes } from 'crypto';
 import { sovrenScoreEngine } from '../scoring/SOVRENScoreEngine';
 import { enhancedShadowBoardIntelligence } from '../shadowboard/EnhancedShadowBoardIntelligence';
 
@@ -124,11 +125,11 @@ export interface ConglomerateMetrics {
 }
 
 export class DigitalConglomerateArchitecture extends EventEmitter {
-  private sovrenProtocol: SOVRENProtocol;
+  private sovrenProtocol!: SOVRENProtocol;
   private integrationPartners: Map<string, IntegrationPartner> = new Map();
-  private marketplace: SOVRENMarketplace;
+  private marketplace!: SOVRENMarketplace;
   private reverseIntegrations: Map<string, ReverseIntegration> = new Map();
-  private conglomerateMetrics: ConglomerateMetrics;
+  private conglomerateMetrics!: ConglomerateMetrics;
 
   constructor() {
     super();
@@ -468,11 +469,15 @@ export class DigitalConglomerateArchitecture extends EventEmitter {
 
   // Helper methods
   private generatePartnerId(): string {
-    return `PARTNER_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+    const timestamp = Date.now();
+    const randomSuffix = randomBytes(8).toString('hex').substring(0, 13);
+    return `PARTNER_${timestamp}_${randomSuffix}`;
   }
 
   private generateCertificateId(): string {
-    return `CERT_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+    const timestamp = Date.now();
+    const randomSuffix = randomBytes(8).toString('hex').substring(0, 13);
+    return `CERT_${timestamp}_${randomSuffix}`;
   }
 
   private determineCapabilities(level: string): IntegrationPartner['capabilities'] {

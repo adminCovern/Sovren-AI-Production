@@ -551,7 +551,7 @@ export class EmergencyPhase4MarketLaunch extends EventEmitter {
             name: 'Market Launch',
             description: 'Go-live and initial market deployment',
             duration: 8,
-            status: 'ready',
+            status: 'pending',
             activities: [
               {
                 activityId: 'go-live',
@@ -559,7 +559,7 @@ export class EmergencyPhase4MarketLaunch extends EventEmitter {
                 description: 'Activate production systems and open to users',
                 owner: 'Operations Team',
                 duration: 60,
-                status: 'ready',
+                status: 'pending',
                 deliverables: ['Production activation', 'User access enabled'],
                 resources: ['Operations team', 'Support team'],
                 validation: [

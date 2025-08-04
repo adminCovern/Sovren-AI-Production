@@ -1,11 +1,17 @@
 /**
  * SOVREN AI - Billing System Exports
- * 
+ *
  * Central export file for the complete automated subscription billing system.
  * Provides all necessary components for integration into the SOVREN AI platform.
- * 
+ *
  * CLASSIFICATION: BILLING SYSTEM EXPORTS
  */
+
+// Import for local use
+import { SubscriptionBillingSystem } from './SubscriptionBillingSystem';
+import { OnboardingPaymentFlow } from './OnboardingPaymentFlow';
+import { WebhookHandler } from './webhooks/WebhookHandler';
+import { defaultBillingConfig, validateBillingConfig } from './config/BillingConfig';
 
 // Core billing system
 export {
@@ -297,19 +303,21 @@ export type {
   // User and billing types
   BillingUser as User,
   BillingProfile as Profile,
-  
+
   // Payment types
   PaymentMethod as Payment,
   PaymentTransaction as Transaction,
-  
+
   // Subscription types
   Subscription as Sub,
-  SubscriptionTier as Tier,
-  
+  SubscriptionTier as Tier
+} from './SubscriptionBillingSystem';
+
+export type {
   // Configuration types
   BillingSystemConfig as Config,
   BillingEnvironmentConfig as Environment
-} from './SubscriptionBillingSystem';
+} from './config/BillingConfig';
 
 // Export version information
 export const BILLING_SYSTEM_VERSION = '1.0.0';

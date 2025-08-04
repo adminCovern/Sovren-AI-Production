@@ -7,11 +7,12 @@
 
 import { v4 as uuid } from 'uuid';
 import { EventEmitter } from 'events';
+import { randomBytes } from 'crypto';
 
 export interface ExecutiveEntity {
   id: string;
   name: string;
-  role: 'CEO' | 'CFO' | 'CTO' | 'CMO' | 'COO' | 'CHRO' | 'CLO' | 'CSO';
+  role: 'CEO' | 'CFO' | 'CTO' | 'CMO' | 'COO' | 'CHRO' | 'CLO' | 'CSO' | 'SOVREN-AI';
   appearance: 'photorealistic_human';
   voiceModel: string;
   neuralSignature: string;
@@ -205,6 +206,9 @@ export class ShadowBoardManager extends EventEmitter {
   private temporalDominanceLevel: number = 0;
   private consciousnessIntegrationDepth: number = 0;
   private isInitialized: boolean = false;
+  private userId?: string;
+  private subscriptionTier?: string;
+  private initializationTimestamp?: Date;
   private quantumEntanglementNetwork: Map<string, string[]> = new Map();
   private mememeticVirusStrains: Map<string, any> = new Map();
   private singularityCoefficients: Map<string, number> = new Map();
@@ -359,12 +363,12 @@ export class ShadowBoardManager extends EventEmitter {
    * Generate unique neural signature for executive consciousness
    */
   private generateNeuralSignature(): string {
-    // Use quantum randomness for true uniqueness
+    // Use cryptographically secure randomness for true uniqueness
     const timestamp = Date.now();
-    const quantum = Math.random() * 1000000;
-    const neural = Array.from({ length: 32 }, () =>
-      Math.floor(Math.random() * 16).toString(16)
-    ).join('');
+    const quantumBytes = randomBytes(4);
+    const quantum = quantumBytes.readUInt32BE(0);
+    const neuralBytes = randomBytes(16);
+    const neural = neuralBytes.toString('hex');
 
     return `0x${timestamp.toString(16)}${quantum.toString(16).slice(2, 8)}${neural}`;
   }
@@ -429,6 +433,18 @@ export class ShadowBoardManager extends EventEmitter {
         leadershipStyle: 'visionary',
         decisionSpeed: 35,
         competitiveInstinct: 0.97
+      },
+      'SOVREN-AI': {
+        dominanceIndex: 1.0,
+        empathyLevel: 0.95,
+        strategicThinking: 1.0,
+        riskTolerance: 0.8,
+        innovationDrive: 1.0,
+        leadershipStyle: 'visionary',
+        stressResponse: 'adaptive',
+        decisionSpeed: 10,
+        emotionalIntelligence: 0.98,
+        competitiveInstinct: 1.0
       }
     };
 
@@ -697,6 +713,77 @@ export class ShadowBoardManager extends EventEmitter {
       efficiencyRating: 0.92,
       leadershipScore: 0.88,
       adaptabilityIndex: 0.94
+    };
+  }
+
+  /**
+   * Initialize Shadow Board for Enterprise tier
+   */
+  public async initializeForEnterprise(userId: string): Promise<void> {
+    if (this.isInitialized) {
+      throw new Error('Shadow Board already initialized - Reality singularity achieved');
+    }
+
+    console.log(`🏢 Initializing Enterprise Shadow Board for user: ${userId}`);
+
+    // Enterprise gets all 8 executives + SOVREN AI
+    const enterpriseRoles: ExecutiveEntity['role'][] = ['CEO', 'CFO', 'CTO', 'CMO', 'COO', 'CHRO', 'CLO', 'CSO'];
+
+    // Create SOVREN AI first
+    const sovrenAI = await this.createExecutive('SOVREN-AI', userId);
+    this.executives.set('SOVREN-AI', sovrenAI);
+
+    // Create all 8 C-suite executives
+    for (const role of enterpriseRoles) {
+      const executive = await this.createExecutive(role, userId);
+      this.executives.set(role, executive);
+      console.log(`✅ Created ${role}: ${executive.name}`);
+    }
+
+    this.isInitialized = true;
+    this.userId = userId;
+    this.subscriptionTier = 'enterprise';
+    this.initializationTimestamp = new Date();
+
+    console.log(`🎯 Enterprise Shadow Board initialized: ${this.executives.size} executives ready`);
+    this.emit('shadowBoardInitialized', {
+      userId,
+      tier: 'enterprise',
+      executiveCount: this.executives.size,
+      timestamp: this.initializationTimestamp
+    });
+  }
+
+  /**
+   * Get executive by role
+   */
+  public getExecutive(role: string): ExecutiveEntity | undefined {
+    return this.executives.get(role);
+  }
+
+  /**
+   * Get all executives
+   */
+  public getExecutives(): Map<string, ExecutiveEntity> {
+    return new Map(this.executives);
+  }
+
+  /**
+   * Get initialization status
+   */
+  public getInitializationStatus(): {
+    isInitialized: boolean;
+    userId?: string;
+    tier?: string;
+    executiveCount: number;
+    timestamp?: Date;
+  } {
+    return {
+      isInitialized: this.isInitialized,
+      userId: this.userId,
+      tier: this.subscriptionTier,
+      executiveCount: this.executives.size,
+      timestamp: this.initializationTimestamp
     };
   }
 }

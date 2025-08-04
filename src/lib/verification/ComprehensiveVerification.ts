@@ -7,7 +7,7 @@
 import { EventEmitter } from 'events';
 import { tlaSpecificationEngine } from '../formal_verification/TLASpecifications';
 import { coqProofEngine } from '../formal_verification/CoqProofs';
-import { quantumResistantSOVREN } from '../security/QuantumResistantSecurity';
+import { quantumResistantSOVREN } from '../security/QuantumResistantSecurity.js';
 import { bareMetalOptimizer } from '../performance/BareMetalOptimization';
 import { adaptiveImmuneSystem } from '../biology/AdaptiveImmuneSystem';
 import { shadowBoardCoordinator } from '../shadowboard/ShadowBoardCoordinator';
@@ -348,7 +348,7 @@ export class ComprehensiveVerificationSystem extends EventEmitter {
       passed,
       score,
       confidence: quantumReport.verificationStatus ? 0.99 : 0.5,
-      details: `Security level: ${quantumReport.securityLevel}, Resistance: ${quantumReport.resistanceYears} years`,
+      details: `Algorithm strength: ${quantumReport.algorithmStrength}, Resistance: ${quantumReport.resistanceYears} years`,
       recommendations: passed ? [] : ['Complete quantum-resistant implementation', 'Verify all algorithms'],
       timestamp: new Date()
     };
@@ -547,7 +547,8 @@ export class ComprehensiveVerificationSystem extends EventEmitter {
   // Helper methods
   private calculateReadinessLevel(score: number, criticalGaps: number): MarketDominationReadiness['readinessLevel'] {
     if (criticalGaps > 0) {
-      return Math.min(6, Math.floor(score)) as MarketDominationReadiness['readinessLevel'];
+      const level = Math.max(1, Math.min(6, Math.floor(score)));
+      return `${level}/10` as MarketDominationReadiness['readinessLevel'];
     }
 
     if (score >= 9.5) return '10/10';

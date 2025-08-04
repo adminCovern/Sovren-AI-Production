@@ -48,6 +48,7 @@ export interface TutorialStep {
   content: StepContent;
   status: 'pending' | 'in_progress' | 'completed' | 'skipped';
   userResponse?: any;
+  startTime?: Date;
   completionTime?: Date;
   attempts: number;
   maxAttempts: number;
@@ -110,7 +111,7 @@ export interface TutorialAnalytics {
 export class InteractiveTutorialSystem extends EventEmitter {
   private tutorialSessions: Map<string, TutorialSession> = new Map();
   private tutorialModules: Map<string, TutorialModule[]> = new Map();
-  private analytics: TutorialAnalytics;
+  private analytics!: TutorialAnalytics;
 
   constructor() {
     super();
@@ -552,6 +553,36 @@ export class InteractiveTutorialSystem extends EventEmitter {
   }
 
   /**
+   * Start tutorial step
+   */
+  public async startTutorialStep(
+    sessionId: string,
+    moduleId: string,
+    stepId: string
+  ): Promise<void> {
+    const session = this.tutorialSessions.get(sessionId);
+    if (!session) {
+      throw new Error('Tutorial session not found');
+    }
+
+    const module = session.modules.find(m => m.id === moduleId);
+    if (!module) {
+      throw new Error('Tutorial module not found');
+    }
+
+    const step = module.steps.find(s => s.id === stepId);
+    if (!step) {
+      throw new Error('Tutorial step not found');
+    }
+
+    step.status = 'in_progress';
+    step.startTime = new Date();
+
+    console.log(`▶️ Tutorial step started: ${stepId}`);
+    this.emit('tutorialStepStarted', { session, module, step });
+  }
+
+  /**
    * Complete tutorial step
    */
   public async completeTutorialStep(
@@ -574,6 +605,11 @@ export class InteractiveTutorialSystem extends EventEmitter {
     const step = module.steps.find(s => s.id === stepId);
     if (!step) {
       throw new Error('Tutorial step not found');
+    }
+
+    // Set start time if not already set
+    if (!step.startTime) {
+      step.startTime = new Date();
     }
 
     step.status = 'completed';

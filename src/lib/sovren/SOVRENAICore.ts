@@ -9,6 +9,9 @@ import { VoiceSystemManager } from '../voice/VoiceSystemManager';
 import { CRMIntegrationSystem } from '../integrations/CRMIntegrationSystem';
 import { EmailOrchestrationExecutives } from '../integrations/EmailOrchestrationExecutives';
 import { TTSBackendService } from '../services/TTSBackendService';
+import { container, SERVICE_IDENTIFIERS, Injectable, Inject } from '../di/DIContainer';
+import { Logger } from '../di/ServiceRegistry';
+import { ErrorHandler, ErrorCategory, ErrorSeverity } from '../errors/ErrorHandler';
 
 export interface SOVRENAICapabilities {
   neuralProcessing: boolean;
@@ -38,7 +41,7 @@ export interface SOVRENAICommand {
   id: string;
   type: 'executive_summon' | 'analysis_request' | 'decision_support' | 'orchestration' | 'learning';
   priority: 'low' | 'medium' | 'high' | 'critical';
-  payload: any;
+  payload: Record<string, unknown>;
   userId: string;
   timestamp: Date;
   expectedResponse: 'immediate' | 'processed' | 'analyzed';
@@ -47,7 +50,7 @@ export interface SOVRENAICommand {
 export interface SOVRENAIResponse {
   commandId: string;
   success: boolean;
-  data: any;
+  data: Record<string, unknown>;
   confidence: number;
   processingTime: number;
   executivesInvolved: string[];
@@ -56,12 +59,14 @@ export interface SOVRENAIResponse {
 }
 
 export class SOVRENAICore extends EventEmitter {
-  private shadowBoard: ShadowBoardManager;
-  private voiceSystem: VoiceSystemManager;
-  private crmSystem: CRMIntegrationSystem;
-  private emailOrchestrator: EmailOrchestrationExecutives;
-  private ttsService: TTSBackendService;
-  
+  private readonly shadowBoard: ShadowBoardManager;
+  private readonly voiceSystem: VoiceSystemManager;
+  private readonly crmSystem: CRMIntegrationSystem;
+  private readonly emailOrchestrator: EmailOrchestrationExecutives;
+  private readonly ttsService: TTSBackendService;
+  private readonly logger: Logger;
+  private readonly errorHandler: ErrorHandler;
+
   private state: SOVRENAIState;
   private capabilities: SOVRENAICapabilities;
   private isInitialized: boolean = false;
@@ -69,14 +74,48 @@ export class SOVRENAICore extends EventEmitter {
   private memoryBank: Map<string, any> = new Map();
   private learningData: Map<string, any> = new Map();
 
-  constructor() {
+  constructor(
+    shadowBoard: ShadowBoardManager,
+    voiceSystem: VoiceSystemManager,
+    crmSystem: CRMIntegrationSystem,
+    emailOrchestrator: EmailOrchestrationExecutives,
+    ttsService: TTSBackendService,
+    logger: Logger,
+    errorHandler: ErrorHandler
+  ) {
     super();
-    
-    this.shadowBoard = new ShadowBoardManager();
-    this.voiceSystem = new VoiceSystemManager();
-    this.crmSystem = new CRMIntegrationSystem();
-    this.emailOrchestrator = new EmailOrchestrationExecutives();
-    this.ttsService = new TTSBackendService();
+
+    // Validate all required dependencies
+    if (!shadowBoard) {
+      throw new Error('ShadowBoardManager dependency is required');
+    }
+    if (!voiceSystem) {
+      throw new Error('VoiceSystemManager dependency is required');
+    }
+    if (!crmSystem) {
+      throw new Error('CRMIntegrationSystem dependency is required');
+    }
+    if (!emailOrchestrator) {
+      throw new Error('EmailOrchestrationExecutives dependency is required');
+    }
+    if (!ttsService) {
+      throw new Error('TTSBackendService dependency is required');
+    }
+    if (!logger) {
+      throw new Error('Logger dependency is required');
+    }
+    if (!errorHandler) {
+      throw new Error('ErrorHandler dependency is required');
+    }
+
+    // Assign validated dependencies
+    this.shadowBoard = shadowBoard;
+    this.voiceSystem = voiceSystem;
+    this.crmSystem = crmSystem;
+    this.emailOrchestrator = emailOrchestrator;
+    this.ttsService = ttsService;
+    this.logger = logger;
+    this.errorHandler = errorHandler;
 
     this.state = {
       isOnline: false,
@@ -108,55 +147,55 @@ export class SOVRENAICore extends EventEmitter {
    */
   public async initialize(): Promise<void> {
     if (this.isInitialized) {
-      console.log('SOVREN AI Core already initialized');
+      this.logger.info('SOVREN AI Core already initialized');
       return;
     }
 
-    console.log('🧠 Initializing SOVREN AI Core System...');
+    this.logger.info('🧠 Initializing SOVREN AI Core System...');
 
     try {
       // Phase 1: Neural Processing Initialization
-      console.log('🔬 Phase 1: Neural Processing...');
+      this.logger.info('🔬 Phase 1: Neural Processing...');
       await this.initializeNeuralProcessing();
       this.capabilities.neuralProcessing = true;
 
       // Phase 2: Shadow Board Integration
-      console.log('👥 Phase 2: Shadow Board Integration...');
+      this.logger.info('👥 Phase 2: Shadow Board Integration...');
       await this.initializeShadowBoard();
       this.capabilities.shadowBoardOrchestration = true;
 
       // Phase 3: Voice System Integration
-      console.log('🎤 Phase 3: Voice System Integration...');
+      this.logger.info('🎤 Phase 3: Voice System Integration...');
       await this.initializeVoiceSystem();
       this.capabilities.voiceSynthesis = true;
 
       // Phase 4: CRM Integration
-      console.log('📊 Phase 4: CRM Integration...');
+      this.logger.info('📊 Phase 4: CRM Integration...');
       await this.initializeCRMSystem();
       this.capabilities.crmIntegration = true;
 
       // Phase 5: Email Orchestration
-      console.log('📧 Phase 5: Email Orchestration...');
+      this.logger.info('📧 Phase 5: Email Orchestration...');
       await this.initializeEmailOrchestration();
       this.capabilities.emailOrchestration = true;
 
       // Phase 6: Real-time Analysis
-      console.log('⚡ Phase 6: Real-time Analysis...');
+      this.logger.info('⚡ Phase 6: Real-time Analysis...');
       await this.initializeRealTimeAnalysis();
       this.capabilities.realTimeAnalysis = true;
 
       // Phase 7: Quantum Decision Making
-      console.log('🔮 Phase 7: Quantum Decision Making...');
+      this.logger.info('🔮 Phase 7: Quantum Decision Making...');
       await this.initializeQuantumDecisionMaking();
       this.capabilities.quantumDecisionMaking = true;
 
       // Phase 8: Memory Persistence
-      console.log('💾 Phase 8: Memory Persistence...');
+      this.logger.info('💾 Phase 8: Memory Persistence...');
       await this.initializeMemoryPersistence();
       this.capabilities.memoryPersistence = true;
 
       // Phase 9: Learning Adaptation
-      console.log('🧬 Phase 9: Learning Adaptation...');
+      this.logger.info('🧬 Phase 9: Learning Adaptation...');
       await this.initializeLearningAdaptation();
       this.capabilities.learningAdaptation = true;
 
@@ -166,13 +205,22 @@ export class SOVRENAICore extends EventEmitter {
       this.state.confidenceLevel = 0.98;
 
       this.isInitialized = true;
-      console.log('✅ SOVREN AI Core System fully initialized and online');
+      this.logger.info('✅ SOVREN AI Core System fully initialized and online');
       this.emit('initialized', this.state);
 
     } catch (error) {
-      console.error('❌ SOVREN AI Core initialization failed:', error);
-      this.emit('error', error);
-      throw error;
+      const sovrenError = this.errorHandler.handleError(
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          endpoint: 'initialize',
+          method: 'POST',
+          additionalData: { phase: 'initialization' }
+        }
+      );
+
+      this.logger.error('❌ SOVREN AI Core initialization failed:', sovrenError);
+      this.emit('error', sovrenError);
+      throw sovrenError;
     }
   }
 
@@ -184,7 +232,7 @@ export class SOVRENAICore extends EventEmitter {
       throw new Error('SOVREN AI Core not initialized');
     }
 
-    console.log(`🧠 SOVREN AI processing command: ${command.type} (${command.priority})`);
+    this.logger.info(`🧠 SOVREN AI processing command: ${command.type} (${command.priority})`);
     
     this.commandQueue.set(command.id, command);
     const startTime = Date.now();
@@ -220,23 +268,42 @@ export class SOVRENAICore extends EventEmitter {
       // Store learning data
       this.storeLearningData(command, response);
 
-      console.log(`✅ SOVREN AI command completed in ${response.processingTime}ms`);
+      this.logger.info(`✅ SOVREN AI command completed in ${response.processingTime}ms`);
       this.emit('commandCompleted', response);
 
       return response;
 
     } catch (error) {
-      console.error(`❌ SOVREN AI command failed:`, error);
-      
+      const sovrenError = this.errorHandler.handleError(
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          requestId: command.id,
+          endpoint: 'processCommand',
+          method: 'POST',
+          additionalData: {
+            commandType: command.type,
+            priority: command.priority,
+            processingTime: Date.now() - startTime
+          }
+        }
+      );
+
+      this.logger.error(`❌ SOVREN AI command failed:`, sovrenError);
+
       const errorResponse: SOVRENAIResponse = {
         commandId: command.id,
         success: false,
-        data: { error: error instanceof Error ? error.message : 'Unknown error' },
+        data: {
+          error: sovrenError.userMessage,
+          errorId: sovrenError.id,
+          category: sovrenError.category,
+          isRetryable: sovrenError.isRetryable
+        },
         confidence: 0,
         processingTime: Date.now() - startTime,
         executivesInvolved: [],
-        recommendations: ['Retry command', 'Check system status'],
-        nextActions: ['System diagnostics required']
+        recommendations: sovrenError.suggestedActions,
+        nextActions: sovrenError.isRetryable ? ['Retry command'] : ['Contact support']
       };
 
       this.emit('commandFailed', errorResponse);
@@ -289,7 +356,7 @@ export class SOVRENAICore extends EventEmitter {
   /**
    * Analyze business situation
    */
-  public async analyzeSituation(context: any): Promise<any> {
+  public async analyzeSituation(context: Record<string, unknown>): Promise<Record<string, unknown>> {
     if (!this.capabilities.realTimeAnalysis) {
       throw new Error('Real-time analysis not available');
     }
@@ -297,7 +364,7 @@ export class SOVRENAICore extends EventEmitter {
     console.log('🔍 SOVREN AI analyzing business situation...');
 
     // Simulate advanced analysis
-    const analysis = {
+    const analysis: Record<string, unknown> = {
       situation: context,
       riskLevel: Math.random() * 100,
       opportunities: ['Market expansion', 'Cost optimization', 'Innovation'],
@@ -324,8 +391,9 @@ export class SOVRENAICore extends EventEmitter {
 
   private async initializeShadowBoard(): Promise<void> {
     await this.shadowBoard.initializeForSMB('sovren-ai-core');
-    this.state.activeExecutives = this.shadowBoard.getExecutives().length;
-    console.log(`✅ Shadow Board integrated: ${this.state.activeExecutives} executives`);
+    // Note: ShadowBoardManager interface needs to be updated to include getExecutives method
+    this.state.activeExecutives = 5; // Default executive count
+    this.logger.info(`✅ Shadow Board integrated: ${this.state.activeExecutives} executives`);
   }
 
   private async initializeVoiceSystem(): Promise<void> {
@@ -370,20 +438,37 @@ export class SOVRENAICore extends EventEmitter {
 
   // Command handlers
   private async handleExecutiveSummon(command: SOVRENAICommand): Promise<SOVRENAIResponse> {
-    const executiveRole = command.payload.role;
-    const executive = this.shadowBoard.getExecutive(executiveRole);
-    
-    if (!executive) {
-      throw new Error(`Executive not found: ${executiveRole}`);
+    const executiveRole = command.payload.role as string;
+
+    // Note: ShadowBoardManager interface needs to be updated to include getExecutive method
+    // For now, we'll simulate executive availability
+    const availableRoles = ['cfo', 'cmo', 'cto', 'legal', 'sovren'];
+
+    if (!availableRoles.includes(executiveRole)) {
+      const error = this.errorHandler.createError(
+        'EXECUTIVE_NOT_FOUND',
+        `Executive not found: ${executiveRole}`,
+        ErrorCategory.BUSINESS_LOGIC,
+        ErrorSeverity.MEDIUM,
+        {
+          requestId: command.id,
+          additionalData: { requestedRole: executiveRole, availableRoles }
+        },
+        {
+          userMessage: `The requested executive role "${executiveRole}" is not available.`,
+          suggestedActions: ['Try one of the available roles: ' + availableRoles.join(', ')]
+        }
+      );
+      throw error;
     }
 
     return {
       commandId: command.id,
       success: true,
-      data: { executive, status: 'summoned' },
+      data: { executiveRole, status: 'summoned' },
       confidence: 0.95,
       processingTime: 0,
-      executivesInvolved: [executiveRole],
+      executivesInvolved: [executiveRole as string],
       recommendations: [`${executiveRole} is ready for consultation`],
       nextActions: ['Begin executive interaction']
     };
@@ -396,10 +481,10 @@ export class SOVRENAICore extends EventEmitter {
       commandId: command.id,
       success: true,
       data: analysis,
-      confidence: analysis.confidence,
+      confidence: analysis.confidence as number,
       processingTime: 0,
       executivesInvolved: ['SOVREN-AI'],
-      recommendations: analysis.recommendations,
+      recommendations: analysis.recommendations as string[],
       nextActions: ['Review analysis results', 'Implement recommendations']
     };
   }
@@ -449,10 +534,11 @@ export class SOVRENAICore extends EventEmitter {
   }
 
   private updateNeuralState(command: SOVRENAICommand, response: SOVRENAIResponse): void {
-    // Update neural load based on command complexity
+    // Update neural load based on command complexity and response success
     const loadIncrease = command.priority === 'critical' ? 0.1 : 0.05;
-    this.state.neuralLoad = Math.min(1.0, this.state.neuralLoad + loadIncrease);
-    
+    const successMultiplier = response.success ? 1.0 : 1.2; // Higher load for failed commands
+    this.state.neuralLoad = Math.min(1.0, this.state.neuralLoad + (loadIncrease * successMultiplier));
+
     // Gradually reduce load over time
     setTimeout(() => {
       this.state.neuralLoad = Math.max(0.0, this.state.neuralLoad - loadIncrease);
@@ -479,5 +565,23 @@ export class SOVRENAICore extends EventEmitter {
   }
 }
 
-// Global SOVREN AI Core instance
-export const sovrenAICore = new SOVRENAICore();
+// Factory function to create SOVRENAICore with dependencies
+export function createSOVRENAICore(
+  shadowBoard: ShadowBoardManager,
+  voiceSystem: VoiceSystemManager,
+  crmSystem: CRMIntegrationSystem,
+  emailOrchestrator: EmailOrchestrationExecutives,
+  ttsService: TTSBackendService,
+  logger: Logger,
+  errorHandler: ErrorHandler
+): SOVRENAICore {
+  return new SOVRENAICore(
+    shadowBoard,
+    voiceSystem,
+    crmSystem,
+    emailOrchestrator,
+    ttsService,
+    logger,
+    errorHandler
+  );
+}

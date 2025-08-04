@@ -5,6 +5,7 @@
  */
 
 import { EventEmitter } from 'events';
+import { randomBytes } from 'crypto';
 import { Worker } from 'worker_threads';
 import { b200OptimizationLayer, ParallelTask } from '../hardware/B200OptimizationLayer';
 import { bayesianConsciousnessEngine } from './BayesianConsciousnessEngine';
@@ -177,7 +178,7 @@ export class ParallelScenarioEngine extends EventEmitter {
         id: `scenario_${i}`,
         baseState: { ...parameters.baseState },
         variables: {},
-        randomSeed: Math.random()
+        randomSeed: this.generateSecureRandom()
       };
 
       // Sample each variable according to its distribution
@@ -205,7 +206,7 @@ export class ParallelScenarioEngine extends EventEmitter {
 
     switch (variable.distribution) {
       case 'uniform':
-        return min + Math.random() * (max - min);
+        return min + this.generateSecureRandom() * (max - min);
       
       case 'normal':
         const mean = (min + max) / 2;
@@ -222,7 +223,7 @@ export class ParallelScenarioEngine extends EventEmitter {
         return min + this.betaRandom(alpha, beta) * (max - min);
       
       default:
-        return min + Math.random() * (max - min);
+        return min + this.generateSecureRandom() * (max - min);
     }
   }
 
@@ -542,10 +543,10 @@ export class ParallelScenarioEngine extends EventEmitter {
       finalState: this.simulateScenarioExecution(scenario),
       trajectory: [],
       probability: 1 / data.batch.length,
-      utility: Math.random() * 100,
-      risk: Math.random() * 50,
+      utility: this.generateSecureRandom() * 100,
+      risk: this.generateSecureRandom() * 50,
       keyEvents: ['Event 1', 'Event 2'],
-      successMetrics: { metric1: Math.random() * 100 }
+      successMetrics: { metric1: this.generateSecureRandom() * 100 }
     }));
   }
 
@@ -553,28 +554,28 @@ export class ParallelScenarioEngine extends EventEmitter {
     // Simulate business state evolution
     return {
       financial: {
-        revenue: scenario.baseState.financial.revenue * (1 + Math.random() * 0.5),
-        expenses: scenario.baseState.financial.expenses * (1 + Math.random() * 0.3),
-        cashFlow: scenario.baseState.financial.cashFlow * (1 + Math.random() * 0.4),
-        growth: Math.random() * 0.3
+        revenue: scenario.baseState.financial.revenue * (1 + this.generateSecureRandom() * 0.5),
+        expenses: scenario.baseState.financial.expenses * (1 + this.generateSecureRandom() * 0.3),
+        cashFlow: scenario.baseState.financial.cashFlow * (1 + this.generateSecureRandom() * 0.4),
+        growth: this.generateSecureRandom() * 0.3
       },
       operational: {
-        efficiency: Math.min(100, scenario.baseState.operational.efficiency + Math.random() * 20),
-        capacity: Math.min(100, scenario.baseState.operational.capacity + Math.random() * 15),
-        quality: Math.min(100, scenario.baseState.operational.quality + Math.random() * 10),
-        automation: Math.min(100, scenario.baseState.operational.automation + Math.random() * 25)
+        efficiency: Math.min(100, scenario.baseState.operational.efficiency + this.generateSecureRandom() * 20),
+        capacity: Math.min(100, scenario.baseState.operational.capacity + this.generateSecureRandom() * 15),
+        quality: Math.min(100, scenario.baseState.operational.quality + this.generateSecureRandom() * 10),
+        automation: Math.min(100, scenario.baseState.operational.automation + this.generateSecureRandom() * 25)
       },
       market: {
-        position: Math.min(100, scenario.baseState.market.position + Math.random() * 20),
-        share: Math.min(100, scenario.baseState.market.share + Math.random() * 15),
-        competition: scenario.baseState.market.competition + Math.random() * 10,
-        demand: scenario.baseState.market.demand + Math.random() * 20
+        position: Math.min(100, scenario.baseState.market.position + this.generateSecureRandom() * 20),
+        share: Math.min(100, scenario.baseState.market.share + this.generateSecureRandom() * 15),
+        competition: scenario.baseState.market.competition + this.generateSecureRandom() * 10,
+        demand: scenario.baseState.market.demand + this.generateSecureRandom() * 20
       },
       strategic: {
-        alignment: Math.min(100, scenario.baseState.strategic.alignment + Math.random() * 15),
-        execution: Math.min(100, scenario.baseState.strategic.execution + Math.random() * 20),
-        innovation: Math.min(100, scenario.baseState.strategic.innovation + Math.random() * 25),
-        risk: Math.max(0, scenario.baseState.strategic.risk - Math.random() * 10)
+        alignment: Math.min(100, scenario.baseState.strategic.alignment + this.generateSecureRandom() * 15),
+        execution: Math.min(100, scenario.baseState.strategic.execution + this.generateSecureRandom() * 20),
+        innovation: Math.min(100, scenario.baseState.strategic.innovation + this.generateSecureRandom() * 25),
+        risk: Math.max(0, scenario.baseState.strategic.risk - this.generateSecureRandom() * 10)
       }
     };
   }
@@ -592,18 +593,95 @@ export class ParallelScenarioEngine extends EventEmitter {
   }
 
   private checkConstraints(result: ScenarioResult, constraints: Constraint[]): number {
-    // Simplified constraint checking
-    return Math.random() * 2; // 0-2 violations
+    // Real constraint checking based on business logic
+    let violations = 0;
+
+    for (const constraint of constraints) {
+      const value = this.extractConstraintValue(result, constraint);
+      if (!this.isConstraintSatisfied(value, constraint)) {
+        violations++;
+      }
+    }
+
+    return violations;
   }
 
   private calculateObjectiveScore(result: ScenarioResult, objectives: Objective[]): number {
-    // Simplified objective scoring
-    return 0.5 + Math.random() * 0.5; // 0.5-1.0
+    // Real objective scoring based on weighted criteria
+    let totalScore = 0;
+    let totalWeight = 0;
+
+    for (const objective of objectives) {
+      const value = this.extractObjectiveValue(result, objective);
+      const normalizedScore = this.normalizeObjectiveValue(value, objective);
+      totalScore += normalizedScore * objective.weight;
+      totalWeight += objective.weight;
+    }
+
+    return totalWeight > 0 ? totalScore / totalWeight : 0.5;
   }
 
   private checkBusinessLogicConsistency(result: ScenarioResult): number {
-    // Simplified consistency check
-    return 0.8 + Math.random() * 0.2; // 0.8-1.0
+    // Real business logic consistency checking
+    let consistencyScore = 1.0;
+
+    // Check financial consistency
+    if (result.finalState.financial.revenue < result.finalState.financial.expenses) {
+      consistencyScore -= 0.1; // Revenue should generally exceed expenses
+    }
+
+    // Check operational consistency
+    if (result.finalState.operational.efficiency > 95 && result.finalState.operational.quality < 80) {
+      consistencyScore -= 0.1; // High efficiency with low quality is inconsistent
+    }
+
+    // Check market consistency
+    if (result.finalState.market.share > 50 && result.finalState.market.position < 70) {
+      consistencyScore -= 0.1; // High market share should correlate with good position
+    }
+
+    return Math.max(0.5, consistencyScore);
+  }
+
+  private extractConstraintValue(result: ScenarioResult, constraint: Constraint): number {
+    // Extract value based on constraint type
+    switch (constraint.type) {
+      case 'financial':
+        return result.finalState.financial.revenue;
+      case 'operational':
+        return result.finalState.operational.efficiency;
+      case 'market':
+        return result.finalState.market.share;
+      default:
+        return 0;
+    }
+  }
+
+  private isConstraintSatisfied(value: number, constraint: Constraint): boolean {
+    return value >= constraint.minValue && value <= constraint.maxValue;
+  }
+
+  private extractObjectiveValue(result: ScenarioResult, objective: Objective): number {
+    // Extract value based on objective type
+    switch (objective.type) {
+      case 'maximize_revenue':
+        return result.finalState.financial.revenue;
+      case 'minimize_cost':
+        return -result.finalState.financial.expenses;
+      case 'improve_efficiency':
+        return result.finalState.operational.efficiency;
+      default:
+        return 0;
+    }
+  }
+
+  private normalizeObjectiveValue(value: number, objective: Objective): number {
+    // Normalize value to 0-1 range based on objective bounds
+    const range = objective.maxValue - objective.minValue;
+    if (range === 0) return 0.5;
+
+    const normalized = (value - objective.minValue) / range;
+    return Math.max(0, Math.min(1, normalized));
   }
 
   private identifySuccessFactors(scenarios: ScenarioResult[]): string[] {
@@ -631,22 +709,31 @@ export class ParallelScenarioEngine extends EventEmitter {
   }
 
   private normalRandom(mean: number, std: number): number {
-    // Box-Muller transformation
-    const u1 = Math.random();
-    const u2 = Math.random();
+    // Box-Muller transformation with secure random
+    const u1 = this.generateSecureRandom();
+    const u2 = this.generateSecureRandom();
     const z0 = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
     return mean + std * z0;
   }
 
   private exponentialRandom(lambda: number): number {
-    return -Math.log(Math.random()) / lambda;
+    return -Math.log(this.generateSecureRandom()) / lambda;
   }
 
   private betaRandom(alpha: number, beta: number): number {
-    // Simplified beta distribution
-    const x = Math.pow(Math.random(), 1 / alpha);
-    const y = Math.pow(Math.random(), 1 / beta);
+    // Simplified beta distribution with secure random
+    const x = Math.pow(this.generateSecureRandom(), 1 / alpha);
+    const y = Math.pow(this.generateSecureRandom(), 1 / beta);
     return x / (x + y);
+  }
+
+  /**
+   * Generate cryptographically secure random number between 0 and 1
+   */
+  private generateSecureRandom(): number {
+    const bytes = randomBytes(4);
+    const uint32 = bytes.readUInt32BE(0);
+    return uint32 / 0xFFFFFFFF;
   }
 
   private cacheResults(parameters: ScenarioParameters, results: ScenarioResult[]): void {
@@ -900,7 +987,7 @@ export class ParallelScenarioEngine extends EventEmitter {
       if ((index + varIndex) % 2 === 0) { // Quantum superposition pattern
         const [min, max] = variable.range;
         const range = max - min;
-        const mutation = (Math.random() - 0.5) * range * mutationStrength;
+        const mutation = (this.generateSecureRandom() - 0.5) * range * mutationStrength;
 
         variable.range = [
           Math.max(min, min + mutation),
@@ -915,9 +1002,9 @@ export class ParallelScenarioEngine extends EventEmitter {
   /**
    * Generate quantum state representation
    */
-  private generateQuantumState(layer: number, index: number): any {
+  private generateQuantumState(layer: number, index: number): { superposition: number; entanglement: number; coherence: number; phase: number } {
     return {
-      superposition: Math.random(),
+      superposition: this.generateSecureRandom(),
       entanglement: (layer + index) % 3,
       coherence: 1 - (layer * 0.1),
       phase: (index * Math.PI) / 4

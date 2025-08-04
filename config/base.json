@@ -1,0 +1,218 @@
+{
+  "version": "1.0.0",
+  "features": {
+    "voiceSynthesis": true,
+    "shadowBoard": true,
+    "crmIntegration": true,
+    "emailOrchestration": true,
+    "realTimeAnalysis": true,
+    "quantumDecisionMaking": false,
+    "memoryPersistence": true,
+    "learningAdaptation": true,
+    "performanceOptimization": true,
+    "advancedSecurity": true,
+    "multiTenant": false,
+    "apiVersioning": true
+  },
+  "limits": {
+    "maxConcurrentUsers": 1000,
+    "maxRequestsPerMinute": 10000,
+    "maxFileSize": 10485760,
+    "maxAudioDuration": 300,
+    "maxExecutivesPerUser": 8,
+    "maxIntegrationsPerUser": 10,
+    "maxSessionDuration": 86400000,
+    "maxUploadSize": 52428800
+  },
+  "security": {
+    "jwt": {
+      "expiresIn": "24h",
+      "issuer": "sovren-ai",
+      "audience": "sovren-ai-users",
+      "algorithm": "HS256"
+    },
+    "bcrypt": {
+      "rounds": 12
+    },
+    "rateLimiting": {
+      "enabled": true,
+      "windowMs": 900000,
+      "max": 1000,
+      "message": "Too many requests from this IP",
+      "standardHeaders": true,
+      "legacyHeaders": false,
+      "skipSuccessfulRequests": false,
+      "skipFailedRequests": false
+    },
+    "cors": {
+      "enabled": true,
+      "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+      "allowedHeaders": ["Content-Type", "Authorization", "X-Requested-With"],
+      "credentials": true,
+      "maxAge": 86400,
+      "preflightContinue": false,
+      "optionsSuccessStatus": 204
+    },
+    "csp": {
+      "enabled": true,
+      "directives": {
+        "default-src": ["'self'"],
+        "script-src": ["'self'", "'unsafe-inline'"],
+        "style-src": ["'self'", "'unsafe-inline'"],
+        "img-src": ["'self'", "data:", "https:"],
+        "font-src": ["'self'"],
+        "connect-src": ["'self'"],
+        "media-src": ["'self'"],
+        "object-src": ["'none'"],
+        "frame-src": ["'none'"]
+      },
+      "reportOnly": false
+    },
+    "headers": {
+      "hsts": {
+        "enabled": true,
+        "maxAge": 31536000,
+        "includeSubDomains": true,
+        "preload": true
+      },
+      "xFrameOptions": "DENY",
+      "xContentTypeOptions": true,
+      "xXSSProtection": true,
+      "referrerPolicy": "strict-origin-when-cross-origin",
+      "permissionsPolicy": {
+        "camera": ["none"],
+        "microphone": ["none"],
+        "geolocation": ["none"],
+        "payment": ["none"],
+        "usb": ["none"]
+      }
+    }
+  },
+  "tts": {
+    "enabled": true,
+    "maxConcurrentSynthesis": 5,
+    "maxTextLength": 5000,
+    "defaultVoice": "sovren-ai-neural",
+    "cacheEnabled": true,
+    "cacheMaxSize": 1000,
+    "cacheTTL": 3600000,
+    "supportedFormats": ["wav", "mp3", "ogg"],
+    "defaultFormat": "wav",
+    "defaultSampleRate": 22050,
+    "qualitySettings": {
+      "low": {
+        "sampleRate": 16000,
+        "bitRate": 64
+      },
+      "medium": {
+        "sampleRate": 22050,
+        "bitRate": 128
+      },
+      "high": {
+        "sampleRate": 44100,
+        "bitRate": 256
+      },
+      "premium": {
+        "sampleRate": 48000,
+        "bitRate": 320
+      }
+    }
+  },
+  "shadowBoard": {
+    "enabled": true,
+    "maxExecutives": 8,
+    "defaultTier": "SMB",
+    "executiveRoles": ["cfo", "cmo", "cto", "legal", "sovren"],
+    "defaultExecutives": [
+      {
+        "role": "cfo",
+        "name": "Sarah Chen",
+        "voiceModel": "cfo-analytical",
+        "personality": "analytical"
+      },
+      {
+        "role": "cmo",
+        "name": "Marcus Rivera",
+        "voiceModel": "cmo-persuasive",
+        "personality": "persuasive"
+      },
+      {
+        "role": "cto",
+        "name": "Alex Kim",
+        "voiceModel": "cto-technical",
+        "personality": "technical"
+      },
+      {
+        "role": "legal",
+        "name": "Diana Blackstone",
+        "voiceModel": "legal-diplomatic",
+        "personality": "diplomatic"
+      }
+    ]
+  },
+  "email": {
+    "provider": "smtp",
+    "from": "noreply@sovren.ai",
+    "templates": {
+      "welcome": "welcome",
+      "passwordReset": "password-reset",
+      "accountLocked": "account-locked",
+      "systemAlert": "system-alert"
+    }
+  },
+  "storage": {
+    "provider": "local"
+  },
+  "monitoring": {
+    "enabled": true,
+    "metricsPort": 9090,
+    "healthCheckInterval": 30000,
+    "alerting": {
+      "enabled": false,
+      "email": "admin@sovren.ai",
+      "thresholds": {
+        "cpuUsage": 80,
+        "memoryUsage": 85,
+        "responseTime": 1000,
+        "errorRate": 5
+      }
+    },
+    "logging": {
+      "level": "info",
+      "format": "json",
+      "file": {
+        "enabled": true,
+        "path": "./logs",
+        "maxSize": "10m",
+        "maxFiles": 5
+      },
+      "console": {
+        "enabled": true,
+        "colorize": true
+      }
+    }
+  },
+  "performance": {
+    "optimization": {
+      "enabled": true,
+      "cacheMaxSize": 1000,
+      "maxConcurrentRequests": 100,
+      "requestTimeout": 30000,
+      "keepAliveTimeout": 5000
+    },
+    "clustering": {
+      "enabled": false,
+      "workers": "auto"
+    },
+    "compression": {
+      "enabled": true,
+      "level": 6,
+      "threshold": 1024
+    },
+    "staticFiles": {
+      "maxAge": 31536000,
+      "etag": true,
+      "lastModified": true
+    }
+  }
+}

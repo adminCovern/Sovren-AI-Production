@@ -389,7 +389,7 @@ export class ShadowBoardInitializer extends EventEmitter {
 
   private selectOptimalGender(role: string, config: ShadowBoardConfiguration): 'male' | 'female' {
     // Psychological optimization based on research
-    const genderOptimization = {
+    const genderOptimization: Record<string, 'male' | 'female'> = {
       'cfo': config.tier === 'SMB' ? 'female' : 'male', // Trust optimization
       'cmo': 'female', // Marketing creativity and empathy
       'cto': 'male', // Technical authority (though this is changing)

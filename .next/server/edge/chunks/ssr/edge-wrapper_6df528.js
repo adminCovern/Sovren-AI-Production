@@ -1,7 +1,7 @@
 (globalThis.TURBOPACK = globalThis.TURBOPACK || []).push([
-    "chunks/ssr/edge-wrapper_6df528.js",
+    "chunks/ssr/edge-wrapper_28919d.js",
     {},
-    {"otherChunks":["chunks/ssr/_9a627e._.js","chunks/ssr/src_97c151._.js"],"runtimeModuleIds":["[project]/edge-wrapper.js { MODULE => \"[project]/node_modules/next/dist/esm/build/templates/middleware.js { INNER_MIDDLEWARE_MODULE => \\\"[project]/src/middleware.ts [middleware] (ecmascript)\\\" } [middleware] (ecmascript)\" } [middleware] (ecmascript)"]}
+    {"otherChunks":["chunks/ssr/_f4e033._.js","chunks/ssr/src_97c151._.js"],"runtimeModuleIds":["[project]/edge-wrapper.js { MODULE => \"[project]/node_modules/next/dist/esm/build/templates/middleware.js { INNER_MIDDLEWARE_MODULE => \\\"[project]/src/middleware.ts [middleware] (ecmascript)\\\" } [middleware] (ecmascript)\" } [middleware] (ecmascript)"]}
 ]);
 (() => {
 if (!Array.isArray(globalThis.TURBOPACK)) {
@@ -1501,4 +1501,4 @@ chunksToRegister.forEach(registerChunk);
 })();
 
 
-//# sourceMappingURL=edge-wrapper_6df528.js.map
+//# sourceMappingURL=edge-wrapper_28919d.js.map

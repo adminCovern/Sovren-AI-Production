@@ -337,7 +337,7 @@ export class OnboardingCompletionValidator extends EventEmitter {
 
       case 'first_executive_interaction':
         // This would be checked against actual interaction logs
-        const hasInteraction = session.tutorial?.interactionCount > 0 || false;
+        const hasInteraction = (session.tutorial?.interactionCount || 0) > 0;
         criterion.status = hasInteraction ? 'passed' : 'warning';
         criterion.score = hasInteraction ? 100 : 0;
         criterion.evidence = [

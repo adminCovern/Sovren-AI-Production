@@ -267,7 +267,7 @@ export class MarketLaunchStrategy extends EventEmitter {
 
     } catch (error) {
       console.error('Market launch failed:', error);
-      this.emit('launchFailed', { launchId, error: error.message });
+      this.emit('launchFailed', { launchId, error: error instanceof Error ? error.message : String(error) });
       throw error;
     } finally {
       this.isLaunching = false;

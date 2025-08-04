@@ -57,7 +57,7 @@ export interface IndustryBenchmarks {
 }
 
 export class SOVRENScoreEngine extends EventEmitter {
-  private industryBenchmarks: IndustryBenchmarks;
+  private industryBenchmarks!: IndustryBenchmarks;
   private historicalScores: Map<string, SOVRENScoreResult[]> = new Map();
   private realTimeMetrics: Map<string, BusinessMetrics> = new Map();
 

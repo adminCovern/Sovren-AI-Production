@@ -12,12 +12,44 @@ export interface StyleTTS2Config {
   enableWebAssembly: boolean;
 }
 
+export interface StyleTTS2ConfigData {
+  model_config: {
+    hidden_channels: number;
+    filter_channels: number;
+    n_heads: number;
+    n_layers: number;
+    kernel_size: number;
+    p_dropout: number;
+    resblock: string;
+    resblock_kernel_sizes: number[];
+    resblock_dilation_sizes: number[][];
+    upsample_rates: number[];
+    upsample_initial_channel: number;
+    upsample_kernel_sizes: number[];
+  };
+  vocoder_config: {
+    sampling_rate: number;
+    hop_length: number;
+    win_length: number;
+    n_fft: number;
+    mel_channels: number;
+    n_mels: number;
+  };
+  training_config: {
+    learning_rate: number;
+    batch_size: number;
+    max_epochs: number;
+    warmup_steps: number;
+  };
+  [key: string]: unknown;
+}
+
 export interface StyleTTS2Model {
   id: string;
   name: string;
   modelData: ArrayBuffer;
   vocoderData: ArrayBuffer;
-  configData: any;
+  configData: StyleTTS2ConfigData;
   isLoaded: boolean;
   loadTime: number;
   memoryUsage: number;
@@ -38,12 +70,35 @@ export interface SynthesisParameters {
   };
 }
 
+export interface WebAssemblyModule {
+  instance: WebAssembly.Instance;
+  module: WebAssembly.Module;
+  synthesize: (text: string, model: StyleTTS2Model, params: SynthesisParameters) => Promise<Float32Array>;
+  loadModel: (modelData: ArrayBuffer) => boolean;
+  setParameters: (params: SynthesisParameters) => void;
+  exports: {
+    getMemory: () => WebAssembly.Memory;
+    malloc: (size: number) => number;
+    free: (ptr: number) => void;
+  };
+}
+
+export interface WebGPUDevice {
+  createBuffer: (descriptor: unknown) => unknown;
+  createComputePipeline: (descriptor: unknown) => unknown;
+  createCommandEncoder: () => unknown;
+  queue: unknown;
+  limits: unknown;
+  features: unknown;
+  destroy?: () => void;
+}
+
 export class StyleTTS2Engine {
   private config: StyleTTS2Config;
   private models: Map<string, StyleTTS2Model> = new Map();
-  private wasmModule: any = null;
+  private wasmModule: WebAssemblyModule | null = null;
   private isInitialized: boolean = false;
-  private webGPUDevice: any | null = null;
+  private webGPUDevice: WebGPUDevice | null = null;
   private audioContext: AudioContext | null = null;
   private eventListeners: Map<string, Function[]> = new Map();
 
@@ -107,9 +162,16 @@ export class StyleTTS2Engine {
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       this.wasmModule = {
+        instance: {} as WebAssembly.Instance,
+        module: {} as WebAssembly.Module,
         synthesize: this.wasmSynthesize.bind(this),
         loadModel: this.wasmLoadModel.bind(this),
-        setParameters: this.wasmSetParameters.bind(this)
+        setParameters: this.wasmSetParameters.bind(this),
+        exports: {
+          getMemory: () => new WebAssembly.Memory({ initial: 1 }),
+          malloc: (size: number) => size,
+          free: (ptr: number) => ptr
+        }
       };
       
       console.log('✓ WebAssembly module loaded');
@@ -122,11 +184,12 @@ export class StyleTTS2Engine {
 
   private async initializeWebGPU(): Promise<void> {
     try {
-      if (!(navigator as any).gpu) {
+      const navigatorWithGPU = navigator as Navigator & { gpu?: { requestAdapter(): Promise<unknown> } };
+      if (!navigatorWithGPU.gpu) {
         throw new Error('WebGPU not supported');
       }
 
-      const adapter = await (navigator as any).gpu.requestAdapter();
+      const adapter = await navigatorWithGPU.gpu.requestAdapter() as { requestDevice(): Promise<WebGPUDevice> } | null;
       if (!adapter) {
         throw new Error('No WebGPU adapter found');
       }
@@ -212,7 +275,13 @@ export class StyleTTS2Engine {
     await Promise.all(loadPromises);
   }
 
-  private async loadModel(modelInfo: any): Promise<void> {
+  private async loadModel(modelInfo: {
+    id: string;
+    name: string;
+    modelPath: string;
+    vocoderPath: string;
+    configPath: string;
+  }): Promise<void> {
     try {
       console.log(`Loading StyleTTS2 model: ${modelInfo.name}`);
       
@@ -307,19 +376,39 @@ export class StyleTTS2Engine {
     return bytes.buffer;
   }
 
-  private async loadConfigData(_path: string): Promise<any> {
+  private async loadConfigData(_path: string): Promise<StyleTTS2ConfigData> {
     // Simulate config loading
     await new Promise(resolve => setTimeout(resolve, 100));
-    
+
     return {
-      sample_rate: 22050,
-      hop_length: 256,
-      win_length: 1024,
-      n_mel: 80,
-      n_fft: 1024,
-      f_min: 0,
-      f_max: 11025,
-      max_wav_value: 32768.0
+      model_config: {
+        hidden_channels: 192,
+        filter_channels: 768,
+        n_heads: 2,
+        n_layers: 6,
+        kernel_size: 3,
+        p_dropout: 0.1,
+        resblock: "1",
+        resblock_kernel_sizes: [3, 7, 11],
+        resblock_dilation_sizes: [[1, 3, 5], [1, 3, 5], [1, 3, 5]],
+        upsample_rates: [8, 8, 2, 2],
+        upsample_initial_channel: 512,
+        upsample_kernel_sizes: [16, 16, 4, 4]
+      },
+      vocoder_config: {
+        sampling_rate: 22050,
+        hop_length: 256,
+        win_length: 1024,
+        n_fft: 1024,
+        mel_channels: 80,
+        n_mels: 80
+      },
+      training_config: {
+        learning_rate: 0.0002,
+        batch_size: 16,
+        max_epochs: 1000,
+        warmup_steps: 4000
+      }
     };
   }
 
@@ -513,8 +602,9 @@ export class StyleTTS2Engine {
     return true;
   }
 
-  private wasmSetParameters(params: any): void {
+  private wasmSetParameters(params: SynthesisParameters): void {
     // Would set WASM parameters
+    console.log('Setting WASM parameters:', params);
   }
 
   public getLoadedModels(): StyleTTS2Model[] {
@@ -546,7 +636,7 @@ export class StyleTTS2Engine {
     }
   }
 
-  private emit(event: string, data?: any): void {
+  private emit(event: string, data?: unknown): void {
     const listeners = this.eventListeners.get(event);
     if (listeners) {
       listeners.forEach(callback => callback(data));
@@ -567,7 +657,7 @@ export class StyleTTS2Engine {
     
     // Clean up WebGPU
     if (this.webGPUDevice) {
-      this.webGPUDevice.destroy();
+      this.webGPUDevice.destroy?.();
       this.webGPUDevice = null;
     }
     

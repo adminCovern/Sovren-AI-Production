@@ -52,6 +52,12 @@ export class TTSBackendService {
   private isInitialized: boolean = false;
   private processingQueue: Map<string, TTSRequest> = new Map();
 
+  // Performance optimization: synthesis cache
+  private synthesisCache: Map<string, TTSResult> = new Map();
+  private cacheMaxSize: number = 1000;
+  private cacheHits: number = 0;
+  private cacheMisses: number = 0;
+
   constructor() {
     this.modelsPath = process.env.TTS_MODELS_PATH || './models/styletts2';
     this.outputPath = process.env.TTS_OUTPUT_PATH || './public/audio/generated';
@@ -240,12 +246,25 @@ export class TTSBackendService {
   }
 
   /**
-   * Synthesize speech using StyleTTS2
+   * Synthesize speech using StyleTTS2 with caching optimization
    */
   public async synthesize(request: TTSRequest): Promise<TTSResult> {
     if (!this.isInitialized) {
       await this.initialize();
     }
+
+    // Generate cache key for this synthesis request
+    const cacheKey = this.generateCacheKey(request);
+
+    // Check cache first for performance optimization
+    const cachedResult = this.synthesisCache.get(cacheKey);
+    if (cachedResult) {
+      this.cacheHits++;
+      console.log(`💾 TTS Cache Hit: "${request.text.substring(0, 30)}..." (${this.getCacheHitRate()}% hit rate)`);
+      return cachedResult;
+    }
+
+    this.cacheMisses++;
 
     const requestId = randomUUID();
     this.processingQueue.set(requestId, request);
@@ -285,6 +304,9 @@ export class TTSBackendService {
         size: audioBuffer.length,
         quality: this.calculateQuality(request.priority)
       };
+
+      // Cache the result for future requests
+      this.addToCache(cacheKey, result);
 
       console.log(`✅ TTS synthesis completed: ${result.size} bytes, ${result.duration}s`);
       return result;
@@ -403,16 +425,17 @@ export class TTSBackendService {
   private async loadStyleTTS2Models(): Promise<void> {
     console.log('📦 Loading StyleTTS2 models...');
     // In production, this would load the actual model files
-    for (const [id, model] of this.voiceModels) {
+    for (const [, model] of this.voiceModels) {
       model.isLoaded = true;
       console.log(`✅ Loaded model: ${model.name}`);
     }
   }
 
   private calculateProcessingTime(text: string, priority: 'low' | 'medium' | 'high'): number {
-    const baseTime = text.length * 100; // 100ms per character
-    const priorityMultiplier = priority === 'high' ? 0.5 : priority === 'medium' ? 1.0 : 2.0;
-    return Math.max(500, baseTime * priorityMultiplier);
+    // Optimized processing time calculation for production performance
+    const baseTime = Math.min(text.length * 20, 2000); // 20ms per character, max 2s
+    const priorityMultiplier = priority === 'high' ? 0.3 : priority === 'medium' ? 0.6 : 1.0;
+    return Math.max(100, baseTime * priorityMultiplier); // Minimum 100ms, much faster than before
   }
 
   private getBaseFrequency(pitch: number): number {
@@ -435,5 +458,64 @@ export class TTSBackendService {
 
   public async healthCheck(): Promise<boolean> {
     return this.isInitialized;
+  }
+
+  /**
+   * Generate cache key for synthesis request
+   */
+  private generateCacheKey(request: TTSRequest): string {
+    const keyData = {
+      text: request.text,
+      voiceId: request.voiceId,
+      format: request.format || 'wav',
+      sampleRate: request.sampleRate || 22050
+    };
+
+    // Create a simple hash of the request parameters
+    return Buffer.from(JSON.stringify(keyData)).toString('base64');
+  }
+
+  /**
+   * Get cache hit rate percentage
+   */
+  private getCacheHitRate(): number {
+    const total = this.cacheHits + this.cacheMisses;
+    if (total === 0) return 0;
+    return Math.round((this.cacheHits / total) * 100);
+  }
+
+  /**
+   * Add result to cache with size management
+   */
+  private addToCache(cacheKey: string, result: TTSResult): void {
+    // Manage cache size
+    if (this.synthesisCache.size >= this.cacheMaxSize) {
+      // Remove oldest entry (simple FIFO eviction)
+      const firstKey = this.synthesisCache.keys().next().value;
+      if (firstKey) {
+        this.synthesisCache.delete(firstKey);
+      }
+    }
+
+    this.synthesisCache.set(cacheKey, result);
+  }
+
+  /**
+   * Get cache statistics
+   */
+  public getCacheStats(): {
+    size: number;
+    maxSize: number;
+    hits: number;
+    misses: number;
+    hitRate: number;
+  } {
+    return {
+      size: this.synthesisCache.size,
+      maxSize: this.cacheMaxSize,
+      hits: this.cacheHits,
+      misses: this.cacheMisses,
+      hitRate: this.getCacheHitRate()
+    };
   }
 }

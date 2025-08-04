@@ -82,7 +82,7 @@ export interface PerformanceMetrics {
 }
 
 export class B200OptimizationLayer extends EventEmitter {
-  private b200Specs: B200Specifications;
+  private b200Specs!: B200Specifications;
   private workerPool: Worker[] = [];
   private gpuKernels: Map<string, GPUKernel> = new Map();
   private memoryPools: Map<string, MemoryPool> = new Map();
@@ -870,7 +870,8 @@ if (!isMainThread && parentPort) {
         parentPort!.postMessage({ data: results });
       }
     } catch (error) {
-      parentPort!.postMessage({ error: error.message });
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      parentPort!.postMessage({ error: errorMessage });
     }
   });
 }

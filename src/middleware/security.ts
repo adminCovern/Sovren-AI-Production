@@ -4,8 +4,9 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { rateLimit } from './rateLimit';
+import { createRateLimiter, getClientId } from './redisRateLimit';
 import { authSystem } from '@/lib/auth/AuthenticationSystem';
+import { csrfProtection } from '@/lib/security/CSRFProtection';
 
 export interface SecurityConfig {
   enableRateLimit: boolean;
@@ -13,13 +14,27 @@ export interface SecurityConfig {
   enableCSP: boolean;
   enableInputSanitization: boolean;
   enableJWTValidation: boolean;
+  enableCSRFProtection: boolean;
   allowedOrigins: string[];
   maxRequestsPerMinute: number;
+  message?: string;
+}
+
+export interface RateLimitInfo {
+  limit: number;
+  current: number;
+  remaining: number;
+  resetTime: Date;
+  allowed: boolean;
+}
+
+export interface RateLimiter {
+  checkLimit(key: string): Promise<RateLimitInfo>;
 }
 
 export class SecurityMiddleware {
   private config: SecurityConfig;
-  private rateLimiter: any;
+  private rateLimiter: RateLimiter | null = null;
 
   constructor(config?: Partial<SecurityConfig>) {
     this.config = {
@@ -28,6 +43,7 @@ export class SecurityMiddleware {
       enableCSP: true,
       enableInputSanitization: true,
       enableJWTValidation: true,
+      enableCSRFProtection: true,
       allowedOrigins: [
         'https://sovren.ai',
         'https://app.sovren.ai',
@@ -38,7 +54,7 @@ export class SecurityMiddleware {
     };
 
     if (this.config.enableRateLimit) {
-      this.rateLimiter = rateLimit({
+      this.rateLimiter = createRateLimiter({
         windowMs: 60 * 1000, // 1 minute
         max: this.config.maxRequestsPerMinute,
         message: 'Too many requests from this IP, please try again later.',
@@ -65,13 +81,19 @@ export class SecurityMiddleware {
         if (corsResult) return corsResult;
       }
 
-      // 3. JWT Validation for protected routes
+      // 3. CSRF Protection for state-changing requests
+      if (this.config.enableCSRFProtection) {
+        const csrfResult = await this.handleCSRFProtection(request);
+        if (csrfResult) return csrfResult;
+      }
+
+      // 4. JWT Validation for protected routes
       if (this.config.enableJWTValidation && this.isProtectedRoute(request)) {
         const authResult = await this.handleAuthentication(request);
         if (authResult) return authResult;
       }
 
-      // 4. Input Sanitization
+      // 5. Input Sanitization
       if (this.config.enableInputSanitization) {
         const sanitizationResult = await this.handleInputSanitization(request);
         if (sanitizationResult) return sanitizationResult;
@@ -90,32 +112,27 @@ export class SecurityMiddleware {
   }
 
   /**
-   * Handle rate limiting
+   * Handle rate limiting with Redis
    */
   private async handleRateLimit(request: NextRequest): Promise<NextResponse | null> {
-    const ip = this.getClientIP(request);
-    const key = `rate_limit:${ip}`;
-    
-    // Simple in-memory rate limiting (in production, use Redis)
-    const now = Date.now();
-    const windowStart = now - 60000; // 1 minute window
-    
-    // This would be implemented with Redis in production
-    const requestCount = await this.getRequestCount(key, windowStart);
-    
-    if (requestCount >= this.config.maxRequestsPerMinute) {
-      return new NextResponse('Rate limit exceeded', { 
+    if (!this.rateLimiter) return null;
+
+    const clientId = getClientId(request);
+    const rateLimitInfo = await this.rateLimiter.checkLimit(clientId);
+
+    if (!rateLimitInfo.allowed) {
+      return new NextResponse(this.config.message || 'Rate limit exceeded', {
         status: 429,
         headers: {
           'Retry-After': '60',
-          'X-RateLimit-Limit': this.config.maxRequestsPerMinute.toString(),
-          'X-RateLimit-Remaining': '0',
-          'X-RateLimit-Reset': Math.ceil((now + 60000) / 1000).toString()
+          'X-RateLimit-Limit': rateLimitInfo.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitInfo.remaining.toString(),
+          'X-RateLimit-Reset': Math.ceil(rateLimitInfo.resetTime.getTime() / 1000).toString(),
+          'X-RateLimit-Used': rateLimitInfo.current.toString()
         }
       });
     }
 
-    await this.incrementRequestCount(key);
     return null;
   }
 
@@ -180,29 +197,141 @@ export class SecurityMiddleware {
   }
 
   /**
-   * Handle input sanitization
+   * Handle CSRF protection
+   */
+  private async handleCSRFProtection(request: NextRequest): Promise<NextResponse | null> {
+    try {
+      return await csrfProtection.middleware(request);
+    } catch (error) {
+      console.error('CSRF protection error:', error);
+      return new NextResponse('CSRF protection error', { status: 500 });
+    }
+  }
+
+  /**
+   * Handle comprehensive input sanitization and validation
    */
   private async handleInputSanitization(request: NextRequest): Promise<NextResponse | null> {
-    if (request.method === 'POST' || request.method === 'PUT') {
+    if (request.method === 'POST' || request.method === 'PUT' || request.method === 'PATCH') {
       try {
         const contentType = request.headers.get('content-type');
-        
+
+        // Check content length
+        const contentLength = request.headers.get('content-length');
+        if (contentLength && parseInt(contentLength) > 10 * 1024 * 1024) { // 10MB limit
+          return new NextResponse('Request too large', { status: 413 });
+        }
+
         if (contentType?.includes('application/json')) {
           const body = await request.json();
-          const sanitizedBody = this.sanitizeObject(body);
-          
-          // In a real implementation, you'd need to modify the request body
-          // For now, we'll just validate it doesn't contain dangerous content
+
+          // Comprehensive validation
+          const validationResult = this.validateInput(body);
+          if (!validationResult.valid) {
+            return new NextResponse(`Input validation failed: ${validationResult.error}`, {
+              status: 400,
+              headers: {
+                'X-Validation-Error': validationResult.error || 'Unknown validation error'
+              }
+            });
+          }
+
+          // Check for dangerous content
           if (this.containsDangerousContent(body)) {
-            return new NextResponse('Invalid input detected', { status: 400 });
+            return new NextResponse('Potentially malicious content detected', {
+              status: 400,
+              headers: {
+                'X-Security-Error': 'Malicious content blocked'
+              }
+            });
           }
         }
+
+        // Validate URL parameters
+        const url = new URL(request.url);
+        for (const [key, value] of url.searchParams.entries()) {
+          if (this.containsDangerousContent({ [key]: value })) {
+            return new NextResponse('Invalid URL parameters', { status: 400 });
+          }
+        }
+
       } catch (error) {
-        return new NextResponse('Invalid request body', { status: 400 });
+        console.error('Input sanitization error:', error);
+        return new NextResponse('Invalid request format', { status: 400 });
       }
     }
 
     return null;
+  }
+
+  /**
+   * Comprehensive input validation
+   */
+  private validateInput(data: unknown): { valid: boolean; error?: string } {
+    // Check for null or undefined
+    if (data === null || data === undefined) {
+      return { valid: false, error: 'Data cannot be null or undefined' };
+    }
+
+    // Check for circular references
+    try {
+      JSON.stringify(data);
+    } catch (error) {
+      return { valid: false, error: 'Circular reference detected' };
+    }
+
+    // Check depth (prevent deep nesting attacks)
+    if (this.getObjectDepth(data) > 10) {
+      return { valid: false, error: 'Object nesting too deep' };
+    }
+
+    // Check for prototype pollution
+    if (this.hasPrototypePollution(data)) {
+      return { valid: false, error: 'Prototype pollution attempt detected' };
+    }
+
+    return { valid: true };
+  }
+
+  /**
+   * Check object depth
+   */
+  private getObjectDepth(obj: unknown, depth = 0): number {
+    if (depth > 10) return depth; // Prevent stack overflow
+
+    if (obj && typeof obj === 'object' && !Array.isArray(obj)) {
+      return Math.max(depth, ...Object.values(obj).map(v => this.getObjectDepth(v, depth + 1)));
+    }
+
+    if (Array.isArray(obj)) {
+      return Math.max(depth, ...obj.map(v => this.getObjectDepth(v, depth + 1)));
+    }
+
+    return depth;
+  }
+
+  /**
+   * Check for prototype pollution attempts
+   */
+  private hasPrototypePollution(obj: unknown): boolean {
+    const dangerousKeys = ['__proto__', 'constructor', 'prototype'];
+
+    if (obj && typeof obj === 'object' && obj !== null) {
+      const objRecord = obj as Record<string, unknown>;
+      for (const key of Object.keys(objRecord)) {
+        if (dangerousKeys.includes(key)) {
+          return true;
+        }
+
+        if (typeof objRecord[key] === 'object' && objRecord[key] !== null) {
+          if (this.hasPrototypePollution(objRecord[key])) {
+            return true;
+          }
+        }
+      }
+    }
+
+    return false;
   }
 
   /**
@@ -211,36 +340,66 @@ export class SecurityMiddleware {
   private addSecurityHeaders(response: NextResponse): void {
     // Content Security Policy
     if (this.config.enableCSP) {
-      response.headers.set('Content-Security-Policy', 
-        "default-src 'self'; " +
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://fonts.googleapis.com; " +
-        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
-        "font-src 'self' https://fonts.gstatic.com; " +
-        "img-src 'self' data: https:; " +
-        "connect-src 'self' wss: https:; " +
-        "media-src 'self'; " +
-        "object-src 'none'; " +
-        "base-uri 'self'; " +
-        "form-action 'self';"
-      );
+      // Enhanced CSP for production security
+      const csp = [
+        "default-src 'self'",
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://fonts.googleapis.com https://cdnjs.cloudflare.com",
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+        "font-src 'self' https://fonts.gstatic.com data:",
+        "img-src 'self' data: https: blob:",
+        "connect-src 'self' ws: wss: https:",
+        "media-src 'self' blob:",
+        "worker-src 'self' blob:",
+        "object-src 'none'",
+        "base-uri 'self'",
+        "form-action 'self'",
+        "frame-ancestors 'none'",
+        "upgrade-insecure-requests"
+      ].join('; ');
+
+      response.headers.set('Content-Security-Policy', csp);
     }
 
-    // Security headers
+    // Enhanced security headers
     response.headers.set('X-Frame-Options', 'DENY');
     response.headers.set('X-Content-Type-Options', 'nosniff');
+    response.headers.set('X-XSS-Protection', '1; mode=block');
     response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-    response.headers.set('Permissions-Policy', 
-      'camera=(), microphone=(), geolocation=(), payment=()');
-    
-    // HSTS (only in production with HTTPS)
+    response.headers.set('Cross-Origin-Embedder-Policy', 'require-corp');
+    response.headers.set('Cross-Origin-Opener-Policy', 'same-origin');
+    response.headers.set('Cross-Origin-Resource-Policy', 'same-origin');
+
+    // Enhanced Permissions Policy
+    const permissionsPolicy = [
+      'camera=()',
+      'microphone=()',
+      'geolocation=()',
+      'payment=()',
+      'usb=()',
+      'magnetometer=()',
+      'gyroscope=()',
+      'accelerometer=()',
+      'ambient-light-sensor=()',
+      'autoplay=()',
+      'encrypted-media=()',
+      'fullscreen=(self)',
+      'picture-in-picture=()'
+    ].join(', ');
+
+    response.headers.set('Permissions-Policy', permissionsPolicy);
+
+    // HSTS (enhanced for production)
     if (process.env.NODE_ENV === 'production') {
-      response.headers.set('Strict-Transport-Security', 
-        'max-age=31536000; includeSubDomains; preload');
+      response.headers.set('Strict-Transport-Security',
+        'max-age=63072000; includeSubDomains; preload');
     }
 
-    // Remove server information
+    // Remove server information and add additional security headers
     response.headers.delete('Server');
     response.headers.delete('X-Powered-By');
+    response.headers.set('X-DNS-Prefetch-Control', 'off');
+    response.headers.set('X-Download-Options', 'noopen');
+    response.headers.set('X-Permitted-Cross-Domain-Policies', 'none');
   }
 
   /**
@@ -296,23 +455,23 @@ export class SecurityMiddleware {
   /**
    * Sanitize object recursively
    */
-  private sanitizeObject(obj: any): any {
+  private sanitizeObject(obj: unknown): unknown {
     if (typeof obj === 'string') {
       return this.sanitizeString(obj);
     }
-    
+
     if (Array.isArray(obj)) {
       return obj.map(item => this.sanitizeObject(item));
     }
-    
+
     if (obj && typeof obj === 'object') {
-      const sanitized: any = {};
+      const sanitized: Record<string, unknown> = {};
       for (const [key, value] of Object.entries(obj)) {
         sanitized[this.sanitizeString(key)] = this.sanitizeObject(value);
       }
       return sanitized;
     }
-    
+
     return obj;
   }
 
@@ -329,31 +488,49 @@ export class SecurityMiddleware {
   }
 
   /**
-   * Check for dangerous content
+   * Enhanced dangerous content detection
    */
-  private containsDangerousContent(obj: any): boolean {
+  private containsDangerousContent(obj: unknown): boolean {
     const dangerousPatterns = [
-      /<script/i,
-      /javascript:/i,
-      /on\w+\s*=/i,
-      /<iframe/i,
-      /eval\s*\(/i,
-      /document\.cookie/i
+      // XSS patterns
+      /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi,
+      /<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi,
+      /javascript:/gi,
+      /on\w+\s*=/gi,
+      /data:text\/html/gi,
+      /vbscript:/gi,
+
+      // Code injection patterns
+      /eval\s*\(/gi,
+      /Function\s*\(/gi,
+      /setTimeout\s*\(/gi,
+      /setInterval\s*\(/gi,
+
+      // DOM manipulation
+      /document\.(cookie|domain|write)/gi,
+      /window\.(location|open)/gi,
+
+      // SQL injection patterns
+      /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC|UNION)\b)/gi,
+      /(--|\/\*|\*\/|;)/g,
+
+      // Command injection patterns
+      /(\||&|;|`|\$\(|\${)/g,
+
+      // Path traversal
+      /\.\.[\/\\]/g,
+
+      // LDAP injection
+      /(\*|\(|\)|\\|\/)/g,
+
+      // NoSQL injection
+      /(\$where|\$ne|\$gt|\$lt|\$regex)/gi
     ];
 
     const str = JSON.stringify(obj);
     return dangerousPatterns.some(pattern => pattern.test(str));
   }
 
-  // Placeholder methods for rate limiting (would use Redis in production)
-  private async getRequestCount(key: string, windowStart: number): Promise<number> {
-    // In production, this would query Redis
-    return 0;
-  }
-
-  private async incrementRequestCount(key: string): Promise<void> {
-    // In production, this would increment Redis counter
-  }
 }
 
 // Export configured security middleware

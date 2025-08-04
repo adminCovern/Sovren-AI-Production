@@ -4,7 +4,7 @@
  */
 
 import { ExecutiveVoiceRouter, SUBSCRIPTION_TIER_CONFIGS } from './ExecutiveVoiceRouter';
-import { VoiceSynthesizer } from './VoiceSynthesizer';
+import { VoiceSynthesizer, VoiceModel } from './VoiceSynthesizer';
 import { VoiceSystemManager } from './VoiceSystemManager';
 
 export class SubscriptionTierTest {
@@ -20,18 +20,18 @@ export class SubscriptionTierTest {
     const basicRouter = new ExecutiveVoiceRouter('sovren_proof');
     const basicExecutives = basicRouter.getAllExecutives();
     
-    console.log(`✅ Basic tier initialized ${basicExecutives.size} executives`);
+    console.log(`✅ Basic tier initialized ${basicExecutives.length} executives`);
     console.log(`📝 Expected: 5 executives (SOVREN AI + 4 core)`);
-    console.log(`🎯 Actual: ${Array.from(basicExecutives.keys()).join(', ')}\n`);
+    console.log(`🎯 Actual: ${basicExecutives.map(exec => exec.id).join(', ')}\n`);
 
     // Test Premium Tier (SOVREN Proof+ - $797/month)
     console.log('📋 Testing SOVREN Proof+ Tier ($797/month):');
     const premiumRouter = new ExecutiveVoiceRouter('sovren_proof_plus');
     const premiumExecutives = premiumRouter.getAllExecutives();
     
-    console.log(`✅ Premium tier initialized ${premiumExecutives.size} executives`);
+    console.log(`✅ Premium tier initialized ${premiumExecutives.length} executives`);
     console.log(`📝 Expected: 9 executives (SOVREN AI + 8 executives)`);
-    console.log(`🎯 Actual: ${Array.from(premiumExecutives.keys()).join(', ')}\n`);
+    console.log(`🎯 Actual: ${premiumExecutives.map(exec => exec.id).join(', ')}\n`);
 
     // Test access validation
     console.log('🔒 Testing Access Validation:');
@@ -57,19 +57,19 @@ export class SubscriptionTierTest {
     console.log('📋 Testing SOVREN Proof Voice Models:');
     const basicSynthesizer = new VoiceSynthesizer(basicConfig, 'sovren_proof');
     await basicSynthesizer.initialize();
-    const basicModels = basicSynthesizer.getAvailableVoiceModels();
-    
+    const basicModels = basicSynthesizer.getVoiceModels();
+
     console.log(`✅ Basic tier loaded ${basicModels.length} voice models`);
-    console.log(`🎯 Models: ${basicModels.map(m => m.id).join(', ')}\n`);
+    console.log(`🎯 Models: ${basicModels.map((m: VoiceModel) => m.id).join(', ')}\n`);
 
     // Test Premium Tier Voice Models
     console.log('📋 Testing SOVREN Proof+ Voice Models:');
     const premiumSynthesizer = new VoiceSynthesizer(basicConfig, 'sovren_proof_plus');
     await premiumSynthesizer.initialize();
-    const premiumModels = premiumSynthesizer.getAvailableVoiceModels();
-    
+    const premiumModels = premiumSynthesizer.getVoiceModels();
+
     console.log(`✅ Premium tier loaded ${premiumModels.length} voice models`);
-    console.log(`🎯 Models: ${premiumModels.map(m => m.id).join(', ')}\n`);
+    console.log(`🎯 Models: ${premiumModels.map((m: VoiceModel) => m.id).join(', ')}\n`);
   }
 
   /**

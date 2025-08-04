@@ -228,6 +228,9 @@ export const OnboardingTutorial: React.FC<OnboardingTutorialProps> = ({
 
       return () => clearTimeout(timer);
     }
+
+    // Explicitly return undefined for other code paths
+    return undefined;
   }, [currentStep, currentStepData]);
 
   // Play voice when step changes
@@ -239,6 +242,9 @@ export const OnboardingTutorial: React.FC<OnboardingTutorialProps> = ({
 
       return () => clearTimeout(timer);
     }
+
+    // Explicitly return undefined for other code paths
+    return undefined;
   }, [currentStep, isVisible]);
 
   if (!isVisible) return null;
