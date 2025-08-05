@@ -1,10 +1,10 @@
 /**
  * SOVREN AI - Billing Webhook Handler
- * 
- * Handles incoming webhooks from Stripe and Zoho for automated billing events.
+ *
+ * Handles incoming webhooks from Stripe for automated billing events.
  * Provides secure webhook verification and event processing.
- * 
- * CLASSIFICATION: WEBHOOK PROCESSING SYSTEM
+ *
+ * CLASSIFICATION: WEBHOOK PROCESSING SYSTEM (STRIPE ONLY)
  */
 
 import { EventEmitter } from 'events';
@@ -35,13 +35,7 @@ export interface WebhookProcessingResult {
   retryable?: boolean;
 }
 
-export interface ZohoWebhookEvent {
-  event_id: string;
-  event_type: string;
-  event_time: string;
-  data: any;
-  organization_id: string;
-}
+// ZohoWebhookEvent interface removed - using Stripe only
 
 export class WebhookHandler extends EventEmitter {
   private billingSystem: SubscriptionBillingSystem;
@@ -118,53 +112,7 @@ export class WebhookHandler extends EventEmitter {
     }
   }
 
-  /**
-   * Handle Zoho webhook
-   */
-  public async handleZohoWebhook(
-    payload: string | Buffer,
-    signature: string
-  ): Promise<WebhookProcessingResult> {
-    console.log('🔗 Processing Zoho webhook');
-
-    try {
-      // Verify webhook signature
-      const event = this.verifyZohoWebhook(payload, signature);
-      
-      // Check for duplicate events
-      if (this.processedEvents.has(event.event_id)) {
-        console.log(`⚠️ Duplicate Zoho event ignored: ${event.event_id}`);
-        return {
-          success: true,
-          eventId: event.event_id,
-          eventType: event.event_type,
-          action: 'duplicate_ignored'
-        };
-      }
-
-      // Process the event
-      const result = await this.processZohoEvent(event);
-      
-      // Mark as processed if successful
-      if (result.success) {
-        this.processedEvents.add(event.event_id);
-        this.eventRetryCount.delete(event.event_id);
-      }
-
-      return result;
-
-    } catch (error) {
-      console.error('❌ Zoho webhook processing failed:', error);
-      return {
-        success: false,
-        eventId: 'unknown',
-        eventType: 'unknown',
-        action: 'error',
-        error: error instanceof Error ? error.message : 'Unknown error',
-        retryable: false
-      };
-    }
-  }
+  // Zoho webhook handling removed - using Stripe only
 
   /**
    * Verify Stripe webhook signature
@@ -227,39 +175,7 @@ export class WebhookHandler extends EventEmitter {
     }
   }
 
-  /**
-   * Verify Zoho webhook signature
-   */
-  private verifyZohoWebhook(payload: string | Buffer, signature: string): ZohoWebhookEvent {
-    const signingKey = defaultBillingConfig.environment.zohoSigningKey;
-    
-    if (!signingKey) {
-      throw new Error('Zoho signing key not configured');
-    }
-
-    const payloadString = typeof payload === 'string' ? payload : payload.toString('utf8');
-    
-    // Calculate expected signature
-    const expectedSignature = crypto
-      .createHmac('sha256', signingKey)
-      .update(payloadString)
-      .digest('hex');
-
-    // Verify signature
-    if (!crypto.timingSafeEqual(
-      Buffer.from(signature, 'hex'),
-      Buffer.from(expectedSignature, 'hex')
-    )) {
-      throw new Error('Invalid Zoho webhook signature');
-    }
-
-    // Parse and return event
-    try {
-      return JSON.parse(payloadString);
-    } catch (error) {
-      throw new Error('Invalid Zoho webhook payload JSON');
-    }
-  }
+  // Zoho webhook verification removed - using Stripe only
 
   /**
    * Process Stripe event
@@ -346,76 +262,7 @@ export class WebhookHandler extends EventEmitter {
     }
   }
 
-  /**
-   * Process Zoho event
-   */
-  private async processZohoEvent(event: ZohoWebhookEvent): Promise<WebhookProcessingResult> {
-    console.log(`📨 Processing Zoho event: ${event.event_type} (${event.event_id})`);
-
-    try {
-      let result: any;
-      let userId: string | undefined;
-
-      switch (event.event_type) {
-        case 'subscription_activation':
-          result = await this.handleZohoSubscriptionActivation(event.data);
-          userId = event.data.custom_fields?.user_id;
-          break;
-
-        case 'payment_success':
-          result = await this.handleZohoPaymentSuccess(event.data);
-          userId = event.data.custom_fields?.user_id;
-          break;
-
-        case 'payment_failure':
-          result = await this.handleZohoPaymentFailure(event.data);
-          userId = event.data.custom_fields?.user_id;
-          break;
-
-        case 'subscription_cancellation':
-          result = await this.handleZohoSubscriptionCancellation(event.data);
-          userId = event.data.custom_fields?.user_id;
-          break;
-
-        default:
-          console.log(`ℹ️ Unhandled Zoho event type: ${event.event_type}`);
-          result = { success: true, action: 'ignored' };
-      }
-
-      this.emit('zohoEventProcessed', {
-        eventId: event.event_id,
-        eventType: event.event_type,
-        userId,
-        result
-      });
-
-      return {
-        success: true,
-        eventId: event.event_id,
-        eventType: event.event_type,
-        action: result.action || 'processed',
-        userId
-      };
-
-    } catch (error) {
-      console.error(`❌ Error processing Zoho event ${event.event_id}:`, error);
-      
-      this.emit('zohoEventError', {
-        eventId: event.event_id,
-        eventType: event.event_type,
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
-
-      return {
-        success: false,
-        eventId: event.event_id,
-        eventType: event.event_type,
-        action: 'error',
-        error: error instanceof Error ? error.message : 'Unknown error',
-        retryable: this.isRetryableError(error)
-      };
-    }
-  }
+  // Zoho event processing removed - using Stripe only
 
   /**
    * Stripe event handlers
@@ -473,28 +320,7 @@ export class WebhookHandler extends EventEmitter {
     return { action: 'payment_method_attached' };
   }
 
-  /**
-   * Zoho event handlers
-   */
-  private async handleZohoSubscriptionActivation(data: any): Promise<{ action: string }> {
-    console.log(`✅ Zoho subscription activated: ${data.subscription_id}`);
-    return { action: 'subscription_activated' };
-  }
-
-  private async handleZohoPaymentSuccess(data: any): Promise<{ action: string }> {
-    console.log(`✅ Zoho payment succeeded: ${data.payment_id}`);
-    return { action: 'payment_succeeded' };
-  }
-
-  private async handleZohoPaymentFailure(data: any): Promise<{ action: string }> {
-    console.log(`❌ Zoho payment failed: ${data.payment_id}`);
-    return { action: 'payment_failed' };
-  }
-
-  private async handleZohoSubscriptionCancellation(data: any): Promise<{ action: string }> {
-    console.log(`🚫 Zoho subscription cancelled: ${data.subscription_id}`);
-    return { action: 'subscription_cancelled' };
-  }
+  // Zoho event handlers removed - using Stripe only
 
   /**
    * Utility methods

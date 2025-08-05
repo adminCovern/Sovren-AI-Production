@@ -13,11 +13,10 @@ import { OnboardingPaymentFlow } from './OnboardingPaymentFlow';
 import { WebhookHandler } from './webhooks/WebhookHandler';
 import { defaultBillingConfig, validateBillingConfig } from './config/BillingConfig';
 
-// Core billing system
+// Core billing system (Stripe only)
 export {
   SubscriptionBillingSystem,
   PaymentGatewayManager,
-  ZohoPayments,
   SUBSCRIPTION_TIERS,
   EXEMPT_USER_TYPES
 } from './SubscriptionBillingSystem';
@@ -72,8 +71,7 @@ export {
 
 export type {
   WebhookEvent,
-  WebhookProcessingResult,
-  ZohoWebhookEvent
+  WebhookProcessingResult
 } from './webhooks/WebhookHandler';
 
 // Testing utilities
