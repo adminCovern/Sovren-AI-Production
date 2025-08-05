@@ -14,7 +14,7 @@ export interface User {
   name: string;
   passwordHash: string;
   salt: string;
-  tier: 'SMB' | 'ENTERPRISE';
+  tier: 'SMB' | 'ENTERPRISE' | 'FOUNDER';
   neuralFingerprint?: string;
   createdAt: Date;
   lastLogin?: Date;
@@ -39,12 +39,12 @@ export interface RegistrationData {
   email: string;
   password: string;
   name: string;
-  tier: 'SMB' | 'ENTERPRISE';
+  tier: 'SMB' | 'ENTERPRISE' | 'FOUNDER';
 }
 
 export interface SessionData {
   userId: string;
-  tier: 'SMB' | 'ENTERPRISE';
+  tier: 'SMB' | 'ENTERPRISE' | 'FOUNDER';
   permissions: string[];
   expiresAt: Date;
 }
@@ -156,6 +156,20 @@ export class AuthenticationSystem {
    * Initialize default users for immediate deployment
    */
   private async initializeDefaultUsers(): Promise<void> {
+    // PRIMARY ADMIN - Brian Geary (SOVREN AI Founder)
+    const adminPasswordData = await this.hashPassword('SOVRENAdmin2024!');
+    const primaryAdmin: User = {
+      id: 'user_founder_brian_geary',
+      email: 'admin@sovrenai.app',
+      name: 'Brian Geary',
+      passwordHash: adminPasswordData.hash,
+      salt: adminPasswordData.salt,
+      tier: 'FOUNDER',
+      neuralFingerprint: this.generateNeuralFingerprint('admin@sovrenai.app'),
+      createdAt: new Date(),
+      failedLoginAttempts: 0
+    };
+
     // Demo SMB user
     const smbPasswordData = await this.hashPassword('SecureDemo123!');
     const smbUser: User = {
@@ -184,10 +198,13 @@ export class AuthenticationSystem {
       failedLoginAttempts: 0
     };
 
+    // Store all users
+    this.users.set(primaryAdmin.email, primaryAdmin);
     this.users.set(smbUser.email, smbUser);
     this.users.set(enterpriseUser.email, enterpriseUser);
 
     console.log('✅ Default users initialized with secure passwords');
+    console.log('👑 FOUNDER ACCESS: admin@sovrenai.app / SOVRENAdmin2024! (Brian Geary - ALL 8 C-SUITE EXECUTIVES)');
     console.log('📧 Demo SMB: demo@company.com / SecureDemo123!');
     console.log('📧 Demo Enterprise: admin@enterprise.com / EnterpriseSecure456!');
   }
@@ -334,7 +351,7 @@ export class AuthenticationSystem {
   /**
    * Get user permissions based on tier
    */
-  private getUserPermissions(tier: 'SMB' | 'ENTERPRISE'): string[] {
+  private getUserPermissions(tier: 'SMB' | 'ENTERPRISE' | 'FOUNDER'): string[] {
     const basePermissions = [
       'sovren:interact',
       'voice:synthesis',
@@ -361,13 +378,32 @@ export class AuthenticationSystem {
       ];
     }
 
+    if (tier === 'FOUNDER') {
+      return [
+        ...basePermissions,
+        'founder:unlimited_access',
+        'shadowboard:full_access',
+        'executives:all_8_csuite',
+        'executives:unlimited_interaction',
+        'enterprise:full_access',
+        'crm:all_systems',
+        'analytics:unlimited',
+        'api:unlimited',
+        'admin:system_control',
+        'admin:user_management',
+        'billing:full_control',
+        'deployment:production_access',
+        'security:admin_override'
+      ];
+    }
+
     return basePermissions;
   }
 
   /**
    * Register new user with secure password
    */
-  async registerUser(email: string, name: string, password: string, tier: 'SMB' | 'ENTERPRISE'): Promise<AuthResult> {
+  async registerUser(email: string, name: string, password: string, tier: 'SMB' | 'ENTERPRISE' | 'FOUNDER'): Promise<AuthResult> {
     try {
       if (this.users.has(email)) {
         return {
