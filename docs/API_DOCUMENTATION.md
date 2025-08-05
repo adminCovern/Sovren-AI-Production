@@ -483,7 +483,7 @@ Configuration can be overridden using environment variables:
 NODE_ENV=production
 PORT=3000
 HOST=0.0.0.0
-BASE_URL=https://api.sovren.ai
+BASE_URL=https://api.sovrenai.app
 
 # Database
 DATABASE_URL=postgresql://user:pass@host:5432/db
@@ -511,9 +511,9 @@ STYLETTS2_PATH=/opt/styletts2
 
 # Email
 EMAIL_PROVIDER=smtp
-SMTP_HOST=smtp.sovren.ai
+SMTP_HOST=smtp.sovrenai.app
 SMTP_PORT=587
-SMTP_USER=noreply@sovren.ai
+SMTP_USER=noreply@sovrenai.app
 SMTP_PASSWORD=smtp_password
 
 # Storage
@@ -526,7 +526,7 @@ AWS_S3_SECRET_ACCESS_KEY=your-secret-key
 # Monitoring
 LOG_LEVEL=info
 METRICS_PORT=9090
-ALERTING_EMAIL=admin@sovren.ai
+ALERTING_EMAIL=admin@sovrenai.app
 ```
 
 ### Configuration Management CLI

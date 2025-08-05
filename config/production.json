@@ -2,7 +2,7 @@
   "environment": "production",
   "port": 3000,
   "host": "0.0.0.0",
-  "baseUrl": "https://api.sovren.ai",
+  "baseUrl": "https://api.sovrenai.app",
   
   "database": {
     "host": "localhost",
@@ -41,7 +41,7 @@
       "max": 5000
     },
     "cors": {
-      "origin": ["https://sovren.ai", "https://app.sovren.ai"]
+      "origin": ["https://sovrenai.app", "https://app.sovrenai.app"]
     },
     "csp": {
       "enabled": true,
@@ -52,7 +52,7 @@
         "style-src": ["'self'", "'unsafe-inline'"],
         "img-src": ["'self'", "data:", "https:"],
         "font-src": ["'self'"],
-        "connect-src": ["'self'", "https://api.sovren.ai"],
+        "connect-src": ["'self'", "https://api.sovrenai.app"],
         "media-src": ["'self'"],
         "object-src": ["'none'"],
         "frame-src": ["'none'"],
@@ -79,7 +79,7 @@
   "email": {
     "provider": "smtp",
     "smtp": {
-      "host": "smtp.sovren.ai",
+      "host": "smtp.sovrenai.app",
       "port": 587,
       "secure": false,
       "auth": {
@@ -87,7 +87,7 @@
         "pass": "SMTP_PASSWORD"
       }
     },
-    "from": "noreply@sovren.ai"
+    "from": "noreply@sovrenai.app"
   },
   
   "storage": {
@@ -97,7 +97,7 @@
       "region": "us-east-1",
       "accessKeyId": "AWS_ACCESS_KEY_ID",
       "secretAccessKey": "AWS_SECRET_ACCESS_KEY",
-      "publicUrl": "https://cdn.sovren.ai"
+      "publicUrl": "https://cdn.sovrenai.app"
     }
   },
   
@@ -106,7 +106,7 @@
     "metricsPort": 9090,
     "alerting": {
       "enabled": true,
-      "email": "alerts@sovren.ai",
+      "email": "alerts@sovrenai.app",
       "webhookUrl": "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK",
       "thresholds": {
         "cpuUsage": 70,
