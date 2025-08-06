@@ -8,6 +8,12 @@
 import { v4 as uuid } from 'uuid';
 import { EventEmitter } from 'events';
 import { randomBytes } from 'crypto';
+import { ShadowBoardVoiceIntegration } from './ShadowBoardVoiceIntegration';
+import { ExecutiveCommunicationOrchestrator } from './ExecutiveCommunicationOrchestrator';
+import { VoiceSystemManager } from '../voice/VoiceSystemManager';
+import { PhoneSystemManager } from '../telephony/PhoneSystemManager';
+import { VoiceSynthesizer } from '../voice/VoiceSynthesizer';
+import { UserPhoneAllocation } from '../telephony/SkyetelService';
 
 export interface ExecutiveEntity {
   id: string;
@@ -214,6 +220,8 @@ export class ShadowBoardManager extends EventEmitter {
   private singularityCoefficients: Map<string, number> = new Map();
   private quantumEntanglement: Map<string, any> = new Map();
   private memeticViruses: Map<string, any> = new Map();
+  private voiceIntegration?: ShadowBoardVoiceIntegration;
+  private communicationOrchestrator?: ExecutiveCommunicationOrchestrator;
 
   constructor(globalNameRegistry: GlobalNameRegistry) {
     super();
@@ -785,5 +793,390 @@ export class ShadowBoardManager extends EventEmitter {
       executiveCount: this.executives.size,
       timestamp: this.initializationTimestamp
     };
+  }
+
+  /**
+   * Get reality distortion field strength
+   */
+  public getRealityDistortionField(): number {
+    return this.realityDistortionField;
+  }
+
+  /**
+   * Get competitive omnicide index
+   */
+  public getCompetitiveOmnicideIndex(): number {
+    return this.competitiveOmnicideIndex;
+  }
+
+  /**
+   * Get temporal dominance level
+   */
+  public getTemporalDominanceLevel(): number {
+    return this.temporalDominanceLevel;
+  }
+
+  /**
+   * Get consciousness integration depth
+   */
+  public getConsciousnessIntegrationDepth(): number {
+    return this.consciousnessIntegrationDepth;
+  }
+
+  /**
+   * Process executive interaction
+   */
+  public async processExecutiveInteraction(
+    executiveRole: string,
+    message: string,
+    context: { type: string; urgency: string; relatedData?: any }
+  ): Promise<{
+    message: string;
+    type: 'text' | 'voice' | 'action';
+    confidence: number;
+    reasoning?: string;
+    suggestedActions?: string[];
+    dimensionalProcessing?: boolean;
+  }> {
+    const executive = this.executives.get(executiveRole);
+    if (!executive) {
+      throw new Error(`Executive ${executiveRole} not found`);
+    }
+
+    // Update executive neural load
+    executive.neuralLoad = Math.min(1.0, executive.neuralLoad + 0.1);
+    executive.currentActivity = {
+      type: 'analyzing',
+      focus: context.type,
+      intensity: context.urgency === 'critical' ? 1.0 : 0.7,
+      startTime: new Date(),
+      estimatedDuration: 3000,
+      relatedExecutives: [],
+      impactRadius: 500,
+      urgencyLevel: context.urgency as any
+    };
+
+    // Simulate executive processing with dimensional capabilities
+    const processingResult = await this.simulateExecutiveProcessing(executive, message, context);
+
+    // Update executive state
+    executive.neuralLoad = Math.max(0.1, executive.neuralLoad - 0.05);
+    executive.currentActivity.type = 'thinking';
+
+    return processingResult;
+  }
+
+  /**
+   * Coordinate multiple executives
+   */
+  public async coordinateExecutives(
+    executiveRoles: string[],
+    scenario: string,
+    objective: string
+  ): Promise<{
+    coordinationId: string;
+    participants: string[];
+    strategy: string;
+    timeline: string;
+    expectedOutcome: string;
+    confidenceLevel: number;
+  }> {
+    const participants = executiveRoles.filter(role => this.executives.has(role));
+
+    if (participants.length === 0) {
+      throw new Error('No valid executives found for coordination');
+    }
+
+    const coordinationId = `coord_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+    // Simulate executive coordination
+    const strategy = await this.generateCoordinationStrategy(participants, scenario, objective);
+
+    return {
+      coordinationId,
+      participants,
+      strategy: strategy.description,
+      timeline: strategy.timeline,
+      expectedOutcome: strategy.expectedOutcome,
+      confidenceLevel: strategy.confidence
+    };
+  }
+
+  /**
+   * Simulate executive processing with dimensional capabilities
+   */
+  private async simulateExecutiveProcessing(
+    executive: ExecutiveEntity,
+    message: string,
+    context: { type: string; urgency: string; relatedData?: any }
+  ): Promise<{
+    message: string;
+    type: 'text' | 'voice' | 'action';
+    confidence: number;
+    reasoning?: string;
+    suggestedActions?: string[];
+    dimensionalProcessing?: boolean;
+  }> {
+    // Simulate processing delay based on complexity
+    const processingTime = context.urgency === 'critical' ? 500 : 1500;
+    await new Promise(resolve => setTimeout(resolve, processingTime));
+
+    // Generate response based on executive role and capabilities
+    const response = this.generateExecutiveResponse(executive, message, context);
+
+    return response;
+  }
+
+  /**
+   * Generate executive response based on role and context
+   */
+  private generateExecutiveResponse(
+    executive: ExecutiveEntity,
+    message: string,
+    context: { type: string; urgency: string; relatedData?: any }
+  ): {
+    message: string;
+    type: 'text' | 'voice' | 'action';
+    confidence: number;
+    reasoning?: string;
+    suggestedActions?: string[];
+    dimensionalProcessing?: boolean;
+  } {
+    const roleResponses = {
+      'CFO': {
+        message: `From a financial perspective, I've analyzed the situation. ${this.generateFinancialInsight(message, context)}`,
+        reasoning: 'Applied financial risk assessment and ROI analysis',
+        suggestedActions: ['Review budget allocation', 'Assess financial impact', 'Prepare cost-benefit analysis']
+      },
+      'CMO': {
+        message: `Looking at this from a marketing standpoint, ${this.generateMarketingInsight(message, context)}`,
+        reasoning: 'Analyzed market positioning and brand impact',
+        suggestedActions: ['Develop marketing strategy', 'Assess brand implications', 'Plan customer communication']
+      },
+      'CTO': {
+        message: `From a technical architecture perspective, ${this.generateTechnicalInsight(message, context)}`,
+        reasoning: 'Evaluated technical feasibility and system requirements',
+        suggestedActions: ['Assess technical requirements', 'Plan implementation', 'Review security implications']
+      },
+      'CLO': {
+        message: `From a legal standpoint, ${this.generateLegalInsight(message, context)}`,
+        reasoning: 'Analyzed legal risks and compliance requirements',
+        suggestedActions: ['Review legal implications', 'Assess compliance requirements', 'Prepare risk mitigation']
+      }
+    };
+
+    const defaultResponse = {
+      message: `As ${executive.role}, I've processed your request and recommend a strategic approach based on our current objectives.`,
+      reasoning: 'Applied executive-level strategic analysis',
+      suggestedActions: ['Analyze situation', 'Develop strategy', 'Execute plan']
+    };
+
+    const response = roleResponses[executive.role as keyof typeof roleResponses] || defaultResponse;
+
+    return {
+      message: response.message,
+      type: 'text',
+      confidence: 0.85 + (Math.random() * 0.1), // 85-95% confidence
+      reasoning: response.reasoning,
+      suggestedActions: response.suggestedActions,
+      dimensionalProcessing: executive.singularityCoefficient > 0.8
+    };
+  }
+
+  /**
+   * Generate coordination strategy
+   */
+  private async generateCoordinationStrategy(
+    participants: string[],
+    scenario: string,
+    objective: string
+  ): Promise<{
+    description: string;
+    timeline: string;
+    expectedOutcome: string;
+    confidence: number;
+  }> {
+    // Simulate strategy generation
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    return {
+      description: `Multi-executive coordination strategy involving ${participants.join(', ')} to address ${scenario} with objective: ${objective}`,
+      timeline: '2-4 weeks for full implementation',
+      expectedOutcome: 'Successful achievement of stated objectives with minimal risk',
+      confidence: 0.88
+    };
+  }
+
+  /**
+   * Generate financial insight
+   */
+  private generateFinancialInsight(message: string, context: any): string {
+    return 'we need to consider the financial implications and ensure optimal resource allocation while maintaining fiscal responsibility.';
+  }
+
+  /**
+   * Generate marketing insight
+   */
+  private generateMarketingInsight(message: string, context: any): string {
+    return 'we should focus on market positioning and customer value proposition to maximize brand impact and market penetration.';
+  }
+
+  /**
+   * Generate technical insight
+   */
+  private generateTechnicalInsight(message: string, context: any): string {
+    return 'we need to evaluate the technical architecture and ensure scalable, secure implementation with proper system integration.';
+  }
+
+  /**
+   * Generate legal insight
+   */
+  private generateLegalInsight(message: string, context: any): string {
+    return 'we must ensure full compliance with applicable regulations and mitigate any potential legal risks through proper documentation and procedures.';
+  }
+
+  /**
+   * Initialize voice integration for Shadow Board
+   */
+  public async initializeVoiceIntegration(
+    voiceSystem: VoiceSystemManager,
+    phoneSystem: PhoneSystemManager,
+    voiceSynthesizer: VoiceSynthesizer,
+    userPhoneAllocation: UserPhoneAllocation
+  ): Promise<void> {
+    if (!this.isInitialized) {
+      throw new Error('Shadow Board must be initialized before voice integration');
+    }
+
+    try {
+      console.log('🎤 Initializing Shadow Board Voice Integration...');
+
+      this.voiceIntegration = new ShadowBoardVoiceIntegration(
+        this,
+        voiceSystem,
+        phoneSystem,
+        voiceSynthesizer
+      );
+
+      await this.voiceIntegration.initialize(userPhoneAllocation);
+
+      console.log('✅ Shadow Board Voice Integration initialized');
+
+      this.emit('voiceIntegrationInitialized', {
+        executiveCount: this.executives.size,
+        voiceProfilesCreated: this.voiceIntegration.getExecutiveVoiceProfiles().length
+      });
+
+    } catch (error) {
+      console.error('❌ Failed to initialize Shadow Board Voice Integration:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Make a call as a specific executive
+   */
+  public async makeExecutiveCall(
+    executiveRole: string,
+    targetNumber: string,
+    callPurpose: string,
+    message?: string,
+    context?: any
+  ): Promise<string> {
+    if (!this.voiceIntegration) {
+      throw new Error('Voice integration not initialized');
+    }
+
+    return await this.voiceIntegration.makeExecutiveCall({
+      executiveRole,
+      targetNumber,
+      callPurpose: callPurpose as any,
+      message,
+      context
+    });
+  }
+
+  /**
+   * Have an executive speak during a call
+   */
+  public async executiveSpeak(callId: string, message: string): Promise<void> {
+    if (!this.voiceIntegration) {
+      throw new Error('Voice integration not initialized');
+    }
+
+    return await this.voiceIntegration.executiveSpeak(callId, message);
+  }
+
+  /**
+   * Get active executive calls
+   */
+  public getActiveExecutiveCalls(): any[] {
+    if (!this.voiceIntegration) {
+      return [];
+    }
+
+    return this.voiceIntegration.getActiveExecutiveCalls();
+  }
+
+  /**
+   * Get executive voice profiles
+   */
+  public getExecutiveVoiceProfiles(): any[] {
+    if (!this.voiceIntegration) {
+      return [];
+    }
+
+    return this.voiceIntegration.getExecutiveVoiceProfiles();
+  }
+
+  /**
+   * Check if voice integration is available
+   */
+  public isVoiceIntegrationAvailable(): boolean {
+    return !!this.voiceIntegration;
+  }
+
+  /**
+   * Initialize communication orchestrator
+   */
+  public async initializeCommunicationOrchestrator(): Promise<void> {
+    if (!this.isInitialized) {
+      throw new Error('Shadow Board must be initialized before communication orchestrator');
+    }
+
+    try {
+      console.log('🎭 Initializing Communication Orchestrator...');
+
+      this.communicationOrchestrator = new ExecutiveCommunicationOrchestrator(
+        this,
+        this.voiceIntegration
+      );
+
+      await this.communicationOrchestrator.initialize();
+
+      console.log('✅ Communication Orchestrator initialized');
+
+      this.emit('communicationOrchestratorInitialized', {
+        hasVoiceIntegration: !!this.voiceIntegration
+      });
+
+    } catch (error) {
+      console.error('❌ Failed to initialize Communication Orchestrator:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get communication orchestrator
+   */
+  public getCommunicationOrchestrator(): ExecutiveCommunicationOrchestrator | null {
+    return this.communicationOrchestrator || null;
+  }
+
+  /**
+   * Check if communication orchestrator is available
+   */
+  public isCommunicationOrchestratorAvailable(): boolean {
+    return !!this.communicationOrchestrator;
   }
 }

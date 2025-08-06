@@ -399,18 +399,103 @@ export class CallEngineSOVREN {
   }
 
   private async generateAIResponse(input: string, context: any): Promise<string> {
-    // Placeholder for AI response generation
-    // This would integrate with your LLM/AI system
-    
-    const responses = [
-      "I understand your request. Let me help you with that.",
-      "Thank you for calling SOVREN AI. How can I assist you today?",
-      "I'm processing your request. Please hold for a moment.",
-      "Let me connect you with the appropriate executive for this matter.",
-      "I'll need to gather some additional information to help you better."
-    ];
+    try {
+      // Import LLM Integration System
+      const { llmIntegrationSystem } = await import('../llm/LLMIntegrationSystem');
 
-    return responses[Math.floor(Math.random() * responses.length)];
+      // Determine if this needs executive handling
+      const executiveRole = this.determineExecutiveForCall(input, context);
+
+      if (executiveRole) {
+        // Generate executive response
+        const prompt = `You are handling a phone call. The caller said: "${input}"
+
+Call Context:
+- Caller: ${context.callerInfo?.name || 'Unknown'}
+- Company: ${context.callerInfo?.company || 'Unknown'}
+- Time of day: ${this.getTimeOfDay()}
+- Call purpose: ${context.purpose || 'General inquiry'}
+
+Please provide a professional, helpful phone response that addresses their needs while maintaining your executive personality. Keep it conversational and appropriate for a phone call.`;
+
+        const response = await llmIntegrationSystem.generateExecutiveResponse(
+          executiveRole,
+          prompt,
+          `Phone call response to: ${input}`,
+          'high'
+        );
+
+        return response.text;
+      } else {
+        // Generate general SOVREN AI response
+        const prompt = `You are SOVREN AI handling a phone call. The caller said: "${input}"
+
+Call Context:
+- Caller: ${context.callerInfo?.name || 'Unknown'}
+- Company: ${context.callerInfo?.company || 'Unknown'}
+- Time of day: ${this.getTimeOfDay()}
+
+Please provide a professional, helpful phone response. You can:
+1. Answer their question directly if it's general
+2. Route them to an appropriate executive if needed
+3. Gather more information if unclear
+
+Keep it conversational and appropriate for a phone call.`;
+
+        const response = await llmIntegrationSystem.generateConsciousnessResponse(
+          prompt,
+          'Phone call handling',
+          0.8
+        );
+
+        return response.text;
+      }
+
+    } catch (error) {
+      console.error('Failed to generate AI response:', error);
+
+      // Fallback responses
+      const fallbackResponses = [
+        "I understand your request. Let me help you with that.",
+        "Thank you for calling SOVREN AI. How can I assist you today?",
+        "I'm processing your request. Please hold for a moment.",
+        "Let me connect you with the appropriate executive for this matter.",
+        "I'll need to gather some additional information to help you better."
+      ];
+
+      return fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)];
+    }
+  }
+
+  private determineExecutiveForCall(input: string, context: any): string | null {
+    const inputLower = input.toLowerCase();
+
+    // Financial matters
+    if (inputLower.includes('financial') || inputLower.includes('budget') ||
+        inputLower.includes('cost') || inputLower.includes('price') ||
+        inputLower.includes('investment')) {
+      return 'CFO';
+    }
+
+    // Marketing/Sales matters
+    if (inputLower.includes('marketing') || inputLower.includes('sales') ||
+        inputLower.includes('customer') || inputLower.includes('brand')) {
+      return 'CMO';
+    }
+
+    // Technical matters
+    if (inputLower.includes('technical') || inputLower.includes('technology') ||
+        inputLower.includes('system') || inputLower.includes('software')) {
+      return 'CTO';
+    }
+
+    // Legal matters
+    if (inputLower.includes('legal') || inputLower.includes('contract') ||
+        inputLower.includes('compliance') || inputLower.includes('terms')) {
+      return 'CLO';
+    }
+
+    return null; // Handle with general SOVREN AI
   }
 
   private generateGreeting(callSession: CallSession): string {
@@ -597,22 +682,112 @@ class FreeSWITCHClient {
 }
 
 class SpeechRecognitionEngine {
+  private whisperService: any;
+
+  constructor() {
+    this.initializeWhisper();
+  }
+
+  private async initializeWhisper(): Promise<void> {
+    try {
+      const { whisperASRService } = await import('./WhisperASRService');
+      this.whisperService = whisperASRService;
+
+      if (!this.whisperService.isInitialized) {
+        await this.whisperService.initialize();
+      }
+    } catch (error) {
+      console.error('Failed to initialize Whisper ASR:', error);
+    }
+  }
+
   async startSession(sessionId: string): Promise<void> {
-    // Start speech recognition for session
+    if (this.whisperService) {
+      await this.whisperService.startRealTimeSession(sessionId, 'auto');
+    }
   }
 
   async stopSession(sessionId: string): Promise<void> {
-    // Stop speech recognition for session
+    if (this.whisperService) {
+      await this.whisperService.stopRealTimeSession(sessionId);
+    }
   }
 
   async transcribe(audioData: ArrayBuffer): Promise<any> {
-    // Transcribe audio using Whisper.cpp or similar
+    if (this.whisperService) {
+      try {
+        // Convert ArrayBuffer to Buffer for Whisper processing
+        const buffer = Buffer.from(audioData);
+
+        // Create a temporary session for this transcription
+        const tempSessionId = `temp_${Date.now()}`;
+        await this.whisperService.startRealTimeSession(tempSessionId, 'auto');
+
+        // Process the audio chunk
+        await this.whisperService.processAudioChunk(tempSessionId, buffer, 16000);
+
+        // Get results and stop session
+        const results = await this.whisperService.stopRealTimeSession(tempSessionId);
+
+        if (results.length > 0) {
+          const latestResult = results[results.length - 1];
+          return {
+            text: latestResult.text,
+            confidence: latestResult.confidence,
+            emotion: this.analyzeEmotion(latestResult.text),
+            intent: this.analyzeIntent(latestResult.text)
+          };
+        }
+      } catch (error) {
+        console.error('Whisper transcription failed:', error);
+      }
+    }
+
+    // Fallback response
     return {
-      text: 'Transcribed text',
-      confidence: 0.95,
+      text: '',
+      confidence: 0.0,
       emotion: 'neutral',
-      intent: 'inquiry'
+      intent: 'unknown'
     };
+  }
+
+  private analyzeEmotion(text: string): string {
+    const emotionKeywords = {
+      happy: ['great', 'excellent', 'wonderful', 'fantastic', 'amazing'],
+      angry: ['terrible', 'awful', 'horrible', 'angry', 'frustrated'],
+      sad: ['disappointed', 'sad', 'upset', 'unhappy'],
+      excited: ['excited', 'thrilled', 'enthusiastic', 'eager']
+    };
+
+    const textLower = text.toLowerCase();
+
+    for (const [emotion, keywords] of Object.entries(emotionKeywords)) {
+      if (keywords.some(keyword => textLower.includes(keyword))) {
+        return emotion;
+      }
+    }
+
+    return 'neutral';
+  }
+
+  private analyzeIntent(text: string): string {
+    const intentKeywords = {
+      inquiry: ['what', 'how', 'when', 'where', 'why', 'question'],
+      request: ['please', 'can you', 'could you', 'would you', 'need'],
+      complaint: ['problem', 'issue', 'wrong', 'error', 'broken'],
+      compliment: ['thank', 'appreciate', 'good job', 'well done']
+    };
+
+    const textLower = text.toLowerCase();
+
+    for (const [intent, keywords] of Object.entries(intentKeywords)) {
+      if (keywords.some(keyword => textLower.includes(keyword))) {
+        return intent;
+      }
+    }
+
+    return 'general';
   }
 }
 

@@ -680,23 +680,128 @@ class EmailAIComposer {
     const style = executive.communicationStyle;
     
     // This would integrate with your AI/LLM system
-    return this.generateEmailContent(request, style);
+    return await this.generateEmailContent(request, style);
   }
 
   public async generateResponse(email: any, executive: ExecutiveEmailProfile, analysis: EmailAnalysis): Promise<string> {
     // AI-powered response generation
     const style = executive.communicationStyle;
     
-    return this.generateResponseContent(email, analysis, style);
+    return await this.generateResponseContent(email, analysis, style);
   }
 
-  private generateEmailContent(request: EmailCompositionRequest, style: CommunicationStyle): string {
-    // Placeholder email generation
-    return `Dear ${request.to.join(', ')},\n\nThank you for your inquiry regarding ${request.purpose}.\n\nBest regards`;
+  private async generateEmailContent(request: EmailCompositionRequest, style: CommunicationStyle): Promise<string> {
+    try {
+      // Import LLM Integration System
+      const { llmIntegrationSystem } = await import('../llm/LLMIntegrationSystem');
+
+      // Determine executive role based on email purpose
+      const executiveRole = this.determineExecutiveRole(request.purpose);
+
+      // Generate email using executive personality
+      const prompt = `Compose a professional email for the following:
+
+TO: ${request.to.join(', ')}
+SUBJECT: ${request.subject}
+PURPOSE: ${request.purpose}
+TONE: ${style.tone}
+FORMALITY: ${style.formality || 'professional'}
+
+Additional Context: ${request.context || 'Standard business communication'}
+
+Please write a complete, professional email that addresses the purpose while maintaining the specified tone and formality level.`;
+
+      const response = await llmIntegrationSystem.generateExecutiveResponse(
+        executiveRole,
+        prompt,
+        `Email composition for ${request.purpose}`,
+        'high'
+      );
+
+      return response.text;
+
+    } catch (error) {
+      console.error('Failed to generate email content with LLM:', error);
+      // Fallback to basic template
+      return `Dear ${request.to.join(', ')},\n\nThank you for your inquiry regarding ${request.purpose}.\n\nWe will review your request and respond promptly with the information you need.\n\nBest regards`;
+    }
   }
 
-  private generateResponseContent(email: any, analysis: EmailAnalysis, style: CommunicationStyle): string {
-    // Placeholder response generation
-    return `Thank you for your email. I have received your message and will respond accordingly.`;
+  private async generateResponseContent(email: any, analysis: EmailAnalysis, style: CommunicationStyle): Promise<string> {
+    try {
+      // Import LLM Integration System
+      const { llmIntegrationSystem } = await import('../llm/LLMIntegrationSystem');
+
+      // Determine executive role based on email analysis
+      const executiveRole = this.determineExecutiveRoleFromAnalysis(analysis);
+
+      // Generate response using executive personality
+      const prompt = `Generate a professional email response to the following:
+
+ORIGINAL EMAIL SUBJECT: ${email.subject}
+ORIGINAL EMAIL CONTENT: ${email.content}
+SENDER: ${email.from}
+
+EMAIL ANALYSIS:
+- Intent: ${analysis.intent}
+- Urgency: ${analysis.urgency || 'medium'}
+- Sentiment: ${analysis.sentiment}
+- Key Topics: ${(analysis.topics || []).join(', ')}
+- Action Items: ${(analysis.actionItems || []).join(', ')}
+
+RESPONSE REQUIREMENTS:
+- Tone: ${style.tone}
+- Formality: ${style.formality || 'professional'}
+- Address all key points and action items
+- Maintain professional executive communication standards
+
+Please write a complete, thoughtful response that addresses the sender's needs appropriately.`;
+
+      const response = await llmIntegrationSystem.generateExecutiveResponse(
+        executiveRole,
+        prompt,
+        `Email response to ${analysis.intent}`,
+        (analysis.urgency || 'medium') === 'high' ? 'high' : 'medium'
+      );
+
+      return response.text;
+
+    } catch (error) {
+      console.error('Failed to generate email response with LLM:', error);
+      // Fallback to basic template
+      return `Thank you for your email regarding ${email.subject}. We have received your message and will review it carefully. We will respond with the appropriate information and next steps shortly.\n\nBest regards`;
+    }
+  }
+
+  private determineExecutiveRole(purpose: string): string {
+    const purposeLower = purpose.toLowerCase();
+
+    if (purposeLower.includes('financial') || purposeLower.includes('budget') || purposeLower.includes('investment')) {
+      return 'CFO';
+    } else if (purposeLower.includes('marketing') || purposeLower.includes('brand') || purposeLower.includes('customer')) {
+      return 'CMO';
+    } else if (purposeLower.includes('technical') || purposeLower.includes('technology') || purposeLower.includes('system')) {
+      return 'CTO';
+    } else if (purposeLower.includes('legal') || purposeLower.includes('contract') || purposeLower.includes('compliance')) {
+      return 'CLO';
+    } else {
+      return 'CMO'; // Default to CMO for general business communications
+    }
+  }
+
+  private determineExecutiveRoleFromAnalysis(analysis: EmailAnalysis): string {
+    const topics = (analysis.topics || []).join(' ').toLowerCase();
+
+    if (topics.includes('financial') || topics.includes('budget') || topics.includes('cost')) {
+      return 'CFO';
+    } else if (topics.includes('marketing') || topics.includes('sales') || topics.includes('customer')) {
+      return 'CMO';
+    } else if (topics.includes('technical') || topics.includes('technology') || topics.includes('development')) {
+      return 'CTO';
+    } else if (topics.includes('legal') || topics.includes('contract') || topics.includes('compliance')) {
+      return 'CLO';
+    } else {
+      return 'CMO'; // Default to CMO
+    }
   }
 }
