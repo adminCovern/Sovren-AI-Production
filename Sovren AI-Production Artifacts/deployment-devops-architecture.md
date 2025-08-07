@@ -26,12 +26,12 @@ edge_locations: 450+ global PoPs
 quantum_compute_clusters: 12 specialized facilities
 ```
 
-#### 1.2 Kubernetes Architecture
+#### 1.2 Bare Metal Cluster Architecture
 ```yaml
 cluster_configuration:
   control_plane:
-    - 3 master nodes per region
-    - etcd cluster with 5 nodes
+    - 3 master servers per region
+    - distributed coordination with Redis cluster
     - HA proxy for API server
   
   node_pools:
@@ -60,55 +60,59 @@ cluster_configuration:
       max_nodes: 300
 ```
 
-### 2. Container Architecture
+### 2. Bare Metal Service Architecture
 
-#### 2.1 Microservices Deployment
+#### 2.1 Process-Based Service Deployment
 ```yaml
 services:
   sovren_core:
-    replicas: 50-500
+    processes: 8-64  # PM2 cluster mode across servers
     resources:
-      cpu: 16 cores
-      memory: 64Gi
-      gpu: 2
+      cpu: 16 cores per process
+      memory: 64Gi per process
+      gpu: 2 B200 GPUs per process
     scaling:
       metric: quantum_load
       threshold: 70%
-  
+      method: PM2 auto-scaling
+
   shadow_board_engine:
-    replicas: 20-200
+    processes: 4-32
     resources:
-      cpu: 8 cores
-      memory: 32Gi
-      gpu: 1
+      cpu: 8 cores per process
+      memory: 32Gi per process
+      gpu: 1 B200 GPU per process
     scaling:
       metric: rendering_queue
       threshold: 100ms
-  
+      method: systemd service scaling
+
   time_machine_processor:
-    replicas: 10-100
+    processes: 2-16
     resources:
-      cpu: 32 cores
-      memory: 128Gi
+      cpu: 32 cores per process
+      memory: 128Gi per process
+      gpu: dedicated B200 allocation
     scaling:
       metric: causal_analysis_depth
       threshold: 5 levels
+      method: direct process spawning
 ```
 
-#### 2.2 Container Registry Strategy
+#### 2.2 Bare Metal Asset Management
 ```yaml
-registries:
+asset_storage:
   primary:
-    location: multi-region
-    replication: active-active
-    scanning: continuous
-    signing: mandatory
-  
+    location: /var/lib/sovren/assets
+    replication: rsync-based multi-server
+    backup: ZFS snapshots
+    security: filesystem-level encryption
+
   artifacts:
-    - quantum_models: 5TB+
-    - executive_avatars: 2TB+
-    - voice_models: 1TB+
-    - behavioral_patterns: 3TB+
+    - quantum_models: 5TB+ on NVMe storage
+    - executive_avatars: 2TB+ on high-speed SSD
+    - voice_models: 1TB+ on dedicated storage
+    - behavioral_patterns: 3TB+ on distributed filesystem
 ```
 
 ### 3. CI/CD Pipeline Architecture
@@ -220,12 +224,12 @@ argocd_config:
 module "sovren_infrastructure" {
   quantum_regions = var.quantum_enabled_regions
   
-  kubernetes_config = {
-    version = "1.29"
-    addons = [
+  bare_metal_config = {
+    os_version = "Ubuntu 22.04 LTS"
+    services = [
       "quantum-scheduler",
-      "gpu-operator",
-      "istio-service-mesh"
+      "gpu-manager",
+      "load-balancer"
     ]
   }
   
@@ -245,7 +249,7 @@ module "sovren_infrastructure" {
 
 #### 5.2 Pulumi for Dynamic Infrastructure
 ```typescript
-const quantumCluster = new QuantumKubernetesCluster("sovren-quantum", {
+const quantumCluster = new QuantumBareMetalCluster("sovren-quantum", {
     nodeGroups: [
         {
             name: "quantum-processing",

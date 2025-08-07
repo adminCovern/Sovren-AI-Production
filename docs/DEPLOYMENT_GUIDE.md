@@ -367,101 +367,88 @@ sudo systemctl start sovren-monitor
 
 ---
 
-## 🐳 Docker Deployment
+## 🏗️ Bare Metal Production Deployment
 
-### Dockerfile
-```dockerfile
-FROM node:20-alpine AS builder
+### Production Server Setup
+```bash
+#!/bin/bash
+# Bare metal production deployment for SOVREN AI
+# No containers - direct system installation
 
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci --only=production
+# Install Node.js 20 LTS
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt-get install -y nodejs
 
-COPY . .
-RUN npm run build
+# Install PM2 globally for process management
+sudo npm install -g pm2
 
-FROM node:20-alpine AS runtime
+# Install Redis directly on system
+sudo apt-get install -y redis-server
+sudo systemctl enable redis-server
+sudo systemctl start redis-server
 
-RUN addgroup -g 1001 -S sovren && \
-    adduser -S sovren -u 1001
+# Install PostgreSQL directly on system
+sudo apt-get install -y postgresql postgresql-contrib
+sudo systemctl enable postgresql
+sudo systemctl start postgresql
 
-WORKDIR /app
+# Configure PostgreSQL
+sudo -u postgres createuser sovren
+sudo -u postgres createdb sovren -O sovren
+sudo -u postgres psql -c "ALTER USER sovren PASSWORD 'your_secure_password';"
 
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./package.json
-
-RUN mkdir -p /app/public/audio/generated && \
-    chown -R sovren:sovren /app
-
-USER sovren
-
-EXPOSE 3000
-
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node healthcheck.js
-
-CMD ["node", "dist/server.js"]
+# Install NGINX directly on system
+sudo apt-get install -y nginx
+sudo systemctl enable nginx
 ```
 
-### Docker Compose
-```yaml
-version: '3.8'
+### Application Deployment
+```bash
+# Deploy application to /var/www/sovren-ai
+sudo mkdir -p /var/www/sovren-ai
+sudo chown -R $USER:$USER /var/www/sovren-ai
 
-services:
-  sovren-ai:
-    build: .
-    ports:
-      - "3000:3000"
-    environment:
-      - NODE_ENV=production
-      - REDIS_URL=redis://redis:6379
-      - DATABASE_URL=postgresql://sovren:password@postgres:5432/sovren
-    depends_on:
-      - redis
-      - postgres
-    volumes:
-      - audio_data:/app/public/audio/generated
-    restart: unless-stopped
-    deploy:
-      replicas: 3
-      resources:
-        limits:
-          memory: 2G
-          cpus: '1'
+# Clone and build
+cd /var/www/sovren-ai
+git clone https://github.com/adminCovern/Sovren-AI-Production.git .
+npm ci --production
+npm run build
 
-  redis:
-    image: redis:7-alpine
-    volumes:
-      - redis_data:/data
-    restart: unless-stopped
+# Start with PM2
+pm2 start ecosystem.config.js --env production
+pm2 save
+pm2 startup systemd
 
-  postgres:
-    image: postgres:15-alpine
-    environment:
-      - POSTGRES_DB=sovren
-      - POSTGRES_USER=sovren
-      - POSTGRES_PASSWORD=password
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    restart: unless-stopped
+# Configure NGINX
+sudo cp nginx.conf /etc/nginx/sites-available/sovren-ai
+sudo ln -s /etc/nginx/sites-available/sovren-ai /etc/nginx/sites-enabled/
+sudo nginx -t && sudo systemctl reload nginx
+```
 
-  nginx:
-    image: nginx:alpine
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf
-      - ./ssl:/etc/ssl
-    depends_on:
-      - sovren-ai
-    restart: unless-stopped
+### Service Configuration
+```bash
+# Redis configuration for bare metal
+sudo tee /etc/redis/redis.conf << 'EOF'
+bind 127.0.0.1
+port 6379
+maxmemory 2gb
+maxmemory-policy allkeys-lru
+save 900 1
+save 300 10
+save 60 10000
+EOF
 
-volumes:
-  redis_data:
-  postgres_data:
-  audio_data:
+# PostgreSQL configuration
+sudo tee -a /etc/postgresql/15/main/postgresql.conf << 'EOF'
+shared_buffers = 256MB
+effective_cache_size = 1GB
+maintenance_work_mem = 64MB
+checkpoint_completion_target = 0.9
+wal_buffers = 16MB
+default_statistics_target = 100
+random_page_cost = 1.1
+effective_io_concurrency = 200
+EOF
 ```
 
 ---

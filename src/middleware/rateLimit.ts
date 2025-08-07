@@ -61,8 +61,7 @@ export class RedisRateLimiter {
       this.redisClient = null;
       this.isRedisConnected = false;
     }
-  }
-    
+
     // Clean up expired entries every minute
     setInterval(() => {
       this.cleanup();
@@ -77,15 +76,15 @@ export class RedisRateLimiter {
     const windowStart = now - this.config.windowMs;
     
     // Get or create entry
-    let entry = this.store.get(key);
-    
+    let entry = this.fallbackStore.get(key);
+
     if (!entry || entry.resetTime <= now) {
       // Create new window
       entry = {
         count: 0,
         resetTime: now + this.config.windowMs
       };
-      this.store.set(key, entry);
+      this.fallbackStore.set(key, entry);
     }
 
     const info: RateLimitInfo = {
@@ -101,7 +100,7 @@ export class RedisRateLimiter {
 
     // Increment counter
     entry.count++;
-    this.store.set(key, entry);
+    this.fallbackStore.set(key, entry);
 
     info.current = entry.count;
     info.remaining = Math.max(0, this.config.max - entry.count);
@@ -115,9 +114,9 @@ export class RedisRateLimiter {
   private cleanup(): void {
     const now = Date.now();
     
-    for (const [key, entry] of this.store.entries()) {
+    for (const [key, entry] of this.fallbackStore.entries()) {
       if (entry.resetTime <= now) {
-        this.store.delete(key);
+        this.fallbackStore.delete(key);
       }
     }
   }
@@ -126,14 +125,14 @@ export class RedisRateLimiter {
    * Reset rate limit for a key
    */
   public reset(key: string): void {
-    this.store.delete(key);
+    this.fallbackStore.delete(key);
   }
 
   /**
    * Get current rate limit info
    */
   public async getInfo(key: string): Promise<RateLimitInfo> {
-    const entry = this.store.get(key);
+    const entry = this.fallbackStore.get(key);
     
     if (!entry) {
       return {

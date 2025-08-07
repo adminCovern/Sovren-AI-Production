@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { authSystem } from '@/lib/auth/AuthenticationSystem';
 import { dbManager } from '@/lib/database/DatabaseManager';
 import { shadowBoardInitializer } from '@/lib/shadowboard/ShadowBoardInitializer';
+import { PhoneProvisioningManager } from '@/lib/telephony/PhoneProvisioningManager';
 import { rateLimiters, getClientId } from '@/middleware/rateLimit';
 import { randomBytes } from 'crypto';
 
@@ -193,6 +194,34 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     console.log(`✅ Shadow Board initialized: ${shadowBoardResult.executives.length} executives`);
+
+    // Provision phone numbers for user
+    console.log(`📞 Provisioning phone numbers for ${body.tier} user...`);
+
+    const phoneProvisioningManager = new PhoneProvisioningManager({
+      apiKey: process.env.SKYETEL_API_KEY!,
+      apiSecret: process.env.SKYETEL_API_SECRET!,
+      baseUrl: process.env.SKYETEL_API_URL || 'https://api.skyetel.com/v1',
+      sipDomain: process.env.SIP_DOMAIN || 'sip.sovren.ai'
+    });
+
+    // Map tier to phone provisioning tier
+    const phoneProvisioningTier = body.tier === 'SMB' ? 'sovren_proof' : 'sovren_proof_plus';
+
+    const phoneProvisioningResult = await phoneProvisioningManager.provisionUserPhoneNumbers({
+      userId: userData.id,
+      subscriptionTier: phoneProvisioningTier,
+      geography: body.geography,
+      userEmail: body.email,
+      companyName: body.company
+    });
+
+    if (!phoneProvisioningResult.success) {
+      console.error(`❌ Phone provisioning failed:`, phoneProvisioningResult.error);
+      // Don't fail registration, but log the issue
+    } else {
+      console.log(`✅ Phone numbers provisioned: ${phoneProvisioningResult.allocation?.phoneNumbers.sovrenAI}`);
+    }
 
     // Generate onboarding token for tutorial
     const onboardingToken = generateOnboardingToken(userData.id);

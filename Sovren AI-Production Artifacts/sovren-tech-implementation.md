@@ -400,8 +400,8 @@ kubectl apply -f k8s/consciousness-engine.yaml
 # 3. Initialize 11-dimensional computing
 ./scripts/init-11d-computing.sh
 
-# 4. Deploy SOVREN AI core
-docker-compose -f docker/sovren-ai-core.yml up -d
+# 4. Deploy SOVREN AI core on bare metal
+pm2 start ecosystem.config.js --env production
 
 # 5. Initialize Shadow Board (SMB only)
 if [ "$USER_TIER" == "SMB" ]; then
