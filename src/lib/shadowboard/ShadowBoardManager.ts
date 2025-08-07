@@ -1632,9 +1632,7 @@ export class ShadowBoardManager extends EventEmitter {
 
       this.voiceIntegration = new ShadowBoardVoiceIntegration(
         this,
-        voiceSystem,
-        phoneSystem,
-        voiceSynthesizer
+        phoneSystem
       );
 
       await this.voiceIntegration.initialize(userPhoneAllocation);
