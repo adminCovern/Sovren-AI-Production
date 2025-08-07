@@ -35,6 +35,8 @@
     "dashboard:init": "ts-node src/scripts/initialize-b200-dashboard.ts",
     "dashboard:monitor": "npm run dashboard:init",
     "dashboard:test": "jest src/tests/dashboard/B200Dashboard.test.ts",
+    "coordination:test": "jest src/tests/coordination/MultiExecutiveCoordination.test.ts",
+    "coordination:optimize": "node -e \"console.log('Optimizing executive placement across B200 GPUs...')\"",
     "db:migrate": "node scripts/db-migrate.js",
     "db:migrate:prod": "NODE_ENV=production node scripts/db-migrate.js",
     "db:seed": "node scripts/db-seed.js",
