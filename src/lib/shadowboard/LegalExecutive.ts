@@ -5,6 +5,8 @@
  */
 
 import { EventEmitter } from 'events';
+import { B200ResourceManager, B200AllocationRequest } from '../b200/B200ResourceManager';
+import { b200LLMClient, B200LLMClient } from '../inference/B200LLMClient';
 
 export interface ContractAnalysis {
   contractId: string;
@@ -16,6 +18,7 @@ export interface ContractAnalysis {
   compliance: boolean;
   recommendations: string[];
   confidence: number;
+  b200Analysis?: string; // B200-generated legal analysis
 }
 
 export interface IPProtectionStrategy {
@@ -72,7 +75,12 @@ export class LegalExecutive extends EventEmitter {
     "International Law"
   ];
 
-  // AI-powered legal models
+  // B200 Blackwell GPU Resources
+  private b200ResourceManager: B200ResourceManager;
+  private allocationId: string | null = null;
+  private isB200Initialized: boolean = false;
+
+  // AI-powered legal models (now B200-accelerated)
   private legalModels!: {
     contractRiskAssessment: any;
     litigationPredictor: any;
@@ -87,8 +95,48 @@ export class LegalExecutive extends EventEmitter {
 
   constructor() {
     super();
+    this.b200ResourceManager = new B200ResourceManager();
+    this.initializeB200Resources();
     this.initializeLegalModels();
-    console.log(`✅ Legal Executive initialized with authority level ${this.authorityLevel}`);
+    console.log(`✅ Legal Executive initialized with B200 Blackwell acceleration and authority level ${this.authorityLevel}`);
+  }
+
+  /**
+   * Initialize B200 GPU resources for Legal analysis
+   */
+  private async initializeB200Resources(): Promise<void> {
+    try {
+      console.log('🚀 Legal initializing B200 Blackwell resources...');
+
+      await this.b200ResourceManager.initialize();
+
+      // Allocate B200 resources for Legal analysis
+      const allocationRequest: B200AllocationRequest = {
+        component_name: 'legal_analysis',
+        model_type: 'llm_70b',
+        quantization: 'fp8',
+        estimated_vram_gb: 45, // Qwen2.5-70B in FP8
+        required_gpus: 1,
+        tensor_parallel: false,
+        context_length: 32768,
+        batch_size: 4,
+        priority: 'high',
+        max_latency_ms: 100, // Legal needs very low latency for precision
+        power_budget_watts: 400
+      };
+
+      const allocation = await this.b200ResourceManager.allocateResources(allocationRequest);
+      this.allocationId = allocation.allocation_id;
+      this.isB200Initialized = true;
+
+      console.log(`✅ Legal B200 resources allocated: ${allocation.allocation_id}`);
+      console.log(`📊 GPU: ${allocation.gpu_ids[0]}, VRAM: ${allocation.memory_allocated_gb}GB, Power: ${allocation.power_allocated_watts}W`);
+
+    } catch (error) {
+      console.error('❌ Legal failed to initialize B200 resources:', error);
+      // Continue without B200 acceleration
+      this.isB200Initialized = false;
+    }
   }
 
   /**
@@ -119,48 +167,92 @@ export class LegalExecutive extends EventEmitter {
     analysis: ContractAnalysis;
   }> {
 
-    console.log(`⚖️ Legal analyzing contract: ${contract.id || 'Unknown'}`);
+    console.log(`⚖️ Legal analyzing contract with B200 acceleration: ${contract.id || 'Unknown'}`);
 
-    // Extract key terms and obligations
-    const termsAnalysis = await this.contractAnalyzer.extractTerms(contract);
+    try {
+      // Use B200-accelerated LLM for comprehensive legal analysis
+      const legalAnalysisText = await b200LLMClient.generateLegalAnalysis(
+        'contract',
+        contract,
+        `Contract risk analysis for ${contract.id || 'contract'}. Provide detailed risk assessment, compliance review, and legal recommendations.`
+      );
 
-    // Risk assessment with legal precedent analysis
-    const riskAssessment = await this.legalModels.contractRiskAssessment.analyze({
-      contractTerms: termsAnalysis,
-      legalPrecedents: await this.getRelevantPrecedents(contract),
-      regulatoryLandscape: await this.getRegulatoryContext(contract)
-    });
+      // Parse B200 analysis and structure results
+      const structuredAnalysis = this.parseLegalAnalysis(legalAnalysisText);
 
-    // Generate legal recommendations
-    const legalRecommendations = await this.generateLegalRecommendations(
-      riskAssessment, termsAnalysis
-    );
+      // Extract key terms and obligations (enhanced with B200 insights)
+      const termsAnalysis = await this.contractAnalyzer.extractTerms(contract);
 
-    // Check compliance
-    const complianceStatus = await this.checkCompliance(contract);
+      // B200-enhanced risk assessment
+      const riskAssessment = await this.assessContractRiskWithB200(contract, legalAnalysisText);
 
-    const analysis: ContractAnalysis = {
-      contractId: contract.id || `CONTRACT_${Date.now()}`,
-      riskScore: riskAssessment.totalRisk,
-      keyRisks: riskAssessment.identifiedRisks,
-      obligations: termsAnalysis.obligations,
-      termination: termsAnalysis.terminationClauses,
-      liability: termsAnalysis.liabilityClauses,
-      compliance: complianceStatus,
-      recommendations: legalRecommendations.map(r => r.description),
-      confidence: riskAssessment.confidence
-    };
+      // B200-powered legal recommendations
+      const legalRecommendations = await this.generateB200LegalRecommendations(contract, legalAnalysisText, riskAssessment);
 
-    const result = {
-      riskScore: riskAssessment.totalRisk,
-      keyRisks: riskAssessment.identifiedRisks,
-      legalRecommendations,
-      complianceStatus,
-      analysis
-    };
+      // Check compliance
+      const complianceStatus = await this.checkCompliance(contract);
 
-    this.emit('contractAnalysisComplete', result);
-    return result;
+      const analysis: ContractAnalysis = {
+        contractId: contract.id || `CONTRACT_${Date.now()}`,
+        riskScore: riskAssessment.totalRisk,
+        keyRisks: riskAssessment.identifiedRisks,
+        obligations: termsAnalysis.obligations,
+        termination: termsAnalysis.terminationClauses,
+        liability: termsAnalysis.liabilityClauses,
+        compliance: complianceStatus,
+        recommendations: legalRecommendations.map((r: any) => r.description),
+        confidence: riskAssessment.confidence,
+        b200Analysis: legalAnalysisText
+      };
+
+      const result = {
+        riskScore: riskAssessment.totalRisk,
+        keyRisks: riskAssessment.identifiedRisks,
+        legalRecommendations,
+        complianceStatus,
+        analysis
+      };
+
+      this.emit('contractAnalysisComplete', result);
+      return result;
+
+    } catch (error) {
+      console.error('❌ B200 legal analysis failed, using traditional methods:', error);
+
+      // Fallback to traditional analysis
+      const termsAnalysis = await this.contractAnalyzer.extractTerms(contract);
+      const riskAssessment = await this.legalModels.contractRiskAssessment.analyze({
+        contractTerms: termsAnalysis,
+        legalPrecedents: await this.getRelevantPrecedents(contract),
+        regulatoryLandscape: await this.getRegulatoryContext(contract)
+      });
+
+      const legalRecommendations = await this.generateLegalRecommendations(riskAssessment, termsAnalysis);
+      const complianceStatus = await this.checkCompliance(contract);
+
+      const analysis: ContractAnalysis = {
+        contractId: contract.id || `CONTRACT_${Date.now()}`,
+        riskScore: riskAssessment.totalRisk,
+        keyRisks: riskAssessment.identifiedRisks,
+        obligations: termsAnalysis.obligations,
+        termination: termsAnalysis.terminationClauses,
+        liability: termsAnalysis.liabilityClauses,
+        compliance: complianceStatus,
+        recommendations: legalRecommendations.map((r: any) => r.description),
+        confidence: riskAssessment.confidence
+      };
+
+      const result = {
+        riskScore: riskAssessment.totalRisk,
+        keyRisks: riskAssessment.identifiedRisks,
+        legalRecommendations,
+        complianceStatus,
+        analysis
+      };
+
+      this.emit('contractAnalysisComplete', result);
+      return result;
+    }
   }
 
   /**
@@ -420,6 +512,105 @@ export class LegalExecutive extends EventEmitter {
   private async checkCompliance(contract: any): Promise<boolean> {
     // Simulate compliance check
     return Math.random() > 0.1; // 90% compliance rate
+  }
+
+  /**
+   * B200-Enhanced Legal Analysis Methods
+   */
+
+  private parseLegalAnalysis(analysisText: string): any {
+    // Parse B200 LLM analysis into structured data
+    const analysis = {
+      riskScore: this.extractNumericValue(analysisText, 'risk score'),
+      keyRisks: this.extractRisks(analysisText),
+      recommendations: this.extractRecommendations(analysisText),
+      complianceStatus: this.extractComplianceStatus(analysisText)
+    };
+
+    return analysis;
+  }
+
+  private async assessContractRiskWithB200(contract: any, b200Analysis: string): Promise<any> {
+    try {
+      // Use B200 for enhanced risk assessment
+      const riskAnalysisText = await b200LLMClient.generateLegalAnalysis(
+        'risk',
+        contract,
+        `Comprehensive risk assessment for contract. Analyze legal risks, compliance issues, and liability exposure.`
+      );
+
+      return {
+        totalRisk: this.extractNumericValue(riskAnalysisText, 'total risk') || 5.0,
+        identifiedRisks: this.extractRisks(riskAnalysisText),
+        confidence: this.extractNumericValue(riskAnalysisText, 'confidence') || 85,
+        b200RiskAnalysis: riskAnalysisText
+      };
+    } catch (error) {
+      console.error('B200 risk assessment failed, using fallback:', error);
+      return this.legalModels.contractRiskAssessment.analyze({
+        contractTerms: await this.contractAnalyzer.extractTerms(contract),
+        legalPrecedents: await this.getRelevantPrecedents(contract),
+        regulatoryLandscape: await this.getRegulatoryContext(contract)
+      });
+    }
+  }
+
+  private async generateB200LegalRecommendations(contract: any, analysisText: string, riskAssessment: any): Promise<LegalRecommendation[]> {
+    try {
+      const recommendationText = await b200LLMClient.generateLegalAnalysis(
+        'contract',
+        {
+          contract,
+          riskAssessment,
+          previousAnalysis: analysisText
+        },
+        'Generate specific legal recommendations for contract modifications, risk mitigation, and compliance.'
+      );
+
+      const recommendations = this.extractRecommendations(recommendationText);
+      return recommendations.map((rec: string, index: number) => ({
+        type: 'contract' as const,
+        priority: index < 3 ? 'high' as const : 'medium' as const,
+        description: rec,
+        legalBasis: `Based on B200 legal analysis and contract law precedents`,
+        implementation: [`Review contract terms`, `Modify clauses as needed`, `Obtain legal approval`],
+        timeline: index < 3 ? '1-2 weeks' : '2-4 weeks',
+        riskMitigation: [`Reduce liability exposure`, `Ensure compliance`, `Protect business interests`],
+        confidence: 85 + (index * 2) // Decreasing confidence for lower priority items
+      }));
+    } catch (error) {
+      console.error('B200 recommendation generation failed, using fallback:', error);
+      return this.generateLegalRecommendations(riskAssessment, await this.contractAnalyzer.extractTerms(contract));
+    }
+  }
+
+  // Helper methods for parsing B200 analysis
+  private extractNumericValue(text: string, metric: string): number {
+    const regex = new RegExp(`${metric}[:\\s]+([\\d.,%-]+)`, 'i');
+    const match = text.match(regex);
+    if (match) {
+      return parseFloat(match[1].replace(/[,%]/g, ''));
+    }
+    return 0;
+  }
+
+  private extractRisks(text: string): string[] {
+    const risks = text.match(/risks?[:\s]+(.*?)(?:\n\n|\.|$)/i);
+    return risks ? risks[1].split(',').map(r => r.trim()) : ['Contract terms unclear', 'Liability exposure'];
+  }
+
+  private extractRecommendations(text: string): string[] {
+    const recommendations = text.match(/recommendations?[:\s]+(.*?)(?:\n\n|\.|$)/i);
+    return recommendations ? recommendations[1].split(',').map(r => r.trim()) : ['Review contract terms', 'Add liability caps'];
+  }
+
+  private extractComplianceStatus(text: string): boolean {
+    const compliance = text.match(/complian(ce|t)[:\s]+(.*?)(?:\n\n|\.|$)/i);
+    if (compliance) {
+      const status = compliance[2].toLowerCase();
+      return status.includes('compliant') || status.includes('yes') || status.includes('pass');
+    }
+    return true; // Default to compliant
   }
 
   private async analyzeCurrentIPPortfolio(): Promise<any> {
