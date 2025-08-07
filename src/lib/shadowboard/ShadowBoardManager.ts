@@ -15,6 +15,47 @@ import { PhoneSystemManager } from '../telephony/PhoneSystemManager';
 import { VoiceSynthesizer } from '../voice/VoiceSynthesizer';
 import { UserPhoneAllocation } from '../telephony/SkyetelService';
 
+// B200 Blackwell GPU Resource Configuration
+export interface B200ResourceAllocation {
+  allocation_id: string;
+  component: string;
+  gpu_ids: number[];
+  memory_gb: number;
+  quantization: 'fp8' | 'fp16' | 'int8' | 'int4';
+  tensor_parallel_size: number;
+  fp8_tensor_cores: number;
+  shared_memory_mb: number;
+  nvlink_bandwidth_gb: number;
+  estimated_vram_gb: number;
+  max_batch_size: number;
+  target_latency_ms: number;
+  power_budget_watts: number;
+  context_length: number;
+  model_type: string;
+}
+
+// B200-Optimized Model Configuration
+export interface B200ModelConfig {
+  name: string;
+  type: 'llm_405b' | 'llm_70b' | 'embedding' | 'voice_synthesis' | 'voice_cloning';
+  provider: 'b200_local' | 'vllm_fp8' | 'tensorrt_llm';
+  modelId: string;
+  maxTokens?: number;
+  temperature?: number;
+  contextWindow?: number;
+  // B200 Blackwell specific config
+  quantization: 'fp8' | 'fp16' | 'int8' | 'int4';
+  gpu_allocation: number[];  // Which B200 GPUs to use
+  tensor_parallel_size: number;  // Multi-GPU parallelism
+  fp8_tensor_cores: number;  // Reserved FP8 Tensor Cores
+  shared_memory_mb: number;  // Reserved shared memory per SM
+  nvlink_bandwidth_gb: number;  // Reserved NVLink bandwidth
+  estimated_vram_gb: number;  // Expected VRAM usage
+  max_batch_size: number;
+  target_latency_ms: number;
+  power_budget_watts: number;
+}
+
 export interface ExecutiveEntity {
   id: string;
   name: string;
@@ -223,6 +264,12 @@ export class ShadowBoardManager extends EventEmitter {
   private voiceIntegration?: ShadowBoardVoiceIntegration;
   private communicationOrchestrator?: ExecutiveCommunicationOrchestrator;
 
+  // B200 Blackwell Resource Management
+  private b200ResourceAllocations: Map<string, B200ResourceAllocation> = new Map();
+  private mcpServerEndpoint: string = 'http://localhost:8000';
+  private executiveModelConfigs: Map<string, B200ModelConfig> = new Map();
+  private gpuUtilizationMap: Map<number, string[]> = new Map(); // GPU ID -> Executive IDs
+
   constructor(globalNameRegistry: GlobalNameRegistry) {
     super();
     this.globalNameRegistry = globalNameRegistry;
@@ -232,7 +279,195 @@ export class ShadowBoardManager extends EventEmitter {
   }
 
   /**
-   * Initialize Shadow Board with subscription tier support
+   * Initialize B200 resource allocation for Shadow Board
+   */
+  private async initializeB200Resources(): Promise<void> {
+    console.log('🚀 Initializing B200 Blackwell resource allocation...');
+
+    try {
+      // Check MCP Server availability
+      const response = await fetch(`${this.mcpServerEndpoint}/health`);
+      if (!response.ok) {
+        throw new Error('MCP Server not available');
+      }
+
+      console.log('✅ MCP Server connected');
+
+      // Initialize GPU utilization tracking
+      for (let gpuId = 0; gpuId < 8; gpuId++) {
+        this.gpuUtilizationMap.set(gpuId, []);
+      }
+
+    } catch (error) {
+      console.error('❌ Failed to initialize B200 resources:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get B200 model configuration for executive role
+   */
+  private getB200ModelConfigForRole(role: string): B200ModelConfig {
+    const baseConfig = {
+      provider: 'vllm_fp8' as const,
+      quantization: 'fp8' as const,
+      contextWindow: 32768,
+      maxTokens: 4096,
+      temperature: 0.7,
+      max_batch_size: 4,
+      target_latency_ms: 150
+    };
+
+    switch (role) {
+      case 'CFO':
+        return {
+          ...baseConfig,
+          name: 'CFO-Qwen2.5-70B-FP8',
+          type: 'llm_70b',
+          modelId: 'Qwen/Qwen2.5-70B-Instruct',
+          gpu_allocation: [0], // Dedicated B200 GPU 0
+          tensor_parallel_size: 1,
+          fp8_tensor_cores: 416, // Half of GPU's tensor cores
+          shared_memory_mb: 113, // Half of 227KB per SM
+          nvlink_bandwidth_gb: 2.0,
+          estimated_vram_gb: 45, // 70B model in FP8
+          power_budget_watts: 400
+        };
+
+      case 'CMO':
+        return {
+          ...baseConfig,
+          name: 'CMO-Qwen2.5-70B-FP8',
+          type: 'llm_70b',
+          modelId: 'Qwen/Qwen2.5-70B-Instruct',
+          gpu_allocation: [1], // Dedicated B200 GPU 1
+          tensor_parallel_size: 1,
+          fp8_tensor_cores: 416,
+          shared_memory_mb: 113,
+          nvlink_bandwidth_gb: 2.0,
+          estimated_vram_gb: 45,
+          power_budget_watts: 400
+        };
+
+      case 'CTO':
+        return {
+          ...baseConfig,
+          name: 'CTO-Qwen2.5-70B-FP8',
+          type: 'llm_70b',
+          modelId: 'Qwen/Qwen2.5-70B-Instruct',
+          gpu_allocation: [2], // Dedicated B200 GPU 2
+          tensor_parallel_size: 1,
+          fp8_tensor_cores: 416,
+          shared_memory_mb: 113,
+          nvlink_bandwidth_gb: 2.0,
+          estimated_vram_gb: 45,
+          power_budget_watts: 400
+        };
+
+      case 'CLO':
+      case 'COO':
+      case 'CHRO':
+      case 'CSO':
+        return {
+          ...baseConfig,
+          name: `${role}-Qwen2.5-70B-FP8`,
+          type: 'llm_70b',
+          modelId: 'Qwen/Qwen2.5-70B-Instruct',
+          gpu_allocation: [3], // Shared B200 GPU 3 for additional executives
+          tensor_parallel_size: 1,
+          fp8_tensor_cores: 208, // Quarter of GPU's tensor cores
+          shared_memory_mb: 56, // Quarter of 227KB per SM
+          nvlink_bandwidth_gb: 1.0,
+          estimated_vram_gb: 45,
+          power_budget_watts: 300
+        };
+
+      case 'SOVREN-AI':
+        return {
+          ...baseConfig,
+          name: 'SOVREN-Qwen2.5-405B-FP8',
+          type: 'llm_405b',
+          modelId: 'Qwen/Qwen2.5-405B-Instruct',
+          gpu_allocation: [4, 5, 6, 7], // Multi-GPU for 405B model
+          tensor_parallel_size: 4,
+          fp8_tensor_cores: 832, // Full tensor cores per GPU
+          shared_memory_mb: 227, // Full shared memory per SM
+          nvlink_bandwidth_gb: 8.0, // Full NVLink bandwidth
+          estimated_vram_gb: 160, // 405B model in FP8 across 4 GPUs
+          power_budget_watts: 800,
+          contextWindow: 131072, // 128K context for SOVREN
+          target_latency_ms: 300
+        };
+
+      default:
+        throw new Error(`Unknown executive role: ${role}`);
+    }
+  }
+
+  /**
+   * Allocate B200 GPU resources for an executive
+   */
+  private async allocateB200ResourcesForExecutive(
+    executiveId: string,
+    role: string,
+    modelConfig: B200ModelConfig
+  ): Promise<B200ResourceAllocation> {
+    console.log(`🎯 Allocating B200 resources for ${role} (${executiveId})`);
+
+    const allocationRequest = {
+      component: `shadow_board_${role.toLowerCase()}`,
+      gpu_ids: modelConfig.gpu_allocation,
+      memory_gb: modelConfig.estimated_vram_gb,
+      cpu_cores: 4,
+      priority: 'high',
+      // B200 specific
+      fp8_tensor_cores: modelConfig.fp8_tensor_cores,
+      shared_memory_mb: modelConfig.shared_memory_mb,
+      nvlink_bandwidth: modelConfig.nvlink_bandwidth_gb,
+      model_type: modelConfig.type,
+      quantization: modelConfig.quantization,
+      context_length: modelConfig.contextWindow || 32768,
+      batch_size: modelConfig.max_batch_size,
+      estimated_latency_ms: modelConfig.target_latency_ms,
+      power_budget_watts: modelConfig.power_budget_watts
+    };
+
+    try {
+      const response = await fetch(`${this.mcpServerEndpoint}/allocate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(allocationRequest)
+      });
+
+      if (!response.ok) {
+        throw new Error(`Resource allocation failed: ${response.statusText}`);
+      }
+
+      const allocation: B200ResourceAllocation = await response.json();
+
+      // Track allocation
+      this.b200ResourceAllocations.set(executiveId, allocation);
+      this.executiveModelConfigs.set(executiveId, modelConfig);
+
+      // Update GPU utilization map
+      for (const gpuId of modelConfig.gpu_allocation) {
+        const currentExecutives = this.gpuUtilizationMap.get(gpuId) || [];
+        currentExecutives.push(executiveId);
+        this.gpuUtilizationMap.set(gpuId, currentExecutives);
+      }
+
+      console.log(`✅ Allocated B200 resources for ${role}: GPUs ${modelConfig.gpu_allocation.join(',')}, ${modelConfig.estimated_vram_gb}GB VRAM`);
+
+      return allocation;
+
+    } catch (error) {
+      console.error(`❌ Failed to allocate B200 resources for ${role}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Initialize Shadow Board with subscription tier support and B200 optimization
    * Creates executives based on subscription tier (4 for Proof, 8 for Proof+)
    */
   public async initializeForSMB(
@@ -242,6 +477,9 @@ export class ShadowBoardManager extends EventEmitter {
     if (this.isInitialized) {
       throw new Error('Shadow Board already initialized - Reality singularity achieved');
     }
+
+    // Initialize B200 Blackwell resources first
+    await this.initializeB200Resources();
 
     // Define executives based on subscription tier
     const allRoles: Array<ExecutiveEntity['role']> = [
@@ -256,10 +494,14 @@ export class ShadowBoardManager extends EventEmitter {
     console.log(`🏢 Initializing Shadow Board for ${subscriptionTier} tier`);
     console.log(`👥 Creating ${allowedRoles.length} executives: ${allowedRoles.join(', ')}`);
 
-    // Create executives with quantum superposition capabilities
+    // Create executives with quantum superposition capabilities and B200 optimization
     for (const role of allowedRoles) {
       const executive = await this.createExecutive(role, userId);
       this.executives.set(role, executive);
+
+      // Allocate B200 resources for this executive
+      const modelConfig = this.getB200ModelConfigForRole(role);
+      await this.allocateB200ResourcesForExecutive(executive.id, role, modelConfig);
 
       // Initialize dimensional processor
       const processor = await this.createDimensionalProcessor(executive.id);

@@ -34,15 +34,24 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 @dataclass
-class GPUStatus:
+class B200GPUStatus:
     gpu_id: int
-    memory_used: float
-    memory_total: float
-    memory_free: float
-    utilization: float
-    temperature: float
-    power_draw: float
+    memory_used: float  # MB
+    memory_total: float  # MB (183,359 MB for B200)
+    memory_free: float  # MB
+    utilization: float  # 0-100%
+    temperature: float  # Celsius
+    power_draw: float  # Watts (up to 1000W for B200)
     processes: List[Dict]
+    # B200 Blackwell specific metrics
+    architecture: str  # "Blackwell B200"
+    compute_capability: str  # "10.0"
+    fp8_tensor_cores: int  # Number of FP8 Tensor Cores
+    shared_memory_per_sm: int  # 227KB for B200
+    streaming_multiprocessors: int  # 208 for B200
+    nvlink_bandwidth: float  # TB/s
+    fp8_utilization: float  # 0-100% FP8 Tensor Core usage
+    memory_bandwidth_utilization: float  # 0-100% of 8TB/s
 
 @dataclass
 class SystemStatus:
@@ -55,19 +64,29 @@ class SystemStatus:
     uptime: float
 
 @dataclass
-class ResourceAllocation:
+class B200ResourceAllocation:
     allocation_id: str
-    component: str
+    component: str  # 'shadow_board_cfo', 'voice_synthesis', 'sovren_core', etc.
     gpu_ids: List[int]
     memory_gb: float
     cpu_cores: int
-    priority: str
-    status: str
+    priority: str  # 'critical', 'high', 'medium', 'low'
+    status: str  # 'allocated', 'active', 'released'
     created_at: datetime
     expires_at: Optional[datetime]
+    # B200 specific allocations
+    fp8_tensor_cores_reserved: int
+    shared_memory_mb: float  # Reserved shared memory per SM
+    nvlink_bandwidth_reserved: float  # Reserved NVLink bandwidth
+    model_type: str  # 'llm_405b', 'voice_synthesis', 'embedding', etc.
+    quantization: str  # 'fp8', 'fp16', 'int8', 'int4'
+    context_length: int  # Token context length
+    batch_size: int
+    estimated_latency_ms: float
+    power_budget_watts: float
 
-class GPUMonitor:
-    """Real-time GPU monitoring and protection"""
+class B200GPUMonitor:
+    """Real-time B200 Blackwell GPU monitoring and protection"""
 
     def __init__(self):
         if not GPUTIL_AVAILABLE or GPUtil is None:
@@ -75,8 +94,122 @@ class GPUMonitor:
         self.gpu_count = len(GPUtil.getGPUs())
         self.monitoring = False
         self.alert_callbacks = []
-        
-    def get_gpu_status(self, gpu_id: int) -> GPUStatus:
+
+        # B200 specific monitoring
+        self.b200_capabilities = self._detect_b200_capabilities()
+        self.fp8_monitoring_enabled = self._check_fp8_monitoring()
+        self.nvlink_topology = self._map_nvlink_topology()
+
+        logger.info(f"B200 Monitor initialized: {self.gpu_count} GPUs detected")
+        logger.info(f"B200 capabilities: {self.b200_capabilities}")
+
+    def _detect_b200_capabilities(self) -> Dict[str, Any]:
+        """Detect B200 Blackwell specific capabilities"""
+        capabilities = {}
+        for gpu_id in range(self.gpu_count):
+            try:
+                # Query GPU architecture and capabilities
+                result = subprocess.run([
+                    'nvidia-ml-py3', '--query-gpu=name,compute_cap,memory.total',
+                    '--format=csv,noheader,nounits', f'--id={gpu_id}'
+                ], capture_output=True, text=True, timeout=10)
+
+                if result.returncode == 0:
+                    data = result.stdout.strip().split(', ')
+                    gpu_name = data[0]
+                    compute_cap = data[1]
+                    memory_total = float(data[2])
+
+                    is_b200 = 'B200' in gpu_name and compute_cap == '10.0'
+                    capabilities[str(gpu_id)] = {
+                        'name': gpu_name,
+                        'compute_capability': compute_cap,
+                        'memory_total_mb': memory_total,
+                        'is_b200_blackwell': is_b200,
+                        'fp8_tensor_cores': 208 * 4 if is_b200 else 0,  # 208 SMs * 4 Tensor Cores
+                        'shared_memory_per_sm': 227 * 1024 if is_b200 else 0,  # 227KB
+                        'max_power_watts': 1000 if is_b200 else 450
+                    }
+            except Exception as e:
+                logger.warning(f"Could not detect capabilities for GPU {gpu_id}: {e}")
+                capabilities[str(gpu_id)] = {'is_b200_blackwell': False}
+
+        return capabilities
+
+    def _check_fp8_monitoring(self) -> bool:
+        """Check if FP8 monitoring is available"""
+        try:
+            # Check if nvidia-ml-py supports FP8 metrics
+            result = subprocess.run([
+                'nvidia-smi', '--query-gpu=compute_cap', '--format=csv,noheader,nounits'
+            ], capture_output=True, text=True, timeout=5)
+
+            if result.returncode == 0:
+                compute_caps = result.stdout.strip().split('\n')
+                return any(cap.strip() == '10.0' for cap in compute_caps)
+        except Exception as e:
+            logger.warning(f"Could not check FP8 monitoring: {e}")
+        return False
+
+    def _map_nvlink_topology(self) -> Dict[str, Any]:
+        """Map NVLink topology for B200 GPUs"""
+        topology = {}
+        try:
+            # Query NVLink topology
+            result = subprocess.run([
+                'nvidia-smi', 'topo', '-m'
+            ], capture_output=True, text=True, timeout=10)
+
+            if result.returncode == 0:
+                # Parse topology matrix
+                lines = result.stdout.strip().split('\n')
+                topology['raw_output'] = lines
+                topology['nvlink_detected'] = 'NV' in result.stdout
+                topology['gpu_count'] = self.gpu_count
+        except Exception as e:
+            logger.warning(f"Could not map NVLink topology: {e}")
+            topology = {'nvlink_detected': False, 'gpu_count': self.gpu_count}
+
+        return topology
+
+    def _get_fp8_utilization(self, gpu_id: int) -> float:
+        """Get FP8 Tensor Core utilization for B200"""
+        try:
+            # Query FP8 utilization using nvidia-ml-py or nvidia-smi
+            # This is a placeholder for actual FP8 monitoring
+            # In production, this would query specific B200 FP8 metrics
+            result = subprocess.run([
+                'nvidia-smi', '--query-gpu=utilization.gpu',
+                '--format=csv,noheader,nounits', f'--id={gpu_id}'
+            ], capture_output=True, text=True, timeout=5)
+
+            if result.returncode == 0:
+                # For now, estimate FP8 utilization as a fraction of GPU utilization
+                gpu_util = float(result.stdout.strip())
+                # B200 FP8 utilization would be measured differently in production
+                return gpu_util * 0.8  # Estimate
+        except Exception as e:
+            logger.warning(f"Could not get FP8 utilization for GPU {gpu_id}: {e}")
+        return 0.0
+
+    def _get_memory_bandwidth_utilization(self, gpu_id: int) -> float:
+        """Get memory bandwidth utilization for B200 (8TB/s)"""
+        try:
+            # Query memory bandwidth utilization
+            # This would use nvidia-ml-py to get actual memory throughput
+            # For now, estimate based on memory usage
+            if GPUTIL_AVAILABLE and GPUtil is not None:
+                gpu_status = GPUtil.getGPUs()[gpu_id]
+            else:
+                return 0.0
+            memory_util = (gpu_status.memoryUsed / gpu_status.memoryTotal) * 100
+            # Estimate bandwidth utilization (would be measured directly in production)
+            return min(memory_util * 1.2, 100.0)
+        except Exception as e:
+            logger.warning(f"Could not get memory bandwidth utilization for GPU {gpu_id}: {e}")
+        return 0.0
+
+    def get_gpu_status(self, gpu_id: int) -> B200GPUStatus:
         """Get comprehensive GPU status"""
         try:
             if not GPUTIL_AVAILABLE or GPUtil is None:
@@ -109,7 +242,12 @@ class GPUMonitor:
             # Get running processes
             processes = self._get_gpu_processes(gpu_id)
             
-            return GPUStatus(
+            # Get B200 specific metrics
+            b200_caps = self.b200_capabilities.get(str(gpu_id), {})
+            fp8_utilization = self._get_fp8_utilization(gpu_id) if b200_caps.get('is_b200_blackwell') else 0.0
+            memory_bandwidth_util = self._get_memory_bandwidth_utilization(gpu_id) if b200_caps.get('is_b200_blackwell') else 0.0
+
+            return B200GPUStatus(
                 gpu_id=gpu_id,
                 memory_used=memory_used,
                 memory_total=memory_total,
@@ -117,7 +255,16 @@ class GPUMonitor:
                 utilization=utilization,
                 temperature=temperature,
                 power_draw=power_draw,
-                processes=processes
+                processes=processes,
+                # B200 Blackwell specific
+                architecture=b200_caps.get('name', 'Unknown'),
+                compute_capability=b200_caps.get('compute_capability', '0.0'),
+                fp8_tensor_cores=b200_caps.get('fp8_tensor_cores', 0),
+                shared_memory_per_sm=b200_caps.get('shared_memory_per_sm', 0),
+                streaming_multiprocessors=208 if b200_caps.get('is_b200_blackwell') else 0,
+                nvlink_bandwidth=8.0 if b200_caps.get('is_b200_blackwell') else 0.0,  # 8TB/s for B200
+                fp8_utilization=fp8_utilization,
+                memory_bandwidth_utilization=memory_bandwidth_util
             )
             
         except Exception as e:
@@ -150,11 +297,11 @@ class GPUMonitor:
             logger.error(f"Error getting GPU {gpu_id} processes: {e}")
             return []
     
-    def get_all_gpu_status(self) -> List[GPUStatus]:
+    def get_all_gpu_status(self) -> List[B200GPUStatus]:
         """Get status of all GPUs"""
         return [self.get_gpu_status(i) for i in range(self.gpu_count)]
-    
-    def check_gpu_health(self, gpu_status: GPUStatus) -> Dict[str, Any]:
+
+    def check_gpu_health(self, gpu_status: B200GPUStatus) -> Dict[str, Any]:
         """Check GPU health and return alerts"""
         alerts = []
         
@@ -238,21 +385,27 @@ class ResourceAllocator:
     """Safe resource allocation and management"""
     
     def __init__(self):
-        self.allocations: Dict[str, ResourceAllocation] = {}
-        self.gpu_monitor = GPUMonitor()
+        self.allocations: Dict[str, B200ResourceAllocation] = {}
+        self.gpu_monitor = B200GPUMonitor()
         self.system_monitor = SystemMonitor()
         self.allocation_lock = asyncio.Lock()
         
-        # Safety limits
+        # B200 Blackwell safety limits
         self.safety_limits = {
-            'max_gpu_memory_percent': 90,  # Never exceed 90% GPU memory
+            'max_gpu_memory_percent': 85,  # Conservative for B200's 183GB
             'max_system_memory_percent': 85,  # Never exceed 85% system memory
             'max_gpu_temperature': 82,  # Celsius
-            'max_power_per_gpu': 450,  # Watts
-            'max_total_power': 7200  # Watts
+            'max_power_per_gpu': 900,  # Watts (B200 max 1000W, leave 100W headroom)
+            'max_total_power': 7200,  # Watts (8x 900W)
+            'max_fp8_tensor_cores_per_gpu': 832,  # 208 SMs * 4 Tensor Cores
+            'max_shared_memory_per_sm': 227 * 1024,  # 227KB in bytes
+            'max_nvlink_bandwidth': 8.0,  # TB/s for B200
+            'min_context_length': 1024,
+            'max_context_length': 2048000,  # 2M tokens for B200
+            'max_concurrent_models': 8  # One per GPU max
         }
     
-    async def allocate_resources(self, request: Dict[str, Any]) -> ResourceAllocation:
+    async def allocate_resources(self, request: Dict[str, Any]) -> B200ResourceAllocation:
         """Safely allocate resources with comprehensive checks"""
         async with self.allocation_lock:
             # Validate request
@@ -269,8 +422,8 @@ class ResourceAllocator:
                     detail="Resource allocation would exceed safety limits"
                 )
             
-            # Create allocation
-            allocation = ResourceAllocation(
+            # Create B200 allocation
+            allocation = B200ResourceAllocation(
                 allocation_id=self._generate_allocation_id(),
                 component=request['component'],
                 gpu_ids=request.get('gpu_ids', []),
@@ -279,7 +432,17 @@ class ResourceAllocator:
                 priority=request.get('priority', 'normal'),
                 status='allocated',
                 created_at=datetime.now(),
-                expires_at=None
+                expires_at=None,
+                # B200 specific allocations
+                fp8_tensor_cores_reserved=request.get('fp8_tensor_cores', 0),
+                shared_memory_mb=request.get('shared_memory_mb', 0),
+                nvlink_bandwidth_reserved=request.get('nvlink_bandwidth', 0.0),
+                model_type=request.get('model_type', 'unknown'),
+                quantization=request.get('quantization', 'fp16'),
+                context_length=request.get('context_length', 4096),
+                batch_size=request.get('batch_size', 1),
+                estimated_latency_ms=request.get('estimated_latency_ms', 100.0),
+                power_budget_watts=request.get('power_budget_watts', 450.0)
             )
             
             # Reserve resources
@@ -298,8 +461,8 @@ class ResourceAllocator:
                     detail=f"Missing required field: {field}"
                 )
     
-    def _is_allocation_safe(self, request: Dict[str, Any], 
-                          gpu_statuses: List[GPUStatus], 
+    def _is_allocation_safe(self, request: Dict[str, Any],
+                          gpu_statuses: List[B200GPUStatus],
                           system_status: SystemStatus) -> bool:
         """Check if allocation is safe"""
         # Check GPU memory
@@ -346,11 +509,11 @@ class ResourceAllocator:
                 return True
             return False
     
-    def get_allocation_status(self, allocation_id: str) -> Optional[ResourceAllocation]:
+    def get_allocation_status(self, allocation_id: str) -> Optional[B200ResourceAllocation]:
         """Get allocation status"""
         return self.allocations.get(allocation_id)
-    
-    def get_all_allocations(self) -> List[ResourceAllocation]:
+
+    def get_all_allocations(self) -> List[B200ResourceAllocation]:
         """Get all current allocations"""
         return list(self.allocations.values())
 

@@ -5,6 +5,8 @@
  */
 
 import { EventEmitter } from 'events';
+import { B200ResourceManager, B200AllocationRequest } from '../b200/B200ResourceManager';
+import { b200LLMClient, B200LLMClient } from '../inference/B200LLMClient';
 
 export interface FinancialMetrics {
   revenue: number;
@@ -64,7 +66,7 @@ export class CFOExecutive extends EventEmitter {
   private authorityLevel: number = 9;
   private expertise: string[] = [
     "Financial Modeling",
-    "Investment Analysis", 
+    "Investment Analysis",
     "Risk Assessment",
     "Board Reporting",
     "Capital Structure",
@@ -73,7 +75,12 @@ export class CFOExecutive extends EventEmitter {
     "M&A Analysis"
   ];
 
-  // AI-powered financial models
+  // B200 Blackwell GPU Resources
+  private b200ResourceManager: B200ResourceManager;
+  private allocationId: string | null = null;
+  private isB200Initialized: boolean = false;
+
+  // AI-powered financial models (now B200-accelerated)
   private financialModels!: {
     cashFlowPredictor: any;
     volatilityAnalyzer: any;
@@ -83,8 +90,48 @@ export class CFOExecutive extends EventEmitter {
 
   constructor() {
     super();
+    this.b200ResourceManager = new B200ResourceManager();
+    this.initializeB200Resources();
     this.initializeFinancialModels();
-    console.log(`✅ CFO Executive initialized with authority level ${this.authorityLevel}`);
+    console.log(`✅ CFO Executive initialized with B200 Blackwell acceleration and authority level ${this.authorityLevel}`);
+  }
+
+  /**
+   * Initialize B200 GPU resources for CFO financial modeling
+   */
+  private async initializeB200Resources(): Promise<void> {
+    try {
+      console.log('🚀 CFO initializing B200 Blackwell resources...');
+
+      await this.b200ResourceManager.initialize();
+
+      // Allocate B200 resources for CFO financial modeling
+      const allocationRequest: B200AllocationRequest = {
+        component_name: 'cfo_financial_modeling',
+        model_type: 'llm_70b',
+        quantization: 'fp8',
+        estimated_vram_gb: 45, // Qwen2.5-70B in FP8
+        required_gpus: 1,
+        tensor_parallel: false,
+        context_length: 32768,
+        batch_size: 4,
+        priority: 'high',
+        max_latency_ms: 150,
+        power_budget_watts: 400
+      };
+
+      const allocation = await this.b200ResourceManager.allocateResources(allocationRequest);
+      this.allocationId = allocation.allocation_id;
+      this.isB200Initialized = true;
+
+      console.log(`✅ CFO B200 resources allocated: ${allocation.allocation_id}`);
+      console.log(`📊 GPU: ${allocation.gpu_ids[0]}, VRAM: ${allocation.memory_allocated_gb}GB, Power: ${allocation.power_allocated_watts}W`);
+
+    } catch (error) {
+      console.error('❌ CFO failed to initialize B200 resources:', error);
+      // Continue without B200 acceleration
+      this.isB200Initialized = false;
+    }
   }
 
   /**
@@ -110,36 +157,72 @@ export class CFOExecutive extends EventEmitter {
     boardSummary: string;
   }> {
 
-    console.log(`💰 CFO analyzing financial opportunity: ${opportunity.name}`);
+    console.log(`💰 CFO analyzing financial opportunity with B200 acceleration: ${opportunity.name}`);
 
-    // Monte Carlo simulation with 10,000 scenarios
-    const scenarios = await this.runFinancialScenarios(opportunity, 10000);
+    try {
+      // Use B200-accelerated LLM for comprehensive financial analysis
+      const analysisText = await b200LLMClient.generateFinancialAnalysis(
+        'investment',
+        opportunity,
+        `Investment analysis for ${opportunity.name}. Provide detailed NPV, IRR, risk assessment, and recommendation.`
+      );
 
-    // Risk-adjusted NPV calculation
-    const npvDistribution = this.calculateNPVDistribution(scenarios);
-    const var95 = this.calculateValueAtRisk(npvDistribution, 0.95);
+      // Parse LLM analysis and structure results
+      const structuredAnalysis = this.parseFinancialAnalysis(analysisText);
 
-    // Risk assessment
-    const riskAssessment = await this.assessInvestmentRisk(opportunity);
+      // Monte Carlo simulation with 10,000 scenarios (enhanced with B200 insights)
+      const scenarios = await this.runFinancialScenarios(opportunity, 10000);
 
-    // Strategic recommendation with confidence intervals
-    const recommendation = this.generateCFORecommendation(
-      npvDistribution, var95, opportunity, riskAssessment
-    );
+      // Risk-adjusted NPV calculation
+      const npvDistribution = this.calculateNPVDistribution(scenarios);
+      const var95 = this.calculateValueAtRisk(npvDistribution, 0.95);
 
-    // Board summary
-    const boardSummary = this.prepareBoardSummary(recommendation, opportunity);
+      // B200-enhanced risk assessment
+      const riskAssessment = await this.assessInvestmentRiskWithB200(opportunity, analysisText);
 
-    const result = {
-      financialImpact: npvDistribution,
-      riskMetrics: riskAssessment,
-      recommendation,
-      confidence: this.calculatePredictionConfidence(scenarios),
-      boardSummary
-    };
+      // B200-powered strategic recommendation
+      const recommendation = await this.generateB200CFORecommendation(opportunity, analysisText, riskAssessment);
 
-    this.emit('financialAnalysisComplete', result);
-    return result;
+      // B200-enhanced board summary
+      const boardSummary = await this.generateB200BoardSummary(opportunity, recommendation, analysisText);
+
+      const result = {
+        financialImpact: {
+          ...npvDistribution,
+          b200Analysis: analysisText,
+          structuredAnalysis
+        },
+        riskMetrics: riskAssessment,
+        recommendation,
+        confidence: this.calculatePredictionConfidence(scenarios),
+        boardSummary
+      };
+
+      this.emit('financialAnalysisComplete', result);
+      return result;
+
+    } catch (error) {
+      console.error('❌ B200 financial analysis failed, using traditional methods:', error);
+
+      // Fallback to traditional analysis
+      const scenarios = await this.runFinancialScenarios(opportunity, 10000);
+      const npvDistribution = this.calculateNPVDistribution(scenarios);
+      const var95 = this.calculateValueAtRisk(npvDistribution, 0.95);
+      const riskAssessment = await this.assessInvestmentRisk(opportunity);
+      const recommendation = this.generateCFORecommendation(npvDistribution, var95, opportunity, riskAssessment);
+      const boardSummary = this.prepareBoardSummary(recommendation, opportunity);
+
+      const result = {
+        financialImpact: npvDistribution,
+        riskMetrics: riskAssessment,
+        recommendation,
+        confidence: this.calculatePredictionConfidence(scenarios),
+        boardSummary
+      };
+
+      this.emit('financialAnalysisComplete', result);
+      return result;
+    }
   }
 
   /**
@@ -506,6 +589,168 @@ export class CFOExecutive extends EventEmitter {
       p75: sorted[Math.floor(0.75 * sorted.length)],
       p95: sorted[Math.floor(0.95 * sorted.length)]
     };
+  }
+
+  /**
+   * B200-Enhanced Financial Analysis Methods
+   */
+
+  private parseFinancialAnalysis(analysisText: string): any {
+    // Parse B200 LLM analysis into structured data
+    // This would use more sophisticated parsing in production
+    const analysis = {
+      npv: this.extractNumericValue(analysisText, 'NPV'),
+      irr: this.extractNumericValue(analysisText, 'IRR'),
+      paybackPeriod: this.extractNumericValue(analysisText, 'payback'),
+      breakEvenAnalysis: this.extractBreakEvenData(analysisText)
+    };
+
+    return analysis;
+  }
+
+  private async assessInvestmentRiskWithB200(opportunity: InvestmentOpportunity, b200Analysis: string): Promise<RiskAssessment> {
+    try {
+      // Use B200 for enhanced risk analysis
+      const riskAnalysisText = await b200LLMClient.generateFinancialAnalysis(
+        'risk',
+        opportunity,
+        `Risk assessment for ${opportunity.name}. Analyze market risk, credit risk, operational risk, and liquidity risk.`
+      );
+
+      return {
+        marketRisk: this.extractRiskScore(riskAnalysisText, 'market'),
+        creditRisk: this.extractRiskScore(riskAnalysisText, 'credit'),
+        operationalRisk: this.extractRiskScore(riskAnalysisText, 'operational'),
+        liquidityRisk: this.extractRiskScore(riskAnalysisText, 'liquidity'),
+        overallRisk: this.calculateOverallRisk(riskAnalysisText),
+        riskFactors: this.extractRiskFactors(riskAnalysisText),
+        mitigationStrategies: this.extractMitigationStrategies(riskAnalysisText),
+        b200Analysis: riskAnalysisText
+      };
+    } catch (error) {
+      console.error('B200 risk analysis failed, using fallback:', error);
+      return this.assessInvestmentRisk(opportunity);
+    }
+  }
+
+  private async generateB200CFORecommendation(
+    opportunity: InvestmentOpportunity,
+    analysisText: string,
+    riskAssessment: RiskAssessment
+  ): Promise<FinancialRecommendation> {
+    try {
+      const recommendationText = await b200LLMClient.generateFinancialAnalysis(
+        'investment',
+        {
+          opportunity,
+          riskAssessment,
+          previousAnalysis: analysisText
+        },
+        'Generate final investment recommendation with specific action, rationale, and conditions.'
+      );
+
+      return {
+        action: this.extractRecommendationAction(recommendationText),
+        rationale: this.extractRationale(recommendationText),
+        conditions: this.extractConditions(recommendationText),
+        alternativeScenarios: this.extractAlternatives(recommendationText),
+        confidenceLevel: this.extractConfidenceLevel(recommendationText),
+        b200Recommendation: recommendationText
+      };
+    } catch (error) {
+      console.error('B200 recommendation failed, using fallback:', error);
+      return this.generateCFORecommendation({}, 0, opportunity, riskAssessment);
+    }
+  }
+
+  private async generateB200BoardSummary(
+    opportunity: InvestmentOpportunity,
+    recommendation: FinancialRecommendation,
+    analysisText: string
+  ): Promise<string> {
+    try {
+      return await b200LLMClient.generateFinancialAnalysis(
+        'investment',
+        {
+          opportunity,
+          recommendation,
+          analysisText
+        },
+        'Generate executive board summary for investment decision. Include key metrics, risks, and clear recommendation.'
+      );
+    } catch (error) {
+      console.error('B200 board summary failed, using fallback:', error);
+      return this.prepareBoardSummary(recommendation, opportunity);
+    }
+  }
+
+  // Helper methods for parsing B200 analysis
+  private extractNumericValue(text: string, metric: string): number {
+    const regex = new RegExp(`${metric}[:\\s]+([\\d.,%-]+)`, 'i');
+    const match = text.match(regex);
+    if (match) {
+      return parseFloat(match[1].replace(/[,%]/g, ''));
+    }
+    return 0;
+  }
+
+  private extractBreakEvenData(text: string): any {
+    return {
+      breakEvenPoint: this.extractNumericValue(text, 'break.?even'),
+      marginOfSafety: this.extractNumericValue(text, 'margin.?of.?safety'),
+      sensitivityAnalysis: 'Extracted from B200 analysis'
+    };
+  }
+
+  private extractRiskScore(text: string, riskType: string): number {
+    const score = this.extractNumericValue(text, `${riskType}.?risk`);
+    return Math.min(Math.max(score, 0), 10); // Normalize to 0-10 scale
+  }
+
+  private calculateOverallRisk(text: string): number {
+    return this.extractNumericValue(text, 'overall.?risk') || 5.0;
+  }
+
+  private extractRiskFactors(text: string): string[] {
+    // Extract risk factors from B200 analysis
+    const factors = text.match(/risk factors?[:\s]+(.*?)(?:\n\n|\.|$)/i);
+    return factors ? factors[1].split(',').map(f => f.trim()) : ['Market volatility', 'Regulatory changes'];
+  }
+
+  private extractMitigationStrategies(text: string): string[] {
+    const strategies = text.match(/mitigation[:\s]+(.*?)(?:\n\n|\.|$)/i);
+    return strategies ? strategies[1].split(',').map(s => s.trim()) : ['Diversification', 'Hedging'];
+  }
+
+  private extractRecommendationAction(text: string): 'approve' | 'reject' | 'conditional_approve' | 'defer' {
+    if (text.toLowerCase().includes('approve') && !text.toLowerCase().includes('reject')) {
+      return text.toLowerCase().includes('conditional') ? 'conditional_approve' : 'approve';
+    } else if (text.toLowerCase().includes('reject')) {
+      return 'reject';
+    } else if (text.toLowerCase().includes('defer')) {
+      return 'defer';
+    }
+    return 'conditional_approve';
+  }
+
+  private extractRationale(text: string): string {
+    const rationale = text.match(/rationale[:\s]+(.*?)(?:\n\n|conditions|$)/i);
+    return rationale ? rationale[1].trim() : 'Based on comprehensive financial analysis';
+  }
+
+  private extractConditions(text: string): string[] {
+    const conditions = text.match(/conditions?[:\s]+(.*?)(?:\n\n|\.|$)/i);
+    return conditions ? conditions[1].split(',').map(c => c.trim()) : [];
+  }
+
+  private extractAlternatives(text: string): string[] {
+    const alternatives = text.match(/alternatives?[:\s]+(.*?)(?:\n\n|\.|$)/i);
+    return alternatives ? alternatives[1].split(',').map(a => a.trim()) : [];
+  }
+
+  private extractConfidenceLevel(text: string): number {
+    const confidence = this.extractNumericValue(text, 'confidence');
+    return confidence > 0 ? confidence : 75; // Default confidence
   }
 
   // Placeholder implementations for complex financial models

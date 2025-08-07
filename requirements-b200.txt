@@ -1,0 +1,56 @@
+# B200 BLACKWELL INFERENCE REQUIREMENTS
+# Production-grade dependencies for B200-accelerated AI inference
+
+# Core VLLM and inference
+vllm>=0.6.2
+torch>=2.1.0
+torchvision>=0.16.0
+torchaudio>=2.1.0
+transformers>=4.36.0
+accelerate>=0.24.0
+tokenizers>=0.15.0
+
+# CUDA and GPU support
+nvidia-ml-py3>=7.352.0
+pynvml>=11.4.1
+
+# Web server and API
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+pydantic>=2.5.0
+
+# Data processing and utilities
+numpy>=1.24.0
+pandas>=2.0.0
+scipy>=1.11.0
+scikit-learn>=1.3.0
+
+# Async and concurrency
+asyncio-mqtt>=0.13.0
+aiofiles>=23.2.1
+aiohttp>=3.9.0
+
+# Monitoring and logging
+psutil>=5.9.0
+prometheus-client>=0.19.0
+structlog>=23.2.0
+
+# Development and testing
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+black>=23.11.0
+isort>=5.12.0
+mypy>=1.7.0
+
+# Optional: Model downloading and caching
+huggingface-hub>=0.19.0
+datasets>=2.14.0
+
+# Optional: Advanced quantization
+bitsandbytes>=0.41.0
+auto-gptq>=0.5.0
+
+# System utilities
+click>=8.1.0
+rich>=13.7.0
+tqdm>=4.66.0
