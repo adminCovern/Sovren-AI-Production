@@ -100,13 +100,26 @@ describe('B200 Performance Benchmarking System', () => {
     });
 
     test('should run LLM inference suite successfully', async () => {
-      // Mock the LLM client responses
+      // Mock the B200 LLM client with real-like responses
       const mockB200LLMClient = require('../../lib/inference/B200LLMClient').B200LLMClient;
       mockB200LLMClient.prototype.generateResponse = jest.fn()
-        .mockResolvedValue('Mocked LLM response for benchmarking');
+        .mockResolvedValue('Comprehensive financial analysis indicates strong performance with strategic growth opportunities across all business segments.');
+
+      // Mock B200 resource manager
+      const mockB200ResourceManager = require('../../lib/b200/B200ResourceManager').B200ResourceManager;
+      mockB200ResourceManager.prototype.getResourceStatus = jest.fn()
+        .mockResolvedValue({ total_gpus: 8, total_memory_gb: 640 });
+      mockB200ResourceManager.prototype.getCurrentMetrics = jest.fn()
+        .mockResolvedValue({
+          memory_usage_gb: 45.2,
+          power_consumption_watts: 680,
+          gpu_utilization: 88,
+          tensor_core_utilization: 92,
+          fp8_utilization: 89
+        });
 
       const result = await benchmark.runBenchmarkSuite('llm_inference_suite');
-      
+
       expect(result).toBeDefined();
       expect(result.status).toBe('completed');
       expect(result.completedTests).toBe(3);
@@ -116,18 +129,31 @@ describe('B200 Performance Benchmarking System', () => {
     });
 
     test('should measure single LLM inference performance', async () => {
-      // Mock LLM client
+      // Mock B200 LLM client with realistic response
       const mockB200LLMClient = require('../../lib/inference/B200LLMClient').B200LLMClient;
       mockB200LLMClient.prototype.generateResponse = jest.fn()
-        .mockResolvedValue('Test response');
+        .mockResolvedValue('Detailed financial analysis with strategic recommendations for Q4 performance optimization.');
+
+      // Mock B200 resource manager with realistic metrics
+      const mockB200ResourceManager = require('../../lib/b200/B200ResourceManager').B200ResourceManager;
+      mockB200ResourceManager.prototype.getResourceStatus = jest.fn()
+        .mockResolvedValue({ total_gpus: 8, total_memory_gb: 640 });
+      mockB200ResourceManager.prototype.getCurrentMetrics = jest.fn()
+        .mockResolvedValue({
+          memory_usage_gb: 15.2,
+          power_consumption_watts: 450,
+          gpu_utilization: 85,
+          tensor_core_utilization: 92,
+          fp8_utilization: 88
+        });
 
       const suite = benchmark.getBenchmarkSuites().get('llm_inference_suite');
       const singleInferenceTest = suite?.tests.find(t => t.testId === 'llm_single_inference');
-      
+
       expect(singleInferenceTest).toBeDefined();
-      
+
       const result = await singleInferenceTest!.testFunction();
-      
+
       expect(result).toBeDefined();
       expect(result.testName).toBe('LLM Single Inference');
       expect(result.component).toBe('llm_inference');

@@ -176,6 +176,48 @@ export class B200LLMClient {
   }
 
   /**
+   * Generate response using B200-accelerated LLM inference
+   * Universal method for all LLM generation needs
+   */
+  public async generateResponse(
+    prompt: string,
+    options: {
+      maxTokens?: number;
+      temperature?: number;
+      topP?: number;
+      topK?: number;
+      repetitionPenalty?: number;
+      stopSequences?: string[];
+      executiveRole?: string;
+    } = {}
+  ): Promise<string> {
+    const {
+      maxTokens = 1024,
+      temperature = 0.7,
+      topP = 0.9,
+      topK = 50,
+      repetitionPenalty = 1.1,
+      stopSequences = [],
+      executiveRole = 'SOVREN-AI'
+    } = options;
+
+    const request: B200InferenceRequest = {
+      prompt,
+      max_tokens: maxTokens,
+      temperature,
+      top_p: topP,
+      top_k: topK,
+      repetition_penalty: repetitionPenalty,
+      stop_sequences: stopSequences,
+      executive_role: executiveRole,
+      request_id: `${executiveRole.toLowerCase()}_${Date.now()}`
+    };
+
+    const response = await this.generateCompletion(request);
+    return response.text;
+  }
+
+  /**
    * Generate strategic analysis using SOVREN-AI optimized prompts
    */
   public async generateStrategicAnalysis(
@@ -189,7 +231,8 @@ export class B200LLMClient {
       const response = await this.generateResponse(prompt, {
         maxTokens: 2048,
         temperature: 0.7,
-        topP: 0.9
+        topP: 0.9,
+        executiveRole: 'SOVREN-AI'
       });
 
       return response;
