@@ -125,7 +125,7 @@ export class B200VoiceSynthesisEngine extends EventEmitter {
       // Allocate B200 resources for voice synthesis
       const allocationRequest: B200AllocationRequest = {
         component_name: 'voice_synthesis_engine',
-        model_type: 'tts_model',
+        model_type: 'voice_synthesis',
         quantization: 'fp8',
         estimated_vram_gb: 12, // TTS models are smaller than LLMs
         required_gpus: 1,
@@ -302,7 +302,7 @@ export class B200VoiceSynthesisEngine extends EventEmitter {
         audioUrl,
         duration,
         sampleRate: request.sampleRate,
-        format: request.outputFormat,
+        format: typeof request.outputFormat === 'string' ? request.outputFormat : 'wav',
         fileSize,
         synthesisTime,
         gpuUtilization

@@ -431,7 +431,7 @@ export class PhoneSystemManager {
    */
   public async isReady(): Promise<boolean> {
     try {
-      const freeswitchReady = await this.freeswitchService.isConnected();
+      const freeswitchReady = this.freeswitchService.isConnected;
       const skyetelReady = await this.skyetelService.testConnection();
 
       return freeswitchReady && skyetelReady;
@@ -477,20 +477,7 @@ export class PhoneSystemManager {
     return backupNumbers;
   }
 
-  /**
-   * Accept incoming call
-   */
-  public async acceptCall(phoneNumber: string, callerNumber: string): Promise<void> {
-    try {
-      console.log(`📞 Accepting incoming call from ${callerNumber} to ${phoneNumber}`);
-      // Implementation would depend on FreeSWITCH call handling
-      await this.freeswitchService.acceptIncomingCall(phoneNumber, callerNumber);
 
-    } catch (error) {
-      console.error(`❌ Failed to accept call from ${callerNumber}:`, error);
-      throw error;
-    }
-  }
 
   /**
    * Cleanup resources

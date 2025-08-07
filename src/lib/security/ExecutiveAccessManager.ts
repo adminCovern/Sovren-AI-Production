@@ -1,5 +1,5 @@
 import { ShadowBoardManager } from '../shadowboard/ShadowBoardManager';
-import { ShadowBoardExecutive } from '../shadowboard/ShadowBoardExecutive';
+import { ExecutiveEntity } from '../shadowboard/ShadowBoardManager';
 
 /**
  * Executive Access Manager
@@ -49,7 +49,7 @@ export class ExecutiveAccessManager {
 
     try {
       // Get user's actual Shadow Board
-      const shadowBoard = await this.shadowBoardManager.getShadowBoard(userId);
+      const shadowBoard = this.shadowBoardManager.getExecutives();
       if (!shadowBoard) {
         throw new Error(`No Shadow Board found for user: ${userId}`);
       }
@@ -57,14 +57,14 @@ export class ExecutiveAccessManager {
       const userExecutives = new Map<string, UserExecutiveInfo>();
 
       // Get all executives for this user
-      for (const [role, executive] of shadowBoard.executives.entries()) {
+      for (const [role, executive] of shadowBoard.entries()) {
         const executiveInfo: UserExecutiveInfo = {
           userId,
           executiveId: executive.id,
           name: executive.name,
-          title: executive.title,
+          title: executive.role,
           role,
-          isActive: executive.isActive
+          isActive: executive.isActive ?? true
         };
         userExecutives.set(role, executiveInfo);
       }
@@ -168,18 +168,15 @@ export class ExecutiveAccessManager {
   /**
    * Get executive by role with security validation
    */
-  public async getExecutiveByRole(userId: string, role: string): Promise<ShadowBoardExecutive | null> {
+  public async getExecutiveByRole(userId: string, role: string): Promise<ExecutiveEntity | null> {
     const validation = await this.validateUserAccess(userId);
     if (!validation.isValid) {
       throw new Error(`SECURITY VIOLATION: ${validation.error}`);
     }
 
-    const shadowBoard = await this.shadowBoardManager.getShadowBoard(userId);
-    if (!shadowBoard) {
-      return null;
-    }
+    const shadowBoard = this.shadowBoardManager.getExecutives();
 
-    const executive = shadowBoard.executives.get(role);
+    const executive = shadowBoard.get(role);
     if (executive) {
       this.logAccess(userId, executive.id, `GET_EXECUTIVE_BY_ROLE_${role.toUpperCase()}`);
     }
@@ -196,10 +193,7 @@ export class ExecutiveAccessManager {
     }
 
     try {
-      const shadowBoard = await this.shadowBoardManager.getShadowBoard(userId);
-      if (!shadowBoard) {
-        return { isValid: false, error: `No Shadow Board found for user: ${userId}` };
-      }
+      const shadowBoard = this.shadowBoardManager.getExecutives();
 
       return { isValid: true };
     } catch (error) {
@@ -295,9 +289,9 @@ export class ExecutiveAccessManager {
    */
   public async ensureUserShadowBoard(userId: string, subscriptionTier: string = 'SMB'): Promise<void> {
     try {
-      let shadowBoard = await this.shadowBoardManager.getShadowBoard(userId);
-      
-      if (!shadowBoard) {
+      let shadowBoard = this.shadowBoardManager.getExecutives();
+
+      if (shadowBoard.size === 0) {
         console.log(`🔐 Initializing Shadow Board for user: ${userId}`);
         
         switch (subscriptionTier.toLowerCase()) {
@@ -308,7 +302,7 @@ export class ExecutiveAccessManager {
             await this.shadowBoardManager.initializeForAdmin(userId, `${userId}@company.com`);
             break;
           default:
-            await this.shadowBoardManager.initializeForSMB(userId, subscriptionTier);
+            await this.shadowBoardManager.initializeForSMB(userId, subscriptionTier as 'sovren_proof' | 'sovren_proof_plus');
         }
 
         // Clear cache to force reload

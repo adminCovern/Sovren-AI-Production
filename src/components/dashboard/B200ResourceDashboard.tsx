@@ -131,6 +131,7 @@ export default function B200ResourceDashboard({ userId }: { userId: string }) {
       const interval = setInterval(fetchDashboardData, 2000); // 2 second refresh
       return () => clearInterval(interval);
     }
+    return undefined;
   }, [fetchDashboardData, autoRefresh]);
 
   // Start/stop monitoring

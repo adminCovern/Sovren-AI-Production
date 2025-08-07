@@ -12,9 +12,12 @@ export interface User {
   id: string;
   email: string;
   name: string;
+  username?: string;
   passwordHash: string;
   salt: string;
   tier: 'SMB' | 'ENTERPRISE' | 'FOUNDER';
+  role?: string;
+  permissions?: string[];
   neuralFingerprint?: string;
   createdAt: Date;
   lastLogin?: Date;
@@ -346,6 +349,22 @@ export class AuthenticationSystem {
         error: 'Invalid token'
       };
     }
+  }
+
+  /**
+   * Get user by ID
+   */
+  public getUser(userId: string): User | { id: any; username: any; email: any; role: any; permissions: any; } | null {
+    const user = this.users.get(userId);
+    if (user) {
+      return {
+        ...user,
+        username: user.username || user.name,
+        role: user.role || 'user',
+        permissions: user.permissions || this.getUserPermissions(user.tier)
+      };
+    }
+    return null;
   }
 
   /**

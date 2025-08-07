@@ -618,14 +618,13 @@ export class CFOExecutive extends EventEmitter {
       );
 
       return {
+        totalRisk: this.calculateOverallRisk(riskAnalysisText),
         marketRisk: this.extractRiskScore(riskAnalysisText, 'market'),
-        creditRisk: this.extractRiskScore(riskAnalysisText, 'credit'),
         operationalRisk: this.extractRiskScore(riskAnalysisText, 'operational'),
-        liquidityRisk: this.extractRiskScore(riskAnalysisText, 'liquidity'),
-        overallRisk: this.calculateOverallRisk(riskAnalysisText),
-        riskFactors: this.extractRiskFactors(riskAnalysisText),
+        financialRisk: this.extractRiskScore(riskAnalysisText, 'credit'),
+        regulatoryRisk: this.extractRiskScore(riskAnalysisText, 'regulatory'),
         mitigationStrategies: this.extractMitigationStrategies(riskAnalysisText),
-        b200Analysis: riskAnalysisText
+        confidenceInterval: [0.8, 0.95] as [number, number]
       };
     } catch (error) {
       console.error('B200 risk analysis failed, using fallback:', error);
@@ -650,12 +649,13 @@ export class CFOExecutive extends EventEmitter {
       );
 
       return {
-        action: this.extractRecommendationAction(recommendationText),
-        rationale: this.extractRationale(recommendationText),
-        conditions: this.extractConditions(recommendationText),
-        alternativeScenarios: this.extractAlternatives(recommendationText),
-        confidenceLevel: this.extractConfidenceLevel(recommendationText),
-        b200Recommendation: recommendationText
+        type: 'investment' as const,
+        priority: 'high' as const,
+        description: this.extractRationale(recommendationText),
+        expectedImpact: 0.15,
+        implementation: this.extractConditions(recommendationText),
+        timeline: '6 months',
+        confidence: 0.85
       };
     } catch (error) {
       console.error('B200 recommendation failed, using fallback:', error);

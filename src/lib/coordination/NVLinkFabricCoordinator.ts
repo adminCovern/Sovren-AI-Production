@@ -187,7 +187,7 @@ export class NVLinkFabricCoordinator extends EventEmitter {
 
     // Place executives based on priority and fabric topology
     for (const executive of executives) {
-      const preferredGPU = executivePriority[executive.toLowerCase()] || 
+      const preferredGPU = (executivePriority as any)[executive.toLowerCase()] ||
                           this.findOptimalGPU(usedGPUs);
       
       placement.set(executive, preferredGPU);
@@ -412,7 +412,9 @@ export class NVLinkFabricCoordinator extends EventEmitter {
       const gpuId = session.allocatedGPUs.get(executive);
       if (gpuId !== undefined) {
         const promise = this.executeExecutiveTask(executive, gpuId, task)
-          .then(result => results.set(executive, result))
+          .then(result => {
+            results.set(executive, result);
+          })
           .catch(error => {
             console.error(`❌ Task failed for ${executive}:`, error);
             results.set(executive, { error: error.message });
@@ -443,7 +445,7 @@ export class NVLinkFabricCoordinator extends EventEmitter {
     // Allocate B200 resources for the executive
     const allocationRequest: B200AllocationRequest = {
       component_name: `coordination_${executive}`,
-      model_type: 'coordination_llm',
+      model_type: 'llm_405b',
       quantization: 'fp8',
       estimated_vram_gb: 20,
       required_gpus: 1,

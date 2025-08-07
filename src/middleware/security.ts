@@ -5,8 +5,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createRateLimiter, getClientId } from './redisRateLimit';
-import { authSystem } from '../src/lib/auth/AuthenticationSystem';
-import { csrfProtection } from '../src/lib/security/CSRFProtection';
+import { authSystem } from '../lib/auth/AuthenticationSystem';
+import { csrfProtection } from '../lib/security/CSRFProtection';
 
 export interface SecurityConfig {
   enableRateLimit: boolean;

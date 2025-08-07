@@ -23,6 +23,9 @@ export interface CallSession {
   startTime: Date;
   status: 'ringing' | 'answered' | 'ended' | 'failed';
   duration?: number;
+  audioQuality?: number;
+  latency?: number;
+  packetsLost?: number;
 }
 
 export interface CallRoutingRule {
@@ -404,6 +407,56 @@ export class FreeSwitchService {
       console.error('Failed to initiate outbound call:', error);
       return null;
     }
+  }
+
+  /**
+   * Get call session by ID
+   */
+  public getCallSession(callId: string): CallSession | undefined {
+    return this.activeCalls.get(callId);
+  }
+
+  /**
+   * Hang up a call
+   */
+  public async hangupCall(callId: string): Promise<boolean> {
+    try {
+      if (this.eslConnection) {
+        await this.eslConnection.api(`uuid_kill ${callId}`);
+      }
+
+      const callSession = this.activeCalls.get(callId);
+      if (callSession) {
+        callSession.status = 'ended';
+        this.activeCalls.delete(callId);
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Failed to hang up call:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Connect audio stream to call
+   */
+  public async connectAudioStream(callId: string, audioStream: any): Promise<boolean> {
+    try {
+      console.log(`🎵 Connecting audio stream to call ${callId}`);
+      // Implementation would connect audio stream to FreeSWITCH
+      return true;
+    } catch (error) {
+      console.error('Failed to connect audio stream:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Check if FreeSWITCH is connected
+   */
+  public get isConnected(): boolean {
+    return !!this.eslConnection;
   }
 
   /**

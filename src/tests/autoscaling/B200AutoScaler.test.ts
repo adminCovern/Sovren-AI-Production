@@ -270,7 +270,7 @@ describe('B200 Auto-Scaling System - SECURE VERSION', () => {
         done();
       });
 
-      autoScaler.start();
+      autoScaler.start('test-user-id');
     });
 
     test('should emit stopped event when stopping', async () => {

@@ -69,10 +69,10 @@ describe('ShadowBoardVoiceIntegration', () => {
 
     // Mock Shadow Board methods - SECURITY: No hardcoded names
     mockShadowBoard.getExecutives.mockReturnValue(new Map([
-      ['CFO', mockExecutive],
-      ['CMO', { ...mockExecutive, id: 'exec-cmo-123', name: 'CMO Executive', role: 'CMO' }],
-      ['CTO', { ...mockExecutive, id: 'exec-cto-123', name: 'CTO Executive', role: 'CTO' }],
-      ['CLO', { ...mockExecutive, id: 'exec-clo-123', name: 'CLO Executive', role: 'CLO' }]
+      ['CFO', mockExecutive as any],
+      ['CMO', { ...mockExecutive, id: 'exec-cmo-123', name: 'CMO Executive', role: 'CMO' } as any],
+      ['CTO', { ...mockExecutive, id: 'exec-cto-123', name: 'CTO Executive', role: 'CTO' } as any],
+      ['CLO', { ...mockExecutive, id: 'exec-clo-123', name: 'CLO Executive', role: 'CLO' } as any]
     ]));
 
     mockShadowBoard.getExecutive.mockImplementation((role: string) => {
@@ -82,9 +82,7 @@ describe('ShadowBoardVoiceIntegration', () => {
 
     voiceIntegration = new ShadowBoardVoiceIntegration(
       mockShadowBoard,
-      mockVoiceSystem,
-      mockPhoneSystem,
-      mockVoiceSynthesizer
+      mockPhoneSystem
     );
   });
 
@@ -305,7 +303,7 @@ describe('ShadowBoardVoiceIntegration', () => {
       const callRequest2: ExecutiveCallRequest = {
         executiveRole: 'CMO',
         targetNumber: '+15559876544',
-        callPurpose: 'marketing'
+        callPurpose: 'sales'
       };
 
       await voiceIntegration.makeExecutiveCall(callRequest1);

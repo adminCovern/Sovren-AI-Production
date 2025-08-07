@@ -56,7 +56,7 @@ describe('PhoneSystemManager', () => {
 
   beforeEach(() => {
     // Create mocked instances
-    mockSkyetelService = new SkyetelService({} as any, {} as any) as jest.Mocked<SkyetelService>;
+    mockSkyetelService = new SkyetelService({} as any) as jest.Mocked<SkyetelService>;
     mockFreeSwitchService = new FreeSwitchService({} as any) as jest.Mocked<FreeSwitchService>;
     mockProvisioningManager = new PhoneProvisioningManager({} as any) as jest.Mocked<PhoneProvisioningManager>;
 

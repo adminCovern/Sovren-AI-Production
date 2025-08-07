@@ -349,6 +349,19 @@ export class SkyetelService {
   }
 
   /**
+   * Test connection to Skyetel API
+   */
+  public async testConnection(): Promise<boolean> {
+    try {
+      const response = await this.apiClient.get('/account');
+      return response.status === 200;
+    } catch (error) {
+      console.error('Skyetel connection test failed:', error);
+      return false;
+    }
+  }
+
+  /**
    * Release phone numbers when user cancels subscription using Skyetel API
    */
   public async releaseUserPhoneNumbers(allocation: UserPhoneAllocation): Promise<boolean> {

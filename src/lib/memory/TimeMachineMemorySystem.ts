@@ -28,6 +28,14 @@ export interface TemporalEventData {
   expectedResult?: number;
   variance?: number;
 
+  // Scenario analysis data
+  parameters?: any;
+  optimalScenario?: any;
+  expectedValue?: number;
+  riskMetrics?: any;
+  recommendation?: any;
+  confidence?: number;
+
   // External data
   marketCondition?: 'bull' | 'bear' | 'stable' | 'volatile';
   competitorAction?: string;

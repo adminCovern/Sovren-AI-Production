@@ -292,7 +292,7 @@ export class ExecutiveInteractionEngine extends EventEmitter {
   private calculateThinkingTime(executive: ExecutiveEntity, interaction: ExecutiveInteraction): number {
     const baseTime = 100; // Base thinking time in ms
     const complexityMultiplier = interaction.context.urgency === 'critical' ? 0.5 : 1.0;
-    const roleMultiplier = executive.role === 'CEO' ? 1.2 : 1.0; // CEOs think more strategically
+    const roleMultiplier = executive.role === 'SOVREN-AI' ? 1.2 : 1.0; // SOVREN-AI thinks more strategically
     
     return baseTime * complexityMultiplier * roleMultiplier;
   }
@@ -429,7 +429,7 @@ export class ExecutiveInteractionEngine extends EventEmitter {
   }
 
   private assessEscalationNeed(executive: ExecutiveEntity, interaction: ExecutiveInteraction): boolean {
-    return interaction.context.urgency === 'critical' && executive.role !== 'CEO';
+    return interaction.context.urgency === 'critical' && executive.role !== 'SOVREN-AI';
   }
 
   private estimateBusinessValue(interaction: ExecutiveInteraction): number {

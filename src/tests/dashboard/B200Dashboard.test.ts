@@ -156,7 +156,7 @@ describe('B200 Resource Monitoring Dashboard', () => {
         
         // Verify alert was acknowledged
         const updatedMetrics = await resourceMonitor.getCurrentMetrics();
-        const acknowledgedAlert = updatedMetrics.alerts.find(a => a.id === alert.id);
+        const acknowledgedAlert = updatedMetrics.alerts.find((a: any) => a.id === alert.id);
         if (acknowledgedAlert) {
           expect(acknowledgedAlert.acknowledged).toBe(true);
         }

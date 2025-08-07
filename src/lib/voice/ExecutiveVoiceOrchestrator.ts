@@ -186,7 +186,7 @@ export class ExecutiveVoiceOrchestrator extends EventEmitter {
       console.log('✅ Executive Voice Orchestrator initialized');
       this.emit('initialized', { capabilities: this.getCapabilities() });
 
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('❌ Failed to initialize Executive Voice Orchestrator:', error);
       throw error;
     }
@@ -303,7 +303,7 @@ export class ExecutiveVoiceOrchestrator extends EventEmitter {
       this.emit('voiceGenerated', result);
       return result;
 
-    } catch (error) {
+    } catch (error: unknown) {
       console.error(`❌ Voice generation failed for ${request.executiveId}:`, error);
       throw error;
     }
@@ -387,7 +387,7 @@ export class ExecutiveVoiceOrchestrator extends EventEmitter {
 
       return callSession;
 
-    } catch (error) {
+    } catch (error: unknown) {
       console.error(`❌ Failed to initiate executive call:`, error);
       callSession.status = 'ended';
       throw error;
@@ -457,7 +457,7 @@ export class ExecutiveVoiceOrchestrator extends EventEmitter {
 
       return callSession;
 
-    } catch (error) {
+    } catch (error: unknown) {
       console.error(`❌ Failed to handle incoming call:`, error);
       callSession.status = 'ended';
       throw error;
@@ -572,7 +572,7 @@ export class ExecutiveVoiceOrchestrator extends EventEmitter {
         memoryUsage: 512 // MB
       };
 
-    } catch (error) {
+    } catch (error: unknown) {
       console.error(`❌ Failed to load voice model for ${role}:`, error);
       return {
         modelPath,
@@ -649,7 +649,7 @@ export class ExecutiveVoiceOrchestrator extends EventEmitter {
         const result = await this.generateExecutiveVoice(request);
         this.voiceGenerationQueue.delete(requestId);
         this.emit('voiceGenerationComplete', { requestId, result });
-      } catch (error) {
+      } catch (error: unknown) {
         console.error(`❌ Voice generation failed for request ${requestId}:`, error);
         this.voiceGenerationQueue.delete(requestId);
         this.emit('voiceGenerationFailed', { requestId, error });
@@ -996,7 +996,7 @@ export class ExecutiveVoiceOrchestrator extends EventEmitter {
           } else if ('cancel' in stream && typeof stream.cancel === 'function') {
             await (stream as any).cancel();
           }
-        } catch (error) {
+        } catch (error: unknown) {
           console.error('❌ Failed to destroy stream:', error);
         }
         this.realTimeStreams.delete(callId);
@@ -1048,7 +1048,7 @@ export class ExecutiveVoiceOrchestrator extends EventEmitter {
         } else if ('cancel' in stream && typeof stream.cancel === 'function') {
           await (stream as any).cancel();
         }
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('❌ Failed to destroy stream during cleanup:', error);
       }
     }

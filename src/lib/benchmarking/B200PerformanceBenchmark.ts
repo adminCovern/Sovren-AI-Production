@@ -927,7 +927,7 @@ export class B200PerformanceBenchmark extends EventEmitter {
     const allocationRequests = [
       {
         component_name: 'benchmark_cfo',
-        model_type: 'llm_model' as const,
+        model_type: 'llm_70b' as const,
         quantization: 'fp8' as const,
         estimated_vram_gb: 20,
         required_gpus: 1,
@@ -940,7 +940,7 @@ export class B200PerformanceBenchmark extends EventEmitter {
       },
       {
         component_name: 'benchmark_cmo',
-        model_type: 'llm_model' as const,
+        model_type: 'llm_70b' as const,
         quantization: 'fp8' as const,
         estimated_vram_gb: 18,
         required_gpus: 1,

@@ -143,7 +143,7 @@ export class SovrenAIShadowBoardIntegration extends EventEmitter {
         status: await this.getStatus()
       });
 
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('❌ Failed to initialize SOVREN-AI Shadow Board Integration:', error);
       this.emit('initializationError', error);
       throw error;
@@ -230,7 +230,7 @@ export class SovrenAIShadowBoardIntegration extends EventEmitter {
         executiveStatus
       };
 
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('❌ Failed to get Shadow Board status:', error);
       return {
         overallStatus: 'error',
@@ -292,7 +292,7 @@ export class SovrenAIShadowBoardIntegration extends EventEmitter {
           text: response,
           context: {
             conversationType: 'meeting',
-            emotionalTone: 'professional',
+            emotionalTone: 'confident',
             urgency: request.priority,
             audience: 'client'
           },
@@ -361,7 +361,7 @@ export class SovrenAIShadowBoardIntegration extends EventEmitter {
         satisfactionPrediction
       };
 
-    } catch (error) {
+    } catch (error: unknown) {
       console.error(`❌ Executive interaction failed for ${executiveRole}:`, error);
       throw error;
     }
@@ -383,7 +383,7 @@ export class SovrenAIShadowBoardIntegration extends EventEmitter {
       this.componentStatus.voiceSynthesis = 'ready';
       console.log('✅ Voice system initialized');
 
-    } catch (error) {
+    } catch (error: unknown) {
       this.componentStatus.voiceSynthesis = 'error';
       throw error;
     }
@@ -404,7 +404,7 @@ export class SovrenAIShadowBoardIntegration extends EventEmitter {
       this.componentStatus.coordination = 'ready';
       console.log('✅ Coordination system initialized');
 
-    } catch (error) {
+    } catch (error: unknown) {
       this.componentStatus.coordination = 'error';
       throw error;
     }
@@ -425,7 +425,7 @@ export class SovrenAIShadowBoardIntegration extends EventEmitter {
       this.componentStatus.performance = 'ready';
       console.log('✅ Performance system initialized');
 
-    } catch (error) {
+    } catch (error: unknown) {
       this.componentStatus.performance = 'error';
       throw error;
     }
@@ -446,7 +446,7 @@ export class SovrenAIShadowBoardIntegration extends EventEmitter {
       this.componentStatus.advanced = 'ready';
       console.log('✅ Advanced features initialized');
 
-    } catch (error) {
+    } catch (error: unknown) {
       this.componentStatus.advanced = 'error';
       throw error;
     }
@@ -467,7 +467,7 @@ export class SovrenAIShadowBoardIntegration extends EventEmitter {
       this.componentStatus.analytics = 'ready';
       console.log('✅ Analytics dashboard initialized');
 
-    } catch (error) {
+    } catch (error: unknown) {
       this.componentStatus.analytics = 'error';
       throw error;
     }
@@ -512,7 +512,7 @@ export class SovrenAIShadowBoardIntegration extends EventEmitter {
 
         console.log(`✅ Executive ${role} initialized`);
 
-      } catch (error) {
+      } catch (error: unknown) {
         console.error(`❌ Failed to initialize executive ${role}:`, error);
       }
     }
@@ -582,7 +582,7 @@ export class SovrenAIShadowBoardIntegration extends EventEmitter {
 
       console.log('✅ SOVREN-AI Shadow Board Integration cleanup complete');
 
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('❌ Failed to cleanup Shadow Board Integration:', error);
     }
   }

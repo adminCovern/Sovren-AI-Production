@@ -74,6 +74,8 @@ export interface UserPreferences {
   // Additional onboarding preferences
   autoExecutiveSummoning?: boolean;
   voiceEnabled?: boolean;
+  phoneNumbersEnabled?: boolean;
+  setupCompleted?: boolean;
 }
 
 export interface UserData {
@@ -267,7 +269,7 @@ export class DatabaseManager {
       }
     ];
 
-    defaultExecutives.forEach(exec => {
+    defaultExecutiveTemplates.forEach((exec: any) => {
       this.executives.set(exec.id, exec);
     });
 
@@ -482,6 +484,24 @@ export class DatabaseManager {
     if (!user) return null;
 
     const updatedUser = { ...user, ...updates };
+    this.users.set(userId, updatedUser);
+    return updatedUser;
+  }
+
+  /**
+   * Update user preferences
+   */
+  async updateUserPreferences(userId: string, preferences: any): Promise<UserData | null> {
+    const user = this.users.get(userId);
+    if (!user) return null;
+
+    const updatedUser = {
+      ...user,
+      preferences: {
+        ...user.preferences,
+        ...preferences
+      }
+    };
     this.users.set(userId, updatedUser);
     return updatedUser;
   }

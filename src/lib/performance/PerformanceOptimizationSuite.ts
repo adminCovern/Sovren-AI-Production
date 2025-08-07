@@ -123,7 +123,6 @@ export class PerformanceOptimizationSuite extends EventEmitter {
     this.redisClient = new Redis({
       host: process.env.REDIS_HOST || 'localhost',
       port: parseInt(process.env.REDIS_PORT || '6379'),
-      retryDelayOnFailover: 100,
       maxRetriesPerRequest: 3
     });
     
@@ -156,7 +155,7 @@ export class PerformanceOptimizationSuite extends EventEmitter {
       console.log('✅ Performance Optimization Suite initialized');
       this.emit('initialized', { capabilities: this.getOptimizationCapabilities() });
 
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('❌ Failed to initialize Performance Optimization Suite:', error);
       throw error;
     }
@@ -193,7 +192,7 @@ export class PerformanceOptimizationSuite extends EventEmitter {
       const cacheId = `cache_${userId}_${executiveId}_${requestHash}`;
 
       // Check cache size limits
-      await this.enforceCache Limits();
+      await this.enforceCacheLimits();
 
       const cacheEntry: ExecutiveResponseCache = {
         cacheId,
@@ -226,7 +225,7 @@ export class PerformanceOptimizationSuite extends EventEmitter {
       
       return cacheId;
 
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('❌ Failed to cache executive response:', error);
       return '';
     }
@@ -273,7 +272,9 @@ export class PerformanceOptimizationSuite extends EventEmitter {
           };
           
           // Restore to memory cache
-          this.responseCache.set(cacheId, cacheEntry);
+          if (cacheEntry) {
+            this.responseCache.set(cacheId, cacheEntry);
+          }
         }
       }
 
@@ -298,7 +299,7 @@ export class PerformanceOptimizationSuite extends EventEmitter {
       this.emit('cacheMiss', { cacheId, executiveId });
       return null;
 
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('❌ Failed to retrieve cached response:', error);
       return null;
     }
@@ -315,7 +316,7 @@ export class PerformanceOptimizationSuite extends EventEmitter {
       console.log(`🚀 Optimizing B200 for executive ${executiveId} (${optimizationLevel})`);
 
       // Get executive information
-      const executive = await executiveAccessManager.getExecutiveById(executiveId);
+      const executive = await executiveAccessManager.getExecutiveByRole('system', executiveId);
       if (!executive) {
         throw new Error(`Executive not found: ${executiveId}`);
       }
@@ -337,7 +338,7 @@ export class PerformanceOptimizationSuite extends EventEmitter {
       
       return optimizationProfile;
 
-    } catch (error) {
+    } catch (error: unknown) {
       console.error(`❌ Failed to optimize B200 for executive ${executiveId}:`, error);
       throw error;
     }
@@ -387,7 +388,7 @@ export class PerformanceOptimizationSuite extends EventEmitter {
       
       return memoryAllocations;
 
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('❌ Failed to manage executive memory:', error);
       throw error;
     }
@@ -417,7 +418,7 @@ export class PerformanceOptimizationSuite extends EventEmitter {
     try {
       await this.redisClient.ping();
       console.log('✅ Redis connection established');
-    } catch (error) {
+    } catch (error: unknown) {
       console.warn('⚠️ Redis not available, using memory-only caching');
     }
   }
@@ -508,7 +509,7 @@ export class PerformanceOptimizationSuite extends EventEmitter {
         powerEfficiency: 10 + Math.random() * 20 // 10-30 tokens/watt
       };
 
-    } catch (error) {
+    } catch (error: unknown) {
       console.error(`❌ Failed to apply B200 optimizations for ${profile.executiveRole}:`, error);
     }
   }
@@ -674,7 +675,7 @@ export class PerformanceOptimizationSuite extends EventEmitter {
 
       this.emit('metricsCollected', metrics);
 
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('❌ Failed to collect performance metrics:', error);
     }
   }
@@ -743,7 +744,7 @@ export class PerformanceOptimizationSuite extends EventEmitter {
         this.emit('autoOptimizationPerformed', { trigger: 'high_response_time', avgResponseTime });
       }
 
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('❌ Auto-optimization failed:', error);
     }
   }
@@ -845,8 +846,18 @@ export class PerformanceOptimizationSuite extends EventEmitter {
 
       console.log('🧹 Performance Optimization Suite cleanup complete');
 
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('❌ Failed to cleanup Performance Optimization Suite:', error);
     }
+  }
+
+  /**
+   * Initialize the performance optimization suite
+   */
+  public async initialize(): Promise<void> {
+    console.log('🚀 Initializing Performance Optimization Suite...');
+    // Initialize components
+    await this.initializeB200OptimizationProfiles();
+    console.log('✅ Performance Optimization Suite initialized');
   }
 }

@@ -63,8 +63,8 @@ class B200SystemTester {
       } else {
         this.addResult(test, 'FAIL', Date.now() - start, `HTTP ${response.status}`);
       }
-    } catch (error) {
-      this.addResult(test, 'FAIL', Date.now() - start, undefined, error.message);
+    } catch (error: unknown) {
+      this.addResult(test, 'FAIL', Date.now() - start, undefined, error instanceof Error ? error.message : 'Unknown error');
     }
   }
 
@@ -81,8 +81,8 @@ class B200SystemTester {
       } else {
         this.addResult(test, 'FAIL', Date.now() - start, `HTTP ${response.status}`);
       }
-    } catch (error) {
-      this.addResult(test, 'FAIL', Date.now() - start, undefined, error.message);
+    } catch (error: unknown) {
+      this.addResult(test, 'FAIL', Date.now() - start, undefined, error instanceof Error ? error.message : 'Unknown error');
     }
   }
 
@@ -98,8 +98,8 @@ class B200SystemTester {
       
       this.addResult(test, 'PASS', Date.now() - start, 
         `GPUs: ${systemMetrics.total_gpus}, Memory: ${systemMetrics.total_memory_gb}GB`);
-    } catch (error) {
-      this.addResult(test, 'FAIL', Date.now() - start, undefined, error.message);
+    } catch (error: unknown) {
+      this.addResult(test, 'FAIL', Date.now() - start, undefined, error instanceof Error ? error.message : 'Unknown error');
     }
   }
 
@@ -119,8 +119,8 @@ class B200SystemTester {
       } else {
         this.addResult(test, 'FAIL', Date.now() - start, 'No models loaded');
       }
-    } catch (error) {
-      this.addResult(test, 'FAIL', Date.now() - start, undefined, error.message);
+    } catch (error: unknown) {
+      this.addResult(test, 'FAIL', Date.now() - start, undefined, error instanceof Error ? error.message : 'Unknown error');
     }
   }
 
@@ -147,13 +147,13 @@ class B200SystemTester {
       const analysis = await cfo.analyzeFinancialOpportunity(testOpportunity);
       
       if (analysis && analysis.recommendation) {
-        this.addResult(test, 'PASS', Date.now() - start, 
-          `Recommendation: ${analysis.recommendation.action || 'Generated'}`);
+        this.addResult(test, 'PASS', Date.now() - start,
+          `Recommendation: ${(analysis.recommendation as any).action || 'Generated'}`);
       } else {
         this.addResult(test, 'FAIL', Date.now() - start, 'No analysis generated');
       }
-    } catch (error) {
-      this.addResult(test, 'FAIL', Date.now() - start, undefined, error.message);
+    } catch (error: unknown) {
+      this.addResult(test, 'FAIL', Date.now() - start, undefined, error instanceof Error ? error.message : 'Unknown error');
     }
   }
 
@@ -181,8 +181,8 @@ class B200SystemTester {
       } else {
         this.addResult(test, 'FAIL', Date.now() - start, 'Insufficient analysis generated');
       }
-    } catch (error) {
-      this.addResult(test, 'FAIL', Date.now() - start, undefined, error.message);
+    } catch (error: unknown) {
+      this.addResult(test, 'FAIL', Date.now() - start, undefined, error instanceof Error ? error.message : 'Unknown error');
     }
   }
 
@@ -208,8 +208,8 @@ class B200SystemTester {
       } else {
         this.addResult(test, 'FAIL', Date.now() - start, 'Performance metrics unavailable');
       }
-    } catch (error) {
-      this.addResult(test, 'FAIL', Date.now() - start, undefined, error.message);
+    } catch (error: unknown) {
+      this.addResult(test, 'FAIL', Date.now() - start, undefined, error instanceof Error ? error.message : 'Unknown error');
     }
   }
 
@@ -261,7 +261,7 @@ class B200SystemTester {
 // Run tests if called directly
 if (require.main === module) {
   const tester = new B200SystemTester();
-  tester.runAllTests().catch(error => {
+  tester.runAllTests().catch((error: unknown) => {
     console.error('❌ Test runner failed:', error);
     process.exit(1);
   });

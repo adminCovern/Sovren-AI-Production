@@ -233,7 +233,7 @@ export class RealTimeExecutiveCoordination extends EventEmitter {
       session.coordinationFlow.push({
         timestamp: new Date(),
         executiveRole,
-        action: action === 'speak' ? 'spoke' : action === 'decide' ? 'decided' : action,
+        action: action === 'speak' ? 'spoke' : action === 'decide' ? 'decided' : action === 'object' ? 'objected' : action === 'agree' ? 'agreed' : action === 'propose' ? 'spoke' : 'spoke',
         content,
         confidence,
         impact: this.calculateImpact(action, confidence, session.priority)
@@ -537,7 +537,7 @@ export class RealTimeExecutiveCoordination extends EventEmitter {
       const executive = this.shadowBoard.getExecutive(executiveRole);
       if (executive) {
         executive.currentActivity = {
-          type: 'coordinating',
+          type: 'communicating',
           focus: `realtime_${session.type}`,
           intensity: session.priority === 'critical' ? 1.0 : 0.8,
           startTime: new Date(),

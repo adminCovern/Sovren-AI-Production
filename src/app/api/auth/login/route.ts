@@ -22,7 +22,7 @@ export interface LoginResponse {
     id: string;
     email: string;
     name: string;
-    tier: 'SMB' | 'ENTERPRISE';
+    tier: 'SMB' | 'ENTERPRISE' | 'FOUNDER';
   };
   expiresAt?: string;
   error?: string;

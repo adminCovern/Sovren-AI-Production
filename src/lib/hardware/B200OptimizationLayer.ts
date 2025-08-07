@@ -81,6 +81,15 @@ export interface PerformanceMetrics {
   parallelism: number; // active threads
 }
 
+export interface B200AllocationRequest {
+  component_name: string;
+  model_type: 'llm_405b' | 'llm_70b' | 'voice_synthesis' | 'embedding';
+  quantization: 'fp8' | 'fp16' | 'int8' | 'int4';
+  estimated_vram_gb: number;
+  priority: 'low' | 'medium' | 'high' | 'critical';
+  max_batch_size: number;
+}
+
 export class B200OptimizationLayer extends EventEmitter {
   private b200Specs!: B200Specifications;
   private workerPool: Worker[] = [];
@@ -844,6 +853,28 @@ export class B200OptimizationLayer extends EventEmitter {
    */
   public getGPUKernels(): GPUKernel[] {
     return Array.from(this.gpuKernels.values());
+  }
+
+  /**
+   * Get all current allocations
+   */
+  public async getAllocations(): Promise<B200AllocationRequest[]> {
+    const allocations: B200AllocationRequest[] = [];
+
+    for (const [poolName, pool] of this.memoryPools.entries()) {
+      for (const [allocationId, allocation] of pool.allocations.entries()) {
+        allocations.push({
+          component_name: allocation.type,
+          model_type: 'llm_405b',
+          quantization: 'fp8',
+          estimated_vram_gb: allocation.size / 1024,
+          priority: 'high',
+          max_batch_size: 1
+        });
+      }
+    }
+
+    return allocations;
   }
 }
 

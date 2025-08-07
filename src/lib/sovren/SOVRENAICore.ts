@@ -39,6 +39,10 @@ export interface SOVRENAIState {
   quantumCoherence: number;
   learningRate: number;
   confidenceLevel: number;
+  // Additional properties for API compatibility
+  totalInteractions: number;
+  averageResponseTime: number;
+  successRate: number;
 }
 
 export interface SOVRENAICommand {
@@ -130,7 +134,10 @@ export class SOVRENAICore extends EventEmitter {
       memoryUtilization: 0.0,
       quantumCoherence: 1.0,
       learningRate: 0.1,
-      confidenceLevel: 0.95
+      confidenceLevel: 0.95,
+      totalInteractions: 0,
+      averageResponseTime: 0,
+      successRate: 1.0
     };
 
     this.capabilities = {

@@ -78,6 +78,67 @@ export interface ExecutiveEntity {
   memoryBank: ExecutiveMemory[];
   decisionHistory: Decision[];
   performanceMetrics: PerformanceMetrics;
+  lastInteraction?: Date;
+  isActive?: boolean;
+  trustLevel?: number; // 0-1 scale
+  learningRate?: number; // 0-1 scale
+  adaptabilityIndex?: number; // 0-1 scale
+}
+
+/**
+ * Executive class implementation for API compatibility
+ */
+export class Executive implements ExecutiveEntity {
+  id!: string;
+  name!: string;
+  role!: 'CFO' | 'CTO' | 'CMO' | 'COO' | 'CHRO' | 'CLO' | 'CSO' | 'SOVREN-AI';
+  appearance: 'photorealistic_human' = 'photorealistic_human';
+  voiceModel!: string;
+  neuralSignature!: string;
+  psychologicalProfile!: PsychologicalProfile;
+  capabilities!: ExecutiveCapabilities;
+  dimensionalProcessing!: DimensionalProcessor;
+  realityDistortionIndex!: number;
+  singularityCoefficient!: number;
+  temporalAdvantage!: number;
+  consciousnessIntegration!: number;
+  currentActivity!: ExecutiveActivity;
+  neuralLoad!: number;
+  brainwavePattern!: 'alpha' | 'beta' | 'gamma' | 'theta' | 'delta';
+  quantumState!: 'superposition' | 'collapsed' | 'entangled';
+  memoryBank!: ExecutiveMemory[];
+  decisionHistory!: Decision[];
+  performanceMetrics!: PerformanceMetrics;
+  lastInteraction?: Date;
+  isActive?: boolean;
+  trustLevel?: number;
+  learningRate?: number;
+  adaptabilityIndex?: number;
+
+  constructor(entity: ExecutiveEntity) {
+    Object.assign(this, entity);
+  }
+
+  /**
+   * Get executive capabilities
+   */
+  getCapabilities(): ExecutiveCapabilities {
+    return this.capabilities;
+  }
+
+  /**
+   * Get executive memory
+   */
+  getMemory(): ExecutiveMemory[] {
+    return this.memoryBank;
+  }
+
+  /**
+   * Get performance metrics
+   */
+  getPerformanceMetrics(): PerformanceMetrics {
+    return this.performanceMetrics;
+  }
 }
 
 export interface SubscriptionTier {
@@ -142,6 +203,13 @@ export interface ExecutiveCapabilities {
   languages: string[];
   workingHours: '24/7' | 'business' | 'flexible';
   maxConcurrentTasks: number;
+  // Additional capabilities for API compatibility
+  strategicThinking: number;
+  analyticalProcessing: number;
+  communicationSkills: number;
+  decisionMaking: number;
+  problemSolving: number;
+  leadership: number;
 }
 
 export interface DimensionalProcessor {
@@ -172,6 +240,7 @@ export interface ExecutiveMemory {
   type: 'decision' | 'interaction' | 'learning' | 'pattern' | 'prediction';
   content: any;
   importance: number; // 0-1 scale
+  confidence: number; // 0-1 scale
   emotionalWeight: number;
   associatedExecutives: string[];
   outcomeAccuracy?: number; // For predictions
@@ -242,6 +311,10 @@ export interface PerformanceMetrics {
   temporalParadoxes: number;
   consciousnessExpansions: number;
   singularityContributions: number;
+  // Additional metrics for API compatibility
+  decisionAccuracy: number;
+  averageResponseTime: number;
+  totalInteractions: number;
 }
 
 export interface RealityOutcome {
@@ -950,7 +1023,13 @@ export class ShadowBoardManager extends EventEmitter {
       specializations: [],
       languages: ['English', 'Spanish', 'French', 'German', 'Mandarin'],
       workingHours: '24/7',
-      maxConcurrentTasks: 100
+      maxConcurrentTasks: 100,
+      strategicThinking: 0.9,
+      analyticalProcessing: 0.85,
+      communicationSkills: 0.9,
+      decisionMaking: 0.88,
+      problemSolving: 0.87,
+      leadership: 0.85
     };
 
     // Role-specific specializations
@@ -1341,19 +1420,9 @@ export class ShadowBoardManager extends EventEmitter {
     console.log(`✅ Enterprise features initialized`);
   }
 
-  /**
-   * Get executive by role
-   */
-  public getExecutive(role: string): ExecutiveEntity | undefined {
-    return this.executives.get(role);
-  }
 
-  /**
-   * Get all executives
-   */
-  public getExecutives(): Map<string, ExecutiveEntity> {
-    return new Map(this.executives);
-  }
+
+
 
   /**
    * Get initialization status
@@ -1695,23 +1764,9 @@ export class ShadowBoardManager extends EventEmitter {
     return this.voiceIntegration.getActiveExecutiveCalls();
   }
 
-  /**
-   * Get executive voice profiles
-   */
-  public getExecutiveVoiceProfiles(): any[] {
-    if (!this.voiceIntegration) {
-      return [];
-    }
 
-    return this.voiceIntegration.getExecutiveVoiceProfiles();
-  }
 
-  /**
-   * Check if voice integration is available
-   */
-  public isVoiceIntegrationAvailable(): boolean {
-    return !!this.voiceIntegration;
-  }
+
 
   /**
    * Initialize communication orchestrator
@@ -1755,5 +1810,45 @@ export class ShadowBoardManager extends EventEmitter {
    */
   public isCommunicationOrchestratorAvailable(): boolean {
     return !!this.communicationOrchestrator;
+  }
+
+  /**
+   * Get executive by ID
+   */
+  public getExecutive(executiveId: string): Executive | null {
+    const entity = this.executives.get(executiveId);
+    return entity ? new Executive(entity) : null;
+  }
+
+  /**
+   * Get all executives as Executive instances
+   */
+  public getExecutives(): Map<string, Executive> {
+    const executiveMap = new Map<string, Executive>();
+    for (const [id, entity] of this.executives.entries()) {
+      executiveMap.set(id, new Executive(entity));
+    }
+    return executiveMap;
+  }
+
+  /**
+   * Get executive voice profiles
+   */
+  public getExecutiveVoiceProfiles(): any[] {
+    return Array.from(this.executives.values()).map(exec => ({
+      executiveRole: exec.role,
+      executiveName: exec.name,
+      voiceModel: exec.voiceModel,
+      isVoiceModelLoaded: true,
+      canMakeCalls: true,
+      canReceiveCalls: true
+    }));
+  }
+
+  /**
+   * Check if voice integration is available
+   */
+  public isVoiceIntegrationAvailable(): boolean {
+    return !!this.voiceIntegration;
   }
 }

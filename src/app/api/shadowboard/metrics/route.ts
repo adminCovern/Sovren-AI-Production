@@ -279,16 +279,19 @@ export async function POST(request: NextRequest) {
         const executives = shadowBoard.getExecutives();
         for (const [role, executive] of executives) {
           executive.performanceMetrics = {
-            totalInteractions: 0,
-            successfulInteractions: 0,
-            averageResponseTime: 0,
+            decisionsPerHour: 12,
+            accuracyRate: 0.95,
+            responseTime: 250,
+            stakeholderSatisfaction: 0.9,
+            revenueGenerated: 100000,
+            competitorsDestroyed: 3,
+            realityAlterations: 1,
+            temporalParadoxes: 0,
+            consciousnessExpansions: 2,
+            singularityContributions: 1,
             decisionAccuracy: 0.85,
-            learningRate: 0.1,
-            adaptabilityScore: 0.8,
-            collaborationEfficiency: 0.9,
-            innovationIndex: 0.7,
-            stressResistance: 0.95,
-            multitaskingCapability: 0.8
+            averageResponseTime: 250,
+            totalInteractions: 0
           };
         }
         result = { message: 'Metrics reset successfully' };

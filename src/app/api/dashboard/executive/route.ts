@@ -8,6 +8,7 @@ import { getSOVRENCore } from '@/lib/bootstrap/ApplicationBootstrap';
 import { authSystem } from '@/lib/auth/AuthenticationSystem';
 import { rateLimiters, getClientId } from '@/middleware/rateLimit';
 import { dbManager } from '@/lib/database/DatabaseManager';
+import { Executive } from '@/lib/shadowboard/ShadowBoardManager';
 
 export interface ExecutiveDashboardData {
   overview: {
@@ -278,14 +279,14 @@ export async function GET(request: NextRequest) {
         recentActivities: exec.memoryBank.slice(-5).map(memory => ({
           timestamp: memory.timestamp.toISOString(),
           type: memory.type,
-          description: memory.content.substring(0, 100) + '...',
+          description: (typeof memory.content === 'string' ? memory.content : JSON.stringify(memory.content)).substring(0, 100) + '...',
           confidence: memory.confidence
         })),
         voiceProfile: voiceProfile ? {
-          phoneNumber: voiceProfile.phoneNumber,
-          canMakeCalls: voiceProfile.canMakeCalls,
-          currentCallCount: voiceProfile.currentCallCount,
-          maxConcurrentCalls: voiceProfile.maxConcurrentCalls
+          phoneNumber: (voiceProfile as any).phoneNumber || 'Not assigned',
+          canMakeCalls: (voiceProfile as any).canMakeCalls || false,
+          currentCallCount: (voiceProfile as any).currentCallCount || 0,
+          maxConcurrentCalls: (voiceProfile as any).maxConcurrentCalls || 0
         } : undefined
       };
     });

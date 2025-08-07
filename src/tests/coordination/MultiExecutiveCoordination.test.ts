@@ -190,7 +190,7 @@ describe('Multi-Executive Coordination System', () => {
       // CFO configuration should be verified through ExecutiveAccessManager
       const cfo = executiveRoles.get('cfo');
       expect(cfo).toBeDefined();
-      expect(cfo?.role).toBe('cfo'); // Verify role, not hardcoded name
+      expect(cfo?.id).toBe('cfo'); // Verify id, not hardcoded name
       expect(cfo?.title).toBe('Chief Financial Officer');
       expect(cfo?.expertise).toContain('financial_analysis');
       

@@ -72,9 +72,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       } as RegistrationResponse, { 
         status: 429,
         headers: {
-          'X-RateLimit-Limit': info.limit.toString(),
-          'X-RateLimit-Remaining': info.remaining.toString(),
-          'X-RateLimit-Reset': Math.ceil(info.resetTime.getTime() / 1000).toString()
+          'X-RateLimit-Limit': (info?.limit || 100).toString(),
+          'X-RateLimit-Remaining': (info?.remaining || 0).toString(),
+          'X-RateLimit-Reset': Math.ceil((info?.resetTime?.getTime() || Date.now()) / 1000).toString()
         }
       });
     }

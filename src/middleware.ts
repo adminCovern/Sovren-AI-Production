@@ -76,19 +76,21 @@ async function handleRateLimiting(request: NextRequest): Promise<NextResponse | 
     return new NextResponse('Rate limit exceeded', {
       status: 429,
       headers: {
-        'X-RateLimit-Limit': info.limit.toString(),
-        'X-RateLimit-Remaining': info.remaining.toString(),
-        'X-RateLimit-Reset': Math.ceil(info.resetTime.getTime() / 1000).toString(),
-        'Retry-After': Math.ceil((info.resetTime.getTime() - Date.now()) / 1000).toString()
+        'X-RateLimit-Limit': info?.limit.toString() || '100',
+        'X-RateLimit-Remaining': info?.remaining.toString() || '0',
+        'X-RateLimit-Reset': info ? Math.ceil(info.resetTime.getTime() / 1000).toString() : '0',
+        'Retry-After': info ? Math.ceil((info.resetTime.getTime() - Date.now()) / 1000).toString() : '60'
       }
     });
   }
 
   // Add rate limit headers to successful requests
   const response = NextResponse.next();
-  response.headers.set('X-RateLimit-Limit', info.limit.toString());
-  response.headers.set('X-RateLimit-Remaining', info.remaining.toString());
-  response.headers.set('X-RateLimit-Reset', Math.ceil(info.resetTime.getTime() / 1000).toString());
+  if (info) {
+    response.headers.set('X-RateLimit-Limit', info.limit.toString());
+    response.headers.set('X-RateLimit-Remaining', info.remaining.toString());
+    response.headers.set('X-RateLimit-Reset', Math.ceil(info.resetTime.getTime() / 1000).toString());
+  }
 
   return null;
 }

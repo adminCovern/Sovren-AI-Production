@@ -31,6 +31,15 @@ export class GeographicAreaCodeMapper {
   }
 
   /**
+   * Initialize the area code mapper
+   */
+  public async initialize(): Promise<void> {
+    console.log('🗺️ Initializing Geographic Area Code Mapper...');
+    // Area code database is already initialized in constructor
+    console.log('✅ Geographic Area Code Mapper initialized');
+  }
+
+  /**
    * Get area codes for a geographic location, ordered by preference
    */
   public async getAreaCodesForLocation(location: GeographicLocation): Promise<AreaCodeInfo[]> {
@@ -39,7 +48,7 @@ export class GeographicAreaCodeMapper {
       const parsedLocation = await this.parseLocationString(location);
       
       // Get area codes for state/region
-      const stateCodes = this.areaCodeDatabase.get(parsedLocation.state?.toUpperCase()) || [];
+      const stateCodes = this.areaCodeDatabase.get(parsedLocation.state?.toUpperCase() || '') || [];
       
       // Filter and sort by proximity to city
       const sortedCodes = await this.sortByProximity(stateCodes, parsedLocation);
@@ -75,7 +84,12 @@ export class GeographicAreaCodeMapper {
       }
     }
 
-    return location;
+    // If we can't parse it, return a default structure
+    return {
+      city: typeof location === 'string' ? location : 'Unknown',
+      state: 'Unknown',
+      country: 'US'
+    };
   }
 
   /**

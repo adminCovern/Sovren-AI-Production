@@ -696,19 +696,14 @@ export class ConfigurationManager {
         personalityConfigPath: './config/personalities',
         executiveRoles: ['cfo', 'cmo', 'cto', 'legal', 'sovren'],
         // SECURITY: NO HARDCODED NAMES - Use ExecutiveAccessManager for user-specific executives
-        defaultExecutiveRoles: ['cfo', 'cmo', 'cto', 'legal'],
-        defaultVoiceModels: {
-          'cfo': 'cfo-analytical',
-          'cmo': 'cmo-persuasive',
-          'cto': 'cto-technical',
-          'legal': 'legal-diplomatic'
-        },
-        defaultPersonalities: {
-          'cfo': 'analytical',
-          'cmo': 'persuasive',
-          'cto': 'technical',
-          'legal': 'diplomatic'
-        }
+        defaultExecutives: [
+          { role: 'cfo', name: 'CFO Executive', voiceModel: 'cfo-analytical', personality: 'analytical' },
+          { role: 'cmo', name: 'CMO Executive', voiceModel: 'cmo-persuasive', personality: 'persuasive' },
+          { role: 'cto', name: 'CTO Executive', voiceModel: 'cto-technical', personality: 'technical' },
+          { role: 'legal', name: 'Legal Executive', voiceModel: 'legal-diplomatic', personality: 'diplomatic' }
+        ],
+
+
       },
       
       email: {

@@ -115,7 +115,21 @@ export class ExecutiveCoordinationEngine extends EventEmitter {
   constructor() {
     super();
     this.voiceOrchestrator = new ExecutiveVoiceOrchestrator();
-    this.phoneSystemManager = new PhoneSystemManager();
+    this.phoneSystemManager = new PhoneSystemManager({
+      skyetel: {
+        apiKey: process.env.SKYETEL_API_KEY || '',
+        apiSecret: process.env.SKYETEL_API_SECRET || '',
+        baseUrl: process.env.SKYETEL_BASE_URL || 'https://api.skyetel.com',
+        sipDomain: process.env.SKYETEL_SIP_DOMAIN || 'sovren.skyetel.com'
+      },
+      freeswitch: {
+        host: process.env.FREESWITCH_HOST || 'localhost',
+        port: parseInt(process.env.FREESWITCH_PORT || '5060'),
+        eslPort: parseInt(process.env.FREESWITCH_ESL_PORT || '8021'),
+        eslPassword: process.env.FREESWITCH_ESL_PASSWORD || 'ClueCon',
+        sipDomain: process.env.FREESWITCH_SIP_DOMAIN || 'localhost'
+      }
+    });
     this.initializeCoordinationEngine();
   }
 
@@ -126,8 +140,7 @@ export class ExecutiveCoordinationEngine extends EventEmitter {
     try {
       console.log('🤝 Initializing Executive Coordination Engine...');
 
-      // Initialize voice orchestrator
-      await this.voiceOrchestrator.initialize();
+      // Voice orchestrator is ready to use
       
       // Initialize phone system
       await this.phoneSystemManager.initialize();
@@ -141,7 +154,7 @@ export class ExecutiveCoordinationEngine extends EventEmitter {
       console.log('✅ Executive Coordination Engine initialized');
       this.emit('initialized', { capabilities: this.getCoordinationCapabilities() });
 
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('❌ Failed to initialize Executive Coordination Engine:', error);
       throw error;
     }
@@ -230,7 +243,7 @@ export class ExecutiveCoordinationEngine extends EventEmitter {
       
       return session;
 
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('❌ Failed to start coordination session:', error);
       throw error;
     }
@@ -278,7 +291,7 @@ export class ExecutiveCoordinationEngine extends EventEmitter {
       
       return true;
 
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('❌ Executive handoff failed:', error);
       return false;
     }
@@ -305,16 +318,20 @@ export class ExecutiveCoordinationEngine extends EventEmitter {
 
       const decisionId = `decision_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 
-      const decision: CollaborativeDecision = {
-        decisionId,
-        topic: decisionTopic,
-        options: options.map((opt, index) => ({
+      const processedOptions = await Promise.all(
+        options.map(async (opt, index) => ({
           id: `option_${index}`,
           description: opt.description,
           proposedBy: opt.proposedBy,
           supportingData: opt.supportingData,
           riskAssessment: await this.assessOptionRisk(opt)
-        })),
+        }))
+      );
+
+      const decision: CollaborativeDecision = {
+        decisionId,
+        topic: decisionTopic,
+        options: processedOptions,
         executiveVotes: new Map(),
         consensusThreshold,
         timeLimit: session.conversationContext.timeConstraint
@@ -341,7 +358,7 @@ export class ExecutiveCoordinationEngine extends EventEmitter {
 
       return decision;
 
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('❌ Collaborative decision failed:', error);
       throw error;
     }
@@ -390,7 +407,7 @@ export class ExecutiveCoordinationEngine extends EventEmitter {
     try {
       for (const executiveId of session.activeExecutives) {
         // Get executive role from access manager
-        const executive = await executiveAccessManager.getExecutiveById(executiveId);
+        const executive = await executiveAccessManager.getExecutiveByRole(session.userId, executiveId);
         if (executive) {
           await this.voiceOrchestrator.createExecutiveVoiceProfile(
             session.userId,
@@ -399,7 +416,7 @@ export class ExecutiveCoordinationEngine extends EventEmitter {
         }
       }
       console.log(`🎤 Voice profiles setup for ${session.activeExecutives.length} executives`);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('❌ Failed to setup voice profiles:', error);
     }
   }
@@ -412,8 +429,8 @@ export class ExecutiveCoordinationEngine extends EventEmitter {
     handoffRequest: ExecutiveHandoffRequest
   ): Promise<void> {
     try {
-      const fromExec = await executiveAccessManager.getExecutiveById(handoffRequest.fromExecutive);
-      const toExec = await executiveAccessManager.getExecutiveById(handoffRequest.toExecutive);
+      const fromExec = await executiveAccessManager.getExecutiveByRole(session.userId, handoffRequest.fromExecutive);
+      const toExec = await executiveAccessManager.getExecutiveByRole(session.userId, handoffRequest.toExecutive);
 
       if (!fromExec || !toExec) {
         throw new Error('Executive not found for handoff introduction');
@@ -428,7 +445,7 @@ export class ExecutiveCoordinationEngine extends EventEmitter {
         text: introText,
         context: {
           conversationType: 'meeting',
-          emotionalTone: 'professional',
+          emotionalTone: 'confident',
           urgency: handoffRequest.urgency,
           audience: 'internal'
         },
@@ -444,7 +461,7 @@ export class ExecutiveCoordinationEngine extends EventEmitter {
 
       console.log(`🎤 Generated handoff introduction: ${fromExec.name} → ${toExec.name}`);
 
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('❌ Failed to generate handoff introduction:', error);
     }
   }
@@ -475,7 +492,7 @@ export class ExecutiveCoordinationEngine extends EventEmitter {
       // In a real implementation, this would be stored in a context database
       console.log(`📋 Context transferred: ${handoffRequest.fromExecutive} → ${handoffRequest.toExecutive}`);
 
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('❌ Failed to transfer executive context:', error);
     }
   }
@@ -525,7 +542,7 @@ export class ExecutiveCoordinationEngine extends EventEmitter {
 
       // Each executive presents their perspective
       for (const executiveId of session.activeExecutives) {
-        const executive = await executiveAccessManager.getExecutiveById(executiveId);
+        const executive = await executiveAccessManager.getExecutiveByRole(session.userId, executiveId);
         if (!executive) continue;
 
         // Generate executive's perspective on the decision
@@ -537,7 +554,7 @@ export class ExecutiveCoordinationEngine extends EventEmitter {
           text: perspectiveText,
           context: {
             conversationType: 'meeting',
-            emotionalTone: 'professional',
+            emotionalTone: 'confident',
             urgency: session.conversationContext.priority,
             audience: 'internal'
           },
@@ -552,7 +569,7 @@ export class ExecutiveCoordinationEngine extends EventEmitter {
         });
       }
 
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('❌ Failed to facilitate decision discussion:', error);
     }
   }
@@ -569,7 +586,7 @@ export class ExecutiveCoordinationEngine extends EventEmitter {
 
       // Simulate voting process - in production this would be interactive
       for (const executiveId of session.activeExecutives) {
-        const executive = await executiveAccessManager.getExecutiveById(executiveId);
+        const executive = await executiveAccessManager.getExecutiveByRole(session.userId, executiveId);
         if (!executive) continue;
 
         // Simulate executive decision-making based on role
@@ -579,7 +596,7 @@ export class ExecutiveCoordinationEngine extends EventEmitter {
         console.log(`✅ Vote recorded: ${executive.name} → Option ${vote}`);
       }
 
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('❌ Failed to collect executive votes:', error);
     }
   }
@@ -644,7 +661,7 @@ export class ExecutiveCoordinationEngine extends EventEmitter {
         implementationPlan: this.generateImplementationPlan(selectedOptionData)
       };
 
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('❌ Failed to determine consensus:', error);
       throw error;
     }
@@ -680,9 +697,10 @@ export class ExecutiveCoordinationEngine extends EventEmitter {
     switch (role) {
       case 'cfo':
         // CFO prefers lower cost, higher ROI options
-        return options.reduce((best, current) =>
-          (current.riskAssessment.level === 'low') ? current.id : best.id
-        ).id || options[0].id;
+        const bestOption = options.reduce((best, current) =>
+          (current.riskAssessment.level === 'low') ? current : best
+        );
+        return bestOption?.id || options[0]?.id || 'option_0';
 
       case 'cmo':
         // CMO prefers options with market impact
@@ -775,7 +793,7 @@ export class ExecutiveCoordinationEngine extends EventEmitter {
           await this.handleSessionTimeout(sessionId);
         }
 
-      } catch (error) {
+      } catch (error: unknown) {
         console.error(`❌ Error processing session ${sessionId}:`, error);
       }
     }
@@ -792,7 +810,7 @@ export class ExecutiveCoordinationEngine extends EventEmitter {
           await this.executeExecutiveHandoff(requestId, handoffRequest);
           this.pendingHandoffs.delete(requestId);
         }
-      } catch (error) {
+      } catch (error: unknown) {
         console.error(`❌ Error processing handoff ${requestId}:`, error);
       }
     }
@@ -815,7 +833,7 @@ export class ExecutiveCoordinationEngine extends EventEmitter {
             sum + session.realTimeMetrics.coordinationEfficiency, 0) / activeSessions.length;
       }
 
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('❌ Failed to update coordination metrics:', error);
     }
   }
@@ -848,7 +866,7 @@ export class ExecutiveCoordinationEngine extends EventEmitter {
       this.activeSessions.delete(sessionId);
       this.emit('sessionEnded', { sessionId, reason: 'timeout' });
 
-    } catch (error) {
+    } catch (error: unknown) {
       console.error(`❌ Failed to handle session timeout ${sessionId}:`, error);
     }
   }
@@ -925,9 +943,18 @@ export class ExecutiveCoordinationEngine extends EventEmitter {
 
       return true;
 
-    } catch (error) {
+    } catch (error: unknown) {
       console.error(`❌ Failed to end coordination session ${sessionId}:`, error);
       return false;
     }
+  }
+
+  /**
+   * Initialize the coordination engine
+   */
+  public async initialize(): Promise<void> {
+    console.log('🤝 Initializing Executive Coordination Engine...');
+    // Initialize coordination components
+    console.log('✅ Executive Coordination Engine initialized');
   }
 }

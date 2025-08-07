@@ -416,16 +416,16 @@ async function handleGetOrchestrationStatus(
       isActive: activeSessions.length > 0,
       activeSessionCount: activeSessions.length,
       totalExecutivesInvolved: new Set(
-        activeSessions.flatMap(session => 
+        activeSessions.flatMap((session: any) =>
           session.scenario.participants.executives
         )
       ).size,
-      averageCoordinationEfficiency: activeSessions.length > 0 
-        ? activeSessions.reduce((sum, session) => 
+      averageCoordinationEfficiency: activeSessions.length > 0
+        ? activeSessions.reduce((sum: number, session: any) =>
             sum + session.realTimeMetrics.coordinationEfficiency, 0
-          ) / activeSessions.length 
+          ) / activeSessions.length
         : 0,
-      scenarioTypes: activeSessions.map(session => session.scenario.type)
+      scenarioTypes: activeSessions.map((session: any) => session.scenario.type)
     };
 
     return NextResponse.json({

@@ -61,6 +61,8 @@ export interface Constraint {
   type: 'hard' | 'soft';
   expression: string;
   penalty: number;
+  minValue?: number;
+  maxValue?: number;
 }
 
 export interface Objective {
@@ -68,6 +70,8 @@ export interface Objective {
   type: 'maximize' | 'minimize';
   weight: number;
   target?: number;
+  minValue?: number;
+  maxValue?: number;
 }
 
 export interface ScenarioResult {
@@ -523,11 +527,11 @@ export class ParallelScenarioEngine extends EventEmitter {
       },
       once: (event: string, callback: Function) => {
         // Simple event emitter simulation
-        this.workerPool[i][event] = callback;
+        (this.workerPool[i] as any)[event] = callback;
       },
       emit: (event: string, data: any) => {
-        if (this.workerPool[i][event]) {
-          this.workerPool[i][event](data);
+        if ((this.workerPool[i] as any)[event]) {
+          (this.workerPool[i] as any)[event](data);
         }
       }
     } as any));
@@ -646,30 +650,28 @@ export class ParallelScenarioEngine extends EventEmitter {
   private extractConstraintValue(result: ScenarioResult, constraint: Constraint): number {
     // Extract value based on constraint type
     switch (constraint.type) {
-      case 'financial':
+      case 'hard':
         return result.finalState.financial.revenue;
-      case 'operational':
+      case 'soft':
         return result.finalState.operational.efficiency;
-      case 'market':
-        return result.finalState.market.share;
       default:
         return 0;
     }
   }
 
   private isConstraintSatisfied(value: number, constraint: Constraint): boolean {
-    return value >= constraint.minValue && value <= constraint.maxValue;
+    const minValue = constraint.minValue ?? -Infinity;
+    const maxValue = constraint.maxValue ?? Infinity;
+    return value >= minValue && value <= maxValue;
   }
 
   private extractObjectiveValue(result: ScenarioResult, objective: Objective): number {
     // Extract value based on objective type
     switch (objective.type) {
-      case 'maximize_revenue':
+      case 'maximize':
         return result.finalState.financial.revenue;
-      case 'minimize_cost':
+      case 'minimize':
         return -result.finalState.financial.expenses;
-      case 'improve_efficiency':
-        return result.finalState.operational.efficiency;
       default:
         return 0;
     }
@@ -677,10 +679,12 @@ export class ParallelScenarioEngine extends EventEmitter {
 
   private normalizeObjectiveValue(value: number, objective: Objective): number {
     // Normalize value to 0-1 range based on objective bounds
-    const range = objective.maxValue - objective.minValue;
+    const maxValue = objective.maxValue ?? 1000;
+    const minValue = objective.minValue ?? 0;
+    const range = maxValue - minValue;
     if (range === 0) return 0.5;
 
-    const normalized = (value - objective.minValue) / range;
+    const normalized = (value - minValue) / range;
     return Math.max(0, Math.min(1, normalized));
   }
 
@@ -743,7 +747,9 @@ export class ParallelScenarioEngine extends EventEmitter {
     // Limit cache size
     if (this.scenarioCache.size > 100) {
       const firstKey = this.scenarioCache.keys().next().value;
-      this.scenarioCache.delete(firstKey);
+      if (firstKey !== undefined) {
+        this.scenarioCache.delete(firstKey);
+      }
     }
   }
 
@@ -867,7 +873,7 @@ export class ParallelScenarioEngine extends EventEmitter {
       {
         parameters,
         optimalScenario: analysis.optimalScenario,
-        expectedValue: analysis.expectedValue,
+        expectedValue: typeof analysis.expectedValue === 'number' ? analysis.expectedValue : 0,
         riskMetrics: analysis.riskMetrics
       },
       'strategic',
@@ -983,7 +989,7 @@ export class ParallelScenarioEngine extends EventEmitter {
     // Apply quantum mutations based on layer and index
     const mutationStrength = 0.1 * (layer + 1);
 
-    mutated.variables.forEach((variable, varIndex) => {
+    mutated.variables.forEach((variable: ScenarioVariable, varIndex: number) => {
       if ((index + varIndex) % 2 === 0) { // Quantum superposition pattern
         const [min, max] = variable.range;
         const range = max - min;

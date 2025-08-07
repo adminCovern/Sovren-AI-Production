@@ -88,7 +88,7 @@ export async function GET(
     const stats = await fs.stat(audioPath);
     
     // Create response with proper headers
-    const response = new NextResponse(audioBuffer, {
+    const response = new NextResponse(new Uint8Array(audioBuffer), {
       status: 200,
       headers: {
         'Content-Type': contentType,

@@ -1,5 +1,6 @@
 import { WebSocketServer, WebSocket } from 'ws';
 import { IncomingMessage } from 'http';
+import { EventEmitter } from 'events';
 import { b200ResourceMonitor } from '../monitoring/B200ResourceMonitor';
 import { authSystem } from '../auth/AuthenticationSystem';
 
@@ -32,7 +33,7 @@ export interface WebSocketResponse {
   error?: string;
 }
 
-export class B200DashboardWebSocket {
+export class B200DashboardWebSocket extends EventEmitter {
   private wss: WebSocketServer | null = null;
   private clients: Map<string, WebSocketClient> = new Map();
   private isRunning: boolean = false;
@@ -40,6 +41,7 @@ export class B200DashboardWebSocket {
   private readonly heartbeatIntervalMs = 30000; // 30 seconds
 
   constructor() {
+    super();
     this.setupMonitoringListeners();
   }
 
@@ -123,6 +125,9 @@ export class B200DashboardWebSocket {
 
     console.log(`🔌 New B200 Dashboard client connected: ${clientId}`);
 
+    // Emit connection event
+    this.emit('connection', clientId);
+
     // Set up client event handlers
     socket.on('message', (data) => this.handleMessage(clientId, data));
     socket.on('close', () => this.handleDisconnection(clientId));
@@ -143,7 +148,7 @@ export class B200DashboardWebSocket {
   /**
    * Handle client message
    */
-  private async handleMessage(clientId: string, data: Buffer): Promise<void> {
+  private async handleMessage(clientId: string, data: any): Promise<void> {
     const client = this.clients.get(clientId);
     if (!client) return;
 
@@ -500,7 +505,7 @@ export class B200DashboardWebSocket {
    * Generate unique client ID
    */
   private generateClientId(): string {
-    return `b200-client-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    return `b200-client-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
   }
 
   /**

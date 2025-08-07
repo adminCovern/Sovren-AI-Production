@@ -33,6 +33,27 @@ export class PhoneProvisioningManager {
   }
 
   /**
+   * Initialize the phone provisioning manager
+   */
+  public async initialize(): Promise<void> {
+    console.log('📞 Initializing Phone Provisioning Manager...');
+    // Initialize area code mapper and skyetel service
+    await this.areaCodeMapper.initialize();
+    console.log('✅ Phone Provisioning Manager initialized');
+  }
+
+  /**
+   * Allocate a phone number for an executive
+   */
+  public async allocatePhoneNumber(): Promise<string> {
+    // Simple allocation - in production this would be more sophisticated
+    const areaCode = '415'; // Default to San Francisco area
+    const number = `+1${areaCode}${Math.floor(Math.random() * 9000000) + 1000000}`;
+    console.log(`📞 Allocated phone number: ${number}`);
+    return number;
+  }
+
+  /**
    * Complete phone number provisioning process for new user
    */
   public async provisionUserPhoneNumbers(request: ProvisioningRequest): Promise<ProvisioningResult> {
@@ -162,7 +183,7 @@ export class PhoneProvisioningManager {
       const phoneNumber = allocation.phoneNumbers.executives[role as keyof typeof allocation.phoneNumbers.executives];
       
       if (phoneNumber) {
-        delegationMatrix.entities[role] = {
+        (delegationMatrix.entities as any)[role] = {
           name: this.getExecutiveName(role),
           role: role.toUpperCase(),
           phoneNumber: phoneNumber,

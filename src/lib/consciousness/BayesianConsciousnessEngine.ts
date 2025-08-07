@@ -106,7 +106,13 @@ export interface PredictiveModel {
 }
 
 export class BayesianConsciousnessEngine extends EventEmitter {
-  private beliefState: BeliefState;
+  private beliefState: BeliefState = {
+    beliefs: new Map(),
+    confidence: 0.5,
+    uncertainty: 0.3,
+    lastUpdated: new Date(),
+    evidenceCount: 0
+  };
   private evidenceHistory: Evidence[] = [];
   private decisionHistory: BayesianDecision[] = [];
   private predictiveModels: Map<string, PredictiveModel> = new Map();

@@ -315,7 +315,7 @@ export class SOVRENAIExecutive extends EventEmitter {
     // This would be implemented with more sophisticated parsing
     // For now, return sample insights
     insights.push({
-      category: 'strategic',
+      category: 'market',
       insight: 'Market opportunity identified in emerging segment',
       impact: 'high',
       timeframe: 'medium-term',

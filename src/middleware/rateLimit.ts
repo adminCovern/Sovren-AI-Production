@@ -25,6 +25,18 @@ export interface RateLimitInfo {
   resetTime: Date;
 }
 
+export interface RequestEntry {
+  timestamp: number;
+}
+
+export interface RateLimitResult {
+  allowed: boolean;
+  limit: number;
+  remaining: number;
+  resetTime: Date;
+  info?: RateLimitInfo;
+}
+
 export class RedisRateLimiter {
   private config: RateLimitConfig;
   private redisClient: RedisClientType | null = null;
@@ -159,10 +171,79 @@ export function rateLimit(config: RateLimitConfig): RateLimiter {
   return new RateLimiter(config);
 }
 
+class RateLimiter {
+  private config: RateLimitConfig;
+  private requests: Map<string, RequestEntry[]> = new Map();
+
+  constructor(config: RateLimitConfig) {
+    this.config = config;
+  }
+
+  async checkLimit(identifier: string): Promise<RateLimitResult> {
+    const now = Date.now();
+    const windowStart = now - this.config.windowMs;
+
+    // Get existing requests for this identifier
+    const userRequests = this.requests.get(identifier) || [];
+
+    // Filter out expired requests
+    const validRequests = userRequests.filter(req => req.timestamp > windowStart);
+
+    // Check if limit exceeded
+    if (validRequests.length >= this.config.max) {
+      const oldestRequest = validRequests[0];
+      const resetTime = oldestRequest.timestamp + this.config.windowMs;
+
+      return {
+        allowed: false,
+        limit: this.config.max,
+        remaining: 0,
+        resetTime: new Date(resetTime)
+      };
+    }
+
+    // Add current request
+    validRequests.push({ timestamp: now });
+    this.requests.set(identifier, validRequests);
+
+    return {
+      allowed: true,
+      limit: this.config.max,
+      remaining: this.config.max - validRequests.length,
+      resetTime: new Date(now + this.config.windowMs)
+    };
+  }
+
+  /**
+   * Check if request is allowed (simplified interface for API routes)
+   */
+  check(identifier: string): boolean {
+    const now = Date.now();
+    const windowStart = now - this.config.windowMs;
+
+    // Get existing requests for this identifier
+    const userRequests = this.requests.get(identifier) || [];
+
+    // Filter out expired requests
+    const validRequests = userRequests.filter(req => req.timestamp > windowStart);
+
+    // Check if limit exceeded
+    if (validRequests.length >= this.config.max) {
+      return false;
+    }
+
+    // Add current request
+    validRequests.push({ timestamp: now });
+    this.requests.set(identifier, validRequests);
+
+    return true;
+  }
+}
+
 /**
  * Default rate limiters for different endpoints
  */
-export const rateLimiters = {
+const rateLimiterConfigs = {
   // General API rate limit
   api: rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
@@ -207,6 +288,16 @@ export const rateLimiters = {
     standardHeaders: true,
     legacyHeaders: false
   })
+};
+
+/**
+ * Rate limiters with get method for compatibility
+ */
+export const rateLimiters = {
+  ...rateLimiterConfigs,
+  get(key: string): RateLimiter | undefined {
+    return (rateLimiterConfigs as any)[key];
+  }
 };
 
 /**
