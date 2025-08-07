@@ -569,6 +569,30 @@ export class AuthenticationSystem {
   getAllUsers(): User[] {
     return Array.from(this.users.values());
   }
+
+  /**
+   * Validate user session
+   */
+  public async validateSession(userId: string): Promise<boolean> {
+    try {
+      const session = await this.getSession(userId);
+      if (!session) return false;
+
+      // Check if session is expired
+      const now = Date.now();
+      const expiresAt = typeof session.expiresAt === 'number' ? session.expiresAt : session.expiresAt.getTime();
+      if (now > expiresAt) {
+        // Session expired, clean it up
+        // Note: Redis cleanup would be handled by the session store
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Session validation error:', error);
+      return false;
+    }
+  }
 }
 
 // Global authentication instance

@@ -176,6 +176,30 @@ export class B200LLMClient {
   }
 
   /**
+   * Generate strategic analysis using SOVREN-AI optimized prompts
+   */
+  public async generateStrategicAnalysis(
+    analysisType: 'strategic' | 'operational' | 'financial' | 'market' | 'competitive' | 'comprehensive' | 'coordination',
+    data: any,
+    context?: string
+  ): Promise<string> {
+    const prompt = this.buildStrategicAnalysisPrompt(analysisType, data, context);
+
+    try {
+      const response = await this.generateResponse(prompt, {
+        maxTokens: 2048,
+        temperature: 0.7,
+        topP: 0.9
+      });
+
+      return response;
+    } catch (error) {
+      console.error('Strategic analysis generation failed:', error);
+      throw new Error('Failed to generate strategic analysis');
+    }
+  }
+
+  /**
    * Generate technical analysis using CTO-optimized prompts
    */
   public async generateTechnicalAnalysis(
@@ -318,6 +342,33 @@ export class B200LLMClient {
       default:
         return `${basePrompt}Provide financial analysis for:\n\n${JSON.stringify(data, null, 2)}\n\nContext: ${context || 'None'}`;
     }
+  }
+
+  /**
+   * Build strategic analysis prompt for SOVREN-AI
+   */
+  private buildStrategicAnalysisPrompt(
+    analysisType: string,
+    data: any,
+    context?: string
+  ): string {
+    const basePrompt = `You are SOVREN-AI, a 405B parameter strategic analysis AI with comprehensive business intelligence capabilities. `;
+
+    const analysisPrompts = {
+      strategic: 'Provide strategic analysis focusing on long-term implications, competitive positioning, and market opportunities.',
+      operational: 'Analyze operational efficiency, process optimization, and resource allocation strategies.',
+      financial: 'Examine financial performance, risk factors, and investment opportunities with quantitative insights.',
+      market: 'Assess market conditions, trends, competitive landscape, and growth opportunities.',
+      competitive: 'Evaluate competitive threats, advantages, and strategic responses with actionable recommendations.',
+      comprehensive: 'Provide holistic analysis covering strategic, operational, financial, and market factors.',
+      coordination: 'Develop executive coordination strategy with clear roles, timelines, and expected outcomes.'
+    };
+
+    const specificPrompt = analysisPrompts[analysisType as keyof typeof analysisPrompts] || 'Provide detailed strategic analysis.';
+    const contextPrompt = context ? `\n\nContext: ${context}` : '';
+    const dataPrompt = `\n\nData to analyze: ${JSON.stringify(data, null, 2)}`;
+
+    return `${basePrompt}${specificPrompt}${contextPrompt}${dataPrompt}\n\nProvide actionable insights, recommendations, and confidence levels.`;
   }
 
   private buildMarketingStrategyPrompt(type: string, data: any, context?: string): string {
