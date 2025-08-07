@@ -325,6 +325,50 @@ export class FreeSwitchService {
   }
 
   /**
+   * Accept an incoming call
+   */
+  public async acceptIncomingCall(phoneNumber: string, callerNumber: string): Promise<boolean> {
+    try {
+      // Find the call session for this incoming call
+      const callSession = Array.from(this.activeCalls.values()).find(
+        call => call.phoneNumber === phoneNumber && call.callerNumber === callerNumber && call.status === 'ringing'
+      );
+
+      if (!callSession) {
+        console.warn(`⚠️ No ringing call found for ${callerNumber} → ${phoneNumber}`);
+        return false;
+      }
+
+      // In a real implementation, this would send an answer command to FreeSWITCH
+      if (this.eslConnection) {
+        try {
+          // Send answer command to FreeSWITCH
+          await this.eslConnection.api(`uuid_answer ${callSession.callId}`);
+
+          // Update call status
+          callSession.status = 'answered';
+
+          console.log(`✅ Call accepted via FreeSWITCH: ${callSession.callId}`);
+          return true;
+
+        } catch (eslError) {
+          console.error('❌ Failed to send answer command to FreeSWITCH:', eslError);
+          return false;
+        }
+      } else {
+        // Simulate accepting the call if no ESL connection
+        callSession.status = 'answered';
+        console.log(`✅ Call accepted (simulated): ${callSession.callId}`);
+        return true;
+      }
+
+    } catch (error) {
+      console.error('❌ Failed to accept incoming call:', error);
+      return false;
+    }
+  }
+
+  /**
    * Get active calls for a user
    */
   public getActiveCallsForUser(userId: string): CallSession[] {

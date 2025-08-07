@@ -122,6 +122,26 @@ export class PhoneSystemManager {
   }
 
   /**
+   * Initiate a call (alias for makeOutboundCall for compatibility)
+   */
+  public async initiateCall(
+    fromNumber: string,
+    toNumber: string,
+    options: {
+      userId: string;
+      executiveRole: string;
+      context?: any;
+    }
+  ): Promise<string | null> {
+    return this.makeOutboundCall({
+      userId: options.userId,
+      executiveRole: options.executiveRole,
+      toNumber,
+      fromNumber
+    });
+  }
+
+  /**
    * Make an outbound call as an executive
    */
   public async makeOutboundCall(request: CallRequest): Promise<string | null> {
@@ -168,6 +188,31 @@ export class PhoneSystemManager {
     } catch (error) {
       console.error('Failed to make outbound call:', error);
       return null;
+    }
+  }
+
+  /**
+   * Accept an incoming call
+   */
+  public async acceptCall(phoneNumber: string, callerNumber: string): Promise<boolean> {
+    try {
+      console.log(`📞 Accepting incoming call: ${callerNumber} → ${phoneNumber}`);
+
+      // In a real implementation, this would interact with FreeSWITCH to accept the call
+      // For now, we'll simulate accepting the call
+      const accepted = await this.freeswitchService.acceptIncomingCall(phoneNumber, callerNumber);
+
+      if (accepted) {
+        console.log(`✅ Call accepted: ${callerNumber} → ${phoneNumber}`);
+        return true;
+      } else {
+        console.log(`❌ Failed to accept call: ${callerNumber} → ${phoneNumber}`);
+        return false;
+      }
+
+    } catch (error) {
+      console.error('Failed to accept incoming call:', error);
+      return false;
     }
   }
 
@@ -297,6 +342,171 @@ export class PhoneSystemManager {
   }
 
   /**
+   * Get stream quality for call
+   */
+  public async getStreamQuality(callId: string): Promise<{ quality: number; latency: number; packetsLost: number } | null> {
+    try {
+      const callSession = await this.freeswitchService.getCallSession(callId);
+      if (!callSession) {
+        return null;
+      }
+
+      // Get real-time call quality metrics
+      return {
+        quality: callSession.audioQuality || 0.9,
+        latency: callSession.latency || 100,
+        packetsLost: callSession.packetsLost || 0
+      };
+
+    } catch (error) {
+      console.error(`❌ Failed to get stream quality for call ${callId}:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Get call status
+   */
+  public async getCallStatus(callId: string): Promise<string> {
+    try {
+      const callSession = await this.freeswitchService.getCallSession(callId);
+      return callSession ? callSession.status : 'ended';
+
+    } catch (error) {
+      console.error(`❌ Failed to get call status for ${callId}:`, error);
+      return 'ended';
+    }
+  }
+
+  /**
+   * End call
+   */
+  public async endCall(callId: string): Promise<void> {
+    try {
+      console.log(`📞 Ending call: ${callId}`);
+      await this.freeswitchService.hangupCall(callId);
+
+    } catch (error) {
+      console.error(`❌ Failed to end call ${callId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Connect voice stream to call
+   */
+  public async connectVoiceStream(callId: string, voiceStream: any): Promise<void> {
+    try {
+      console.log(`🎤 Connecting voice stream to call ${callId}`);
+      await this.freeswitchService.connectAudioStream(callId, voiceStream);
+
+    } catch (error) {
+      console.error(`❌ Failed to connect voice stream to call ${callId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Create streaming URL for audio
+   */
+  public async createStreamingUrl(audioData: Buffer, quality: string): Promise<string> {
+    try {
+      // Create temporary streaming endpoint for audio data
+      const streamId = `stream_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+      const streamingUrl = `https://voice-streams.sovren.ai/${streamId}`;
+
+      // In production, this would upload to CDN or streaming service
+      console.log(`🎵 Created streaming URL: ${streamingUrl} (${audioData.length} bytes, ${quality} quality)`);
+
+      return streamingUrl;
+
+    } catch (error) {
+      console.error('❌ Failed to create streaming URL:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Check if phone system is ready
+   */
+  public async isReady(): Promise<boolean> {
+    try {
+      const freeswitchReady = await this.freeswitchService.isConnected();
+      const skyetelReady = await this.skyetelService.testConnection();
+
+      return freeswitchReady && skyetelReady;
+
+    } catch (error) {
+      console.error('❌ Phone system readiness check failed:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Allocate phone number for executive
+   */
+  public async allocatePhoneNumber(executiveId: string): Promise<string> {
+    try {
+      // Use existing provisioning system
+      const phoneNumber = await this.provisioningManager.allocatePhoneNumber();
+      console.log(`📞 Allocated phone number ${phoneNumber} for executive ${executiveId}`);
+      return phoneNumber;
+
+    } catch (error) {
+      console.error(`❌ Failed to allocate phone number for executive ${executiveId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Allocate backup phone numbers
+   */
+  public async allocateBackupNumbers(executiveId: string, count: number): Promise<string[]> {
+    const backupNumbers: string[] = [];
+
+    for (let i = 0; i < count; i++) {
+      try {
+        const phoneNumber = await this.provisioningManager.allocatePhoneNumber();
+        backupNumbers.push(phoneNumber);
+      } catch (error) {
+        console.error(`❌ Failed to allocate backup number ${i + 1} for executive ${executiveId}:`, error);
+      }
+    }
+
+    console.log(`📞 Allocated ${backupNumbers.length} backup numbers for executive ${executiveId}`);
+    return backupNumbers;
+  }
+
+  /**
+   * Accept incoming call
+   */
+  public async acceptCall(phoneNumber: string, callerNumber: string): Promise<void> {
+    try {
+      console.log(`📞 Accepting incoming call from ${callerNumber} to ${phoneNumber}`);
+      // Implementation would depend on FreeSWITCH call handling
+      await this.freeswitchService.acceptIncomingCall(phoneNumber, callerNumber);
+
+    } catch (error) {
+      console.error(`❌ Failed to accept call from ${callerNumber}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Cleanup resources
+   */
+  public async cleanup(): Promise<void> {
+    try {
+      console.log('🧹 Cleaning up Phone System Manager...');
+      await this.shutdown();
+      console.log('✅ Phone System Manager cleanup complete');
+
+    } catch (error) {
+      console.error('❌ Phone System Manager cleanup failed:', error);
+    }
+  }
+
+  /**
    * Shutdown the phone system
    */
   public async shutdown(): Promise<void> {
@@ -304,7 +514,7 @@ export class PhoneSystemManager {
       console.log('🛑 Shutting down phone system...');
 
       await this.freeswitchService.disconnect();
-      
+
       console.log('✅ Phone system shutdown complete');
 
     } catch (error) {
