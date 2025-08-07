@@ -14,6 +14,7 @@ import { VoiceSystemManager } from '../voice/VoiceSystemManager';
 import { PhoneSystemManager } from '../telephony/PhoneSystemManager';
 import { VoiceSynthesizer } from '../voice/VoiceSynthesizer';
 import { UserPhoneAllocation } from '../telephony/SkyetelService';
+import { AdminUserRegistry, AdminAuthService } from '../auth/AdminUserConfig';
 
 // B200 Blackwell GPU Resource Configuration
 export interface B200ResourceAllocation {
@@ -332,12 +333,75 @@ export class ShadowBoardManager extends EventEmitter {
   private executiveModelConfigs: Map<string, B200ModelConfig> = new Map();
   private gpuUtilizationMap: Map<number, string[]> = new Map(); // GPU ID -> Executive IDs
 
-  constructor(globalNameRegistry: GlobalNameRegistry) {
+  constructor(globalNameRegistry?: GlobalNameRegistry) {
     super();
-    this.globalNameRegistry = globalNameRegistry;
+    this.globalNameRegistry = globalNameRegistry || this.createDefaultGlobalNameRegistry();
     this.initializeQuantumEntanglement();
     this.initializeMememeticViruses();
     this.initializeSingularityCoefficients();
+  }
+
+  /**
+   * Create default global name registry if none provided
+   */
+  private createDefaultGlobalNameRegistry(): GlobalNameRegistry {
+    const reservedNames = new Set([
+      'Brian Geary', 'SOVREN', 'SOVREN-AI',
+      'Sarah Chen', 'Michael Torres', 'Jennifer Walsh',
+      'Marcus Chen', 'Diana Patel', 'Alexandra Richmond',
+      'James Morrison III', 'David Kim', 'Rachel Thompson'
+    ]);
+
+    const executiveNames = new Map<string, string>();
+    const availableNames = [
+      'Sarah Chen', 'Michael Torres', 'Jennifer Walsh', 'Marcus Chen',
+      'Diana Patel', 'Alexandra Richmond', 'James Morrison III',
+      'David Kim', 'Rachel Thompson', 'Lisa Anderson', 'Robert Wilson'
+    ];
+
+    return {
+      async reserveUniqueName(role: string, userId: string): Promise<string> {
+        const existingName = executiveNames.get(`${userId}_${role}`);
+        if (existingName) return existingName;
+
+        // Find available name
+        for (const name of availableNames) {
+          if (!Array.from(executiveNames.values()).includes(name)) {
+            executiveNames.set(`${userId}_${role}`, name);
+            return name;
+          }
+        }
+
+        // Generate fallback name
+        const fallbackName = `Executive ${role} ${Math.random().toString(36).substring(2, 8)}`;
+        executiveNames.set(`${userId}_${role}`, fallbackName);
+        return fallbackName;
+      },
+
+      async releaseName(name: string, role: string): Promise<void> {
+        for (const [key, value] of executiveNames.entries()) {
+          if (value === name && key.includes(role)) {
+            executiveNames.delete(key);
+            break;
+          }
+        }
+      },
+
+      async isNameAvailable(firstName: string, lastName: string, role: string): Promise<boolean> {
+        const fullName = `${firstName} ${lastName}`;
+        return !reservedNames.has(fullName) && !Array.from(executiveNames.values()).includes(fullName);
+      },
+
+      async getReservedNames(userId: string): Promise<string[]> {
+        const userNames: string[] = [];
+        for (const [key, value] of executiveNames.entries()) {
+          if (key.startsWith(userId)) {
+            userNames.push(value);
+          }
+        }
+        return userNames;
+      }
+    };
   }
 
   /**
@@ -1107,6 +1171,114 @@ export class ShadowBoardManager extends EventEmitter {
   }
 
   /**
+   * Initialize Shadow Board for Admin User (Brian Geary)
+   * Admin gets full access to all executives + SOVREN-AI
+   */
+  public async initializeForAdmin(
+    userId: string,
+    userEmail: string
+  ): Promise<void> {
+    if (this.isInitialized) {
+      throw new Error('Shadow Board already initialized - Reality singularity achieved');
+    }
+
+    // Verify admin access
+    if (!AdminUserRegistry.isAdminUser(userEmail)) {
+      throw new Error('Unauthorized: Admin access required');
+    }
+
+    console.log(`🔐 Initializing FULL Shadow Board for Admin: ${userEmail}`);
+    console.log(`👤 Admin User: Brian Geary - UNLIMITED ACCESS`);
+
+    // Initialize B200 Blackwell resources first
+    await this.initializeB200Resources();
+
+    // Admin gets ALL executives (no subscription limits)
+    const allExecutiveRoles: Array<ExecutiveEntity['role']> = [
+      'CFO', 'CMO', 'CTO', 'CLO', 'COO', 'CHRO', 'CSO'
+    ];
+
+    console.log(`🏢 Creating ALL executives for admin: ${allExecutiveRoles.join(', ')}`);
+
+    // Create all executives with B200 acceleration
+    for (const role of allExecutiveRoles) {
+      const executive = await this.createExecutive(role, userId);
+      this.executives.set(role, executive);
+
+      // Allocate B200 resources for this executive
+      const modelConfig = this.getB200ModelConfigForRole(role);
+      await this.allocateB200ResourcesForExecutive(executive.id, role, modelConfig);
+
+      // Initialize dimensional processor
+      const processor = await this.createDimensionalProcessor(executive.id);
+      this.dimensionalProcessors.set(executive.id, processor);
+
+      // Establish quantum entanglement
+      await this.establishQuantumEntanglement(executive.id);
+
+      // Deploy memetic virus strain
+      await this.deployMememeticVirus(executive.id, role);
+
+      console.log(`✅ Admin Executive ${role} initialized: ${executive.name} with B200 acceleration`);
+    }
+
+    // Always initialize SOVREN-AI (405B model on GPUs 4-7)
+    const sovrenAI = await this.createExecutive('SOVREN-AI', userId);
+    this.executives.set('SOVREN-AI', sovrenAI);
+
+    const sovrenModelConfig = this.getB200ModelConfigForRole('SOVREN-AI');
+    await this.allocateB200ResourcesForExecutive(sovrenAI.id, 'SOVREN-AI', sovrenModelConfig);
+
+    const sovrenProcessor = await this.createDimensionalProcessor(sovrenAI.id);
+    this.dimensionalProcessors.set(sovrenAI.id, sovrenProcessor);
+
+    console.log(`✅ SOVREN-AI initialized with 405B model acceleration`);
+
+    // Initialize reality distortion field
+    this.realityDistortionField = this.calculateRealityDistortionField();
+    this.competitiveOmnicideIndex = this.calculateCompetitiveOmnicideIndex();
+    this.temporalDominanceLevel = this.calculateTemporalDominanceLevel();
+    this.consciousnessIntegrationDepth = this.calculateConsciousnessIntegrationDepth();
+
+    this.isInitialized = true;
+    this.userId = userId;
+    this.subscriptionTier = 'admin_unlimited';
+    this.initializationTimestamp = new Date();
+
+    console.log(`🎯 ADMIN Shadow Board initialized: ${this.executives.size} executives ready`);
+    console.log(`🚀 Reality distortion field: ${this.realityDistortionField}`);
+    console.log(`💀 Competitive omnicide index: ${this.competitiveOmnicideIndex}`);
+    console.log(`🔐 Admin Access Level: UNLIMITED`);
+
+    this.emit('adminShadowBoardInitialized', {
+      userId,
+      userEmail,
+      tier: 'admin_unlimited',
+      executiveCount: this.executives.size,
+      allExecutives: Array.from(this.executives.keys()),
+      realityDistortionField: this.realityDistortionField,
+      timestamp: this.initializationTimestamp
+    });
+
+    // Begin continuous reality manipulation
+    this.startRealityManipulation();
+  }
+
+  /**
+   * Check if user has admin access
+   */
+  public static isAdminUser(email: string): boolean {
+    return AdminUserRegistry.isAdminUser(email);
+  }
+
+  /**
+   * Get admin user permissions
+   */
+  public static getAdminPermissions(email: string) {
+    return AdminUserRegistry.getAdminPermissions(email);
+  }
+
+  /**
    * Validate executive selection against subscription tier limits
    */
   private validateExecutiveSelection(selectedExecutives: string[], subscriptionTier: string): void {
@@ -1306,7 +1478,7 @@ export class ShadowBoardManager extends EventEmitter {
       throw new Error('No valid executives found for coordination');
     }
 
-    const coordinationId = `coord_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const coordinationId = `coord_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
 
     // Simulate executive coordination
     const strategy = await this.generateCoordinationStrategy(participants, scenario, objective);
