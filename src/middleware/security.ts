@@ -5,8 +5,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createRateLimiter, getClientId } from './redisRateLimit';
-import { authSystem } from '@/lib/auth/AuthenticationSystem';
-import { csrfProtection } from '@/lib/security/CSRFProtection';
+import { authSystem } from '../src/lib/auth/AuthenticationSystem';
+import { csrfProtection } from '../src/lib/security/CSRFProtection';
 
 export interface SecurityConfig {
   enableRateLimit: boolean;
@@ -449,7 +449,7 @@ export class SecurityMiddleware {
       return realIP;
     }
 
-    return request.ip || 'unknown';
+    return (request as any).ip || request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
   }
 
   /**

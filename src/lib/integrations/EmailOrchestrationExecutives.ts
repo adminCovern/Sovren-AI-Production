@@ -31,6 +31,7 @@ export interface CommunicationStyle {
   verbosity: 'concise' | 'detailed' | 'comprehensive';
   responseTime: 'immediate' | 'within-hour' | 'within-day';
   languages: string[];
+  formality?: 'casual' | 'professional' | 'formal';
 }
 
 export interface EmailCompositionRequest {
@@ -71,6 +72,8 @@ export interface EmailAnalysis {
   topics: string[];
   responseRequired: boolean;
   estimatedResponseTime: number; // minutes
+  urgency?: 'low' | 'medium' | 'high';
+  actionItems?: string[];
 }
 
 export class EmailOrchestrationExecutives {

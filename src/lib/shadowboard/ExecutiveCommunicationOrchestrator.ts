@@ -291,9 +291,13 @@ export class ExecutiveCommunicationOrchestrator extends EventEmitter {
       }
 
       // Update executive communication history
+      const historyType = communicationType === 'speak' ? 'spoke' :
+                          communicationType === 'listen' ? 'listened' :
+                          communicationType === 'decide' ? 'decided' : 'coordinated';
+
       executiveState.communicationHistory.push({
         timestamp: new Date(),
-        type: communicationType,
+        type: historyType,
         content,
         confidence
       });
@@ -378,6 +382,8 @@ export class ExecutiveCommunicationOrchestrator extends EventEmitter {
     this.scenarioTemplates.set('negotiation', {
       type: 'negotiation',
       timeline: {
+        startTime: new Date(),
+        estimatedDuration: 1800000, // 30 minutes
         phases: [
           {
             name: 'Opening & Rapport Building',
@@ -422,6 +428,8 @@ export class ExecutiveCommunicationOrchestrator extends EventEmitter {
     this.scenarioTemplates.set('crisis_management', {
       type: 'crisis_management',
       timeline: {
+        startTime: new Date(),
+        estimatedDuration: 2700000, // 45 minutes
         phases: [
           {
             name: 'Situation Assessment',

@@ -4,8 +4,8 @@
  */
 
 import { createHash, randomBytes } from 'crypto';
-import jwt from 'jsonwebtoken';
-import bcrypt from 'bcrypt';
+import * as jwt from 'jsonwebtoken';
+import * as bcrypt from 'bcrypt';
 import { createClient, RedisClientType } from 'redis';
 
 export interface User {
@@ -142,7 +142,7 @@ export class AuthenticationSystem {
     if (this.redisClient) {
       try {
         const sessionStr = await this.redisClient.get(`session:${userId}`);
-        return sessionStr ? JSON.parse(sessionStr) : null;
+        return sessionStr ? JSON.parse(sessionStr as string) : null;
       } catch (error) {
         console.warn('Redis session retrieval failed, checking memory:', error);
         return this.sessions.get(userId) || null;

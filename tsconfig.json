@@ -46,7 +46,8 @@
     "exactOptionalPropertyTypes": false,
     "noImplicitOverride": true,
     "noPropertyAccessFromIndexSignature": false,
-    "noUncheckedIndexedAccess": false
+    "noUncheckedIndexedAccess": false,
+    "downlevelIteration": true
   },
   "include": [
     "next-env.d.ts",

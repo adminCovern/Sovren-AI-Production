@@ -104,7 +104,7 @@ export class LLMIntegrationSystem extends EventEmitter {
       console.log('🤖 Initializing LLM Integration System...');
 
       // Initialize LLM Resource Manager
-      if (!llmResourceManager.isInitialized) {
+      if (!(llmResourceManager as any).isInitialized) {
         await llmResourceManager.initialize();
       }
 

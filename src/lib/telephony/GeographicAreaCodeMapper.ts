@@ -57,9 +57,9 @@ export class GeographicAreaCodeMapper {
   /**
    * Parse location string into structured format
    */
-  private async parseLocationString(location: GeographicLocation): Promise<GeographicLocation> {
+  private async parseLocationString(location: GeographicLocation | string): Promise<GeographicLocation> {
     // If already structured, return as-is
-    if (location.state && location.city) {
+    if (typeof location === 'object' && location.state && location.city) {
       return location;
     }
 

@@ -5,7 +5,7 @@
 
 import { spawn, ChildProcess } from 'child_process';
 import { promises as fs } from 'fs';
-import path from 'path';
+import * as path from 'path';
 import { randomUUID } from 'crypto';
 
 export interface TTSRequest {

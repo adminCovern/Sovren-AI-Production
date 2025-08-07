@@ -373,14 +373,16 @@ export class ShadowBoardVoiceIntegration extends EventEmitter {
       this.handleExecutiveDecision(event);
     });
 
-    // Listen for phone system events
-    this.phoneSystem.on('callConnected', (event) => {
-      this.handleCallConnected(event);
-    });
+    // Listen for phone system events (if PhoneSystemManager supports events)
+    if (typeof (this.phoneSystem as any).on === 'function') {
+      (this.phoneSystem as any).on('callConnected', (event: any) => {
+        this.handleCallConnected(event);
+      });
 
-    this.phoneSystem.on('callEnded', (event) => {
-      this.handleCallEnded(event);
-    });
+      (this.phoneSystem as any).on('callEnded', (event: any) => {
+        this.handleCallEnded(event);
+      });
+    }
   }
 
   /**
