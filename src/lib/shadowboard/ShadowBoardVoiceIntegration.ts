@@ -5,10 +5,9 @@
 
 import { EventEmitter } from 'events';
 import { ShadowBoardManager, ExecutiveEntity } from './ShadowBoardManager';
-import { VoiceSystemManager } from '../voice/VoiceSystemManager';
+import { B200VoiceSynthesisEngine, VoiceSynthesisRequest, VoiceSynthesisResult } from '../voice/B200VoiceSynthesisEngine';
 import { PhoneSystemManager } from '../telephony/PhoneSystemManager';
 import { UserPhoneAllocation } from '../telephony/SkyetelService';
-import { VoiceSynthesizer } from '../voice/VoiceSynthesizer';
 
 export interface ExecutiveVoiceProfile {
   executiveId: string;
@@ -66,9 +65,8 @@ export interface ExecutiveCallSession {
 
 export class ShadowBoardVoiceIntegration extends EventEmitter {
   private shadowBoard: ShadowBoardManager;
-  private voiceSystem: VoiceSystemManager;
+  private b200VoiceEngine: B200VoiceSynthesisEngine;
   private phoneSystem: PhoneSystemManager;
-  private voiceSynthesizer: VoiceSynthesizer;
   
   private executiveVoiceProfiles: Map<string, ExecutiveVoiceProfile> = new Map();
   private activeCallSessions: Map<string, ExecutiveCallSession> = new Map();
@@ -78,15 +76,12 @@ export class ShadowBoardVoiceIntegration extends EventEmitter {
 
   constructor(
     shadowBoard: ShadowBoardManager,
-    voiceSystem: VoiceSystemManager,
-    phoneSystem: PhoneSystemManager,
-    voiceSynthesizer: VoiceSynthesizer
+    phoneSystem: PhoneSystemManager
   ) {
     super();
     this.shadowBoard = shadowBoard;
-    this.voiceSystem = voiceSystem;
+    this.b200VoiceEngine = new B200VoiceSynthesisEngine();
     this.phoneSystem = phoneSystem;
-    this.voiceSynthesizer = voiceSynthesizer;
   }
 
   /**
@@ -223,12 +218,24 @@ export class ShadowBoardVoiceIntegration extends EventEmitter {
     }
 
     try {
-      // Synthesize speech using executive's voice model
-      await this.voiceSynthesizer.synthesize(
-        message,
-        executiveProfile.voiceModelId,
-        'high' // High priority for live calls
-      );
+      // Get B200-optimized voice profile for executive
+      const voiceProfile = this.b200VoiceEngine.getVoiceProfile(callSession.executiveRole);
+      if (!voiceProfile) {
+        throw new Error(`B200 voice profile not found for ${callSession.executiveRole}`);
+      }
+
+      // Create B200 voice synthesis request
+      const synthesisRequest: VoiceSynthesisRequest = {
+        text: message,
+        voiceProfile,
+        outputFormat: 'wav',
+        sampleRate: 22050,
+        priority: 'high', // High priority for live calls
+        executiveRole: callSession.executiveRole
+      };
+
+      // Synthesize speech using B200-accelerated engine
+      const synthesisResult = await this.b200VoiceEngine.synthesizeSpeech(synthesisRequest);
 
       // Add to call transcript
       callSession.transcript.push({
@@ -239,8 +246,18 @@ export class ShadowBoardVoiceIntegration extends EventEmitter {
       });
 
       console.log(`🗣️ ${executiveProfile.executiveName}: "${message.substring(0, 50)}..."`);
+      console.log(`🎤 B200 Voice Synthesis: ${synthesisResult.synthesisTime}ms, ${synthesisResult.gpuUtilization}% GPU, ${synthesisResult.duration}s audio`);
 
-      this.emit('executiveSpoke', { callSession, message });
+      this.emit('executiveSpoke', {
+        callSession,
+        message,
+        synthesisResult: {
+          audioUrl: synthesisResult.audioUrl,
+          duration: synthesisResult.duration,
+          synthesisTime: synthesisResult.synthesisTime,
+          gpuUtilization: synthesisResult.gpuUtilization
+        }
+      });
 
     } catch (error) {
       console.error(`Failed to synthesize speech for ${callSession.executiveRole}:`, error);
