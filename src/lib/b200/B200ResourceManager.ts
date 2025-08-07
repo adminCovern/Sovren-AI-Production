@@ -328,12 +328,177 @@ export class B200ResourceManager {
     }
   }
 
+  /**
+   * Deallocate B200 resources
+   */
+  public async deallocateResources(allocationId: string): Promise<void> {
+    const allocation = this.allocations.get(allocationId);
+    if (!allocation) {
+      throw new Error(`Allocation not found: ${allocationId}`);
+    }
+
+    try {
+      // Send deallocation request to MCP Server
+      const response = await fetch(`${this.mcpServerUrl}/deallocate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ allocation_id: allocationId })
+      });
+
+      if (!response.ok) {
+        throw new Error(`MCP deallocation failed: ${response.statusText}`);
+      }
+
+      allocation.status = 'completed';
+      this.allocations.delete(allocationId);
+      this.systemMetrics.active_allocations--;
+
+      console.log(`✅ B200 resources deallocated: ${allocationId}`);
+
+    } catch (error) {
+      console.error(`❌ Failed to deallocate B200 resources:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get resource status
+   */
+  public async getResourceStatus(): Promise<any> {
+    return {
+      total_gpus: this.systemMetrics.total_gpus,
+      available_gpus: 8 - this.systemMetrics.active_allocations,
+      total_memory_gb: this.systemMetrics.total_memory_gb,
+      used_memory_gb: Array.from(this.gpuMetrics.values())
+        .reduce((sum, gpu) => sum + gpu.memory_used_gb, 0),
+      total_power_budget_watts: 8000,
+      current_power_watts: this.systemMetrics.total_power_draw_watts
+    };
+  }
+
+  /**
+   * Get current metrics
+   */
+  public async getCurrentMetrics(): Promise<any> {
+    const totalUtilization = Array.from(this.gpuMetrics.values())
+      .reduce((sum, gpu) => sum + gpu.utilization_percent, 0) / 8;
+
+    const totalMemoryUsed = Array.from(this.gpuMetrics.values())
+      .reduce((sum, gpu) => sum + gpu.memory_used_gb, 0);
+
+    return {
+      gpu_utilization: totalUtilization,
+      memory_usage_gb: totalMemoryUsed,
+      power_consumption_watts: this.systemMetrics.total_power_draw_watts,
+      tensor_core_utilization: Array.from(this.gpuMetrics.values())
+        .reduce((sum, gpu) => sum + gpu.fp8_tensor_core_utilization, 0) / 8,
+      fp8_utilization: Array.from(this.gpuMetrics.values())
+        .reduce((sum, gpu) => sum + gpu.fp8_tensor_core_utilization, 0) / 8,
+      average_latency_ms: 150 // Placeholder - would be calculated from actual requests
+    };
+  }
+
+  /**
+   * Get active allocations
+   */
+  public async getActiveAllocations(): Promise<B200Allocation[]> {
+    return Array.from(this.allocations.values());
+  }
+
+  /**
+   * Expand cluster by adding GPUs (for auto-scaling)
+   */
+  public async expandCluster(additionalGPUs: number): Promise<void> {
+    console.log(`📈 Expanding cluster by ${additionalGPUs} GPUs`);
+
+    // Update system metrics
+    this.systemMetrics.total_gpus += additionalGPUs;
+    this.systemMetrics.total_memory_gb += additionalGPUs * 183;
+    this.systemMetrics.total_fp8_tensor_cores += additionalGPUs * 832;
+    this.systemMetrics.memory_bandwidth_total_tbs += additionalGPUs * 8;
+
+    // Initialize new GPU metrics
+    for (let i = 0; i < additionalGPUs; i++) {
+      const newGpuId = this.systemMetrics.total_gpus - additionalGPUs + i;
+      this.gpuMetrics.set(newGpuId, {
+        gpu_id: newGpuId,
+        memory_used_gb: 0,
+        memory_total_gb: 183,
+        memory_free_gb: 183,
+        utilization_percent: 0,
+        temperature_celsius: 25,
+        power_draw_watts: 140,
+        fp8_tensor_core_utilization: 0,
+        shared_memory_utilization: 0,
+        nvlink_bandwidth_utilization: 0,
+        streaming_multiprocessors: 208,
+        active_processes: []
+      });
+    }
+
+    console.log(`✅ Cluster expanded to ${this.systemMetrics.total_gpus} GPUs`);
+  }
+
+  /**
+   * Shrink cluster by removing GPUs (for auto-scaling)
+   */
+  public async shrinkCluster(gpusToRemove: number): Promise<void> {
+    console.log(`📉 Shrinking cluster by ${gpusToRemove} GPUs`);
+
+    if (gpusToRemove >= this.systemMetrics.total_gpus) {
+      throw new Error('Cannot remove all GPUs from cluster');
+    }
+
+    // Remove GPUs from the end
+    for (let i = 0; i < gpusToRemove; i++) {
+      const gpuId = this.systemMetrics.total_gpus - 1 - i;
+      this.gpuMetrics.delete(gpuId);
+    }
+
+    // Update system metrics
+    this.systemMetrics.total_gpus -= gpusToRemove;
+    this.systemMetrics.total_memory_gb -= gpusToRemove * 183;
+    this.systemMetrics.total_fp8_tensor_cores -= gpusToRemove * 832;
+    this.systemMetrics.memory_bandwidth_total_tbs -= gpusToRemove * 8;
+
+    console.log(`✅ Cluster shrunk to ${this.systemMetrics.total_gpus} GPUs`);
+  }
+
+  /**
+   * Migrate allocation to different GPUs (for auto-scaling)
+   */
+  public async migrateAllocation(allocationId: string, excludeGPUs: number[]): Promise<void> {
+    const allocation = this.allocations.get(allocationId);
+    if (!allocation) {
+      throw new Error(`Allocation not found: ${allocationId}`);
+    }
+
+    console.log(`🔄 Migrating allocation ${allocationId}`);
+
+    // Find new GPUs (simplified - would be more complex in production)
+    const newGPUs = [];
+    const requiredGPUs = allocation.gpu_ids.length; // Use current GPU count
+    for (let gpuId = 0; gpuId < this.systemMetrics.total_gpus; gpuId++) {
+      if (!excludeGPUs.includes(gpuId) && newGPUs.length < requiredGPUs) {
+        newGPUs.push(gpuId);
+      }
+    }
+
+    if (newGPUs.length < requiredGPUs) {
+      throw new Error(`Insufficient GPUs for migration`);
+    }
+
+    // Update allocation
+    allocation.gpu_ids = newGPUs;
+    console.log(`✅ Allocation ${allocationId} migrated to GPUs: ${newGPUs.join(', ')}`);
+  }
+
   public async shutdown(): Promise<void> {
     if (this.monitoringInterval) {
       clearInterval(this.monitoringInterval);
       this.monitoringInterval = null;
     }
-    
+
     console.log('🔄 B200 Resource Manager shutdown complete');
   }
 }
