@@ -59,7 +59,7 @@ export interface B200ModelConfig {
 export interface ExecutiveEntity {
   id: string;
   name: string;
-  role: 'CEO' | 'CFO' | 'CTO' | 'CMO' | 'COO' | 'CHRO' | 'CLO' | 'CSO' | 'SOVREN-AI';
+  role: 'CFO' | 'CTO' | 'CMO' | 'COO' | 'CHRO' | 'CLO' | 'CSO' | 'SOVREN-AI';
   appearance: 'photorealistic_human';
   voiceModel: string;
   neuralSignature: string;
@@ -77,6 +77,40 @@ export interface ExecutiveEntity {
   memoryBank: ExecutiveMemory[];
   decisionHistory: Decision[];
   performanceMetrics: PerformanceMetrics;
+}
+
+export interface SubscriptionTier {
+  name: string;
+  maxExecutives: number;
+  selectableExecutives: string[];
+  sovrenAI: boolean;
+  targetMarket: string;
+  features: string[];
+}
+
+export interface BusinessProfile {
+  industry: 'saas' | 'ecommerce' | 'consulting' | 'manufacturing' | 'fintech' | 'healthcare' | 'other';
+  stage: 'startup' | 'growth' | 'scale' | 'established';
+  primaryChallenges: string[];
+  keyFunctions: string[];
+  teamSize: number;
+  revenue: string;
+  geographicMarkets: string[];
+}
+
+export interface ExecutiveRecommendation {
+  role: string;
+  priority: 'critical' | 'high' | 'medium' | 'low';
+  reason: string;
+  businessValue: string;
+  confidence: number;
+}
+
+export interface ExecutiveSelectionResult {
+  recommendedExecutives: ExecutiveRecommendation[];
+  selectedExecutives: string[];
+  businessProfile: BusinessProfile;
+  selectionReason: string;
 }
 
 export interface PsychologicalProfile {
@@ -267,6 +301,34 @@ export class ShadowBoardManager extends EventEmitter {
   // B200 Blackwell Resource Management
   private b200ResourceAllocations: Map<string, B200ResourceAllocation> = new Map();
   private mcpServerEndpoint: string = 'http://localhost:8000';
+
+  // Subscription tier definitions
+  private static readonly SUBSCRIPTION_TIERS: Record<string, SubscriptionTier> = {
+    sovren_proof: {
+      name: 'SOVREN Proof',
+      maxExecutives: 4,
+      selectableExecutives: ['CFO', 'CMO', 'CTO', 'CLO', 'COO', 'CHRO', 'CSO'],
+      sovrenAI: true,
+      targetMarket: 'SMB/Startups',
+      features: ['Shadow Board', 'Executive Selection', 'B200 Acceleration']
+    },
+    sovren_proof_plus: {
+      name: 'SOVREN Proof Plus',
+      maxExecutives: 8,
+      selectableExecutives: ['CFO', 'CMO', 'CTO', 'CLO', 'COO', 'CHRO', 'CSO'],
+      sovrenAI: true,
+      targetMarket: 'Growing SMBs',
+      features: ['Full Shadow Board', 'Executive Selection', 'B200 Acceleration', 'Advanced Analytics']
+    },
+    sovren_enterprise: {
+      name: 'SOVREN Enterprise',
+      maxExecutives: 0, // No Shadow Board executives
+      selectableExecutives: [],
+      sovrenAI: true, // Only SOVREN-AI
+      targetMarket: 'Enterprise/Large Companies',
+      features: ['SOVREN-AI Chief of Staff', 'Enterprise Integration', 'Custom Workflows', 'API Access']
+    }
+  };
   private executiveModelConfigs: Map<string, B200ModelConfig> = new Map();
   private gpuUtilizationMap: Map<number, string[]> = new Map(); // GPU ID -> Executive IDs
 
@@ -483,7 +545,7 @@ export class ShadowBoardManager extends EventEmitter {
 
     // Define executives based on subscription tier
     const allRoles: Array<ExecutiveEntity['role']> = [
-      'CEO', 'CFO', 'CTO', 'CMO', 'COO', 'CHRO', 'CLO', 'CSO'
+      'CFO', 'CTO', 'CMO', 'COO', 'CHRO', 'CLO', 'CSO'
     ];
 
     // Filter roles based on subscription tier
@@ -628,13 +690,7 @@ export class ShadowBoardManager extends EventEmitter {
    */
   private async optimizePsychologicalProfile(role: ExecutiveEntity['role']): Promise<PsychologicalProfile> {
     const baseProfiles: Record<ExecutiveEntity['role'], Partial<PsychologicalProfile>> = {
-      CEO: {
-        dominanceIndex: 0.95,
-        strategicThinking: 0.98,
-        leadershipStyle: 'visionary',
-        decisionSpeed: 50,
-        competitiveInstinct: 0.99
-      },
+
       CFO: {
         dominanceIndex: 0.85,
         strategicThinking: 0.92,
@@ -967,41 +1023,162 @@ export class ShadowBoardManager extends EventEmitter {
   }
 
   /**
-   * Initialize Shadow Board for Enterprise tier
+   * Initialize Shadow Board with user-customizable executive selection
+   * SMB users can choose their executives based on business needs
    */
-  public async initializeForEnterprise(userId: string): Promise<void> {
+  public async initializeWithCustomSelection(
+    userId: string,
+    subscriptionTier: 'sovren_proof' | 'sovren_proof_plus',
+    selectedExecutives: string[]
+  ): Promise<void> {
     if (this.isInitialized) {
       throw new Error('Shadow Board already initialized - Reality singularity achieved');
     }
 
-    console.log(`🏢 Initializing Enterprise Shadow Board for user: ${userId}`);
+    console.log(`🚀 Initializing B200-accelerated Shadow Board for user: ${userId}`);
+    console.log(`🎯 Tier: ${subscriptionTier}, Selected executives: ${selectedExecutives.join(', ')}`);
 
-    // Enterprise gets all 8 executives + SOVREN AI
-    const enterpriseRoles: ExecutiveEntity['role'][] = ['CEO', 'CFO', 'CTO', 'CMO', 'COO', 'CHRO', 'CLO', 'CSO'];
+    // Validate selection against tier limits
+    this.validateExecutiveSelection(selectedExecutives, subscriptionTier);
 
-    // Create SOVREN AI first
+    // Initialize B200 Blackwell resources first
+    await this.initializeB200Resources();
+
+    // Create and initialize selected executives with B200 resources
+    for (const role of selectedExecutives) {
+      const executive = await this.createExecutive(role as ExecutiveEntity['role'], userId);
+      this.executives.set(role, executive);
+
+      // Allocate B200 resources for this executive
+      const modelConfig = this.getB200ModelConfigForRole(role);
+      await this.allocateB200ResourcesForExecutive(executive.id, role, modelConfig);
+
+      // Initialize dimensional processor
+      const processor = await this.createDimensionalProcessor(executive.id);
+      this.dimensionalProcessors.set(executive.id, processor);
+
+      // Establish quantum entanglement
+      await this.establishQuantumEntanglement(executive.id);
+
+      // Deploy memetic virus strain
+      await this.deployMememeticVirus(executive.id, role);
+
+      console.log(`✅ Executive ${role} initialized: ${executive.name} with B200 acceleration`);
+    }
+
+    // Always initialize SOVREN-AI (405B model on GPUs 4-7)
     const sovrenAI = await this.createExecutive('SOVREN-AI', userId);
     this.executives.set('SOVREN-AI', sovrenAI);
 
-    // Create all 8 C-suite executives
-    for (const role of enterpriseRoles) {
-      const executive = await this.createExecutive(role, userId);
-      this.executives.set(role, executive);
-      console.log(`✅ Created ${role}: ${executive.name}`);
-    }
+    const sovrenModelConfig = this.getB200ModelConfigForRole('SOVREN-AI');
+    await this.allocateB200ResourcesForExecutive(sovrenAI.id, 'SOVREN-AI', sovrenModelConfig);
+
+    const sovrenProcessor = await this.createDimensionalProcessor(sovrenAI.id);
+    this.dimensionalProcessors.set(sovrenAI.id, sovrenProcessor);
+
+    console.log(`✅ SOVREN-AI initialized with 405B model acceleration`);
+
+    // Initialize reality distortion field
+    this.realityDistortionField = this.calculateRealityDistortionField();
+    this.competitiveOmnicideIndex = this.calculateCompetitiveOmnicideIndex();
+    this.temporalDominanceLevel = this.calculateTemporalDominanceLevel();
+    this.consciousnessIntegrationDepth = this.calculateConsciousnessIntegrationDepth();
 
     this.isInitialized = true;
     this.userId = userId;
-    this.subscriptionTier = 'enterprise';
+    this.subscriptionTier = subscriptionTier;
     this.initializationTimestamp = new Date();
 
-    console.log(`🎯 Enterprise Shadow Board initialized: ${this.executives.size} executives ready`);
+    console.log(`🎯 Shadow Board initialized: ${this.executives.size} executives ready`);
+    console.log(`🚀 Reality distortion field: ${this.realityDistortionField}`);
+    console.log(`💀 Competitive omnicide index: ${this.competitiveOmnicideIndex}`);
+
     this.emit('shadowBoardInitialized', {
       userId,
-      tier: 'enterprise',
+      tier: subscriptionTier,
       executiveCount: this.executives.size,
+      selectedExecutives,
+      realityDistortionField: this.realityDistortionField,
       timestamp: this.initializationTimestamp
     });
+
+    // Begin continuous reality manipulation
+    this.startRealityManipulation();
+  }
+
+  /**
+   * Validate executive selection against subscription tier limits
+   */
+  private validateExecutiveSelection(selectedExecutives: string[], subscriptionTier: string): void {
+    const tierConfig = ShadowBoardManager.SUBSCRIPTION_TIERS[subscriptionTier];
+
+    if (!tierConfig) {
+      throw new Error(`Invalid subscription tier: ${subscriptionTier}`);
+    }
+
+    if (selectedExecutives.length > tierConfig.maxExecutives) {
+      throw new Error(`Too many executives selected. ${subscriptionTier} allows maximum ${tierConfig.maxExecutives} executives.`);
+    }
+
+    for (const executive of selectedExecutives) {
+      if (!tierConfig.selectableExecutives.includes(executive)) {
+        throw new Error(`Executive ${executive} not available for ${subscriptionTier} tier.`);
+      }
+    }
+  }
+
+  /**
+   * Initialize SOVREN-AI for Enterprise tier
+   * Enterprise users get SOVREN-AI Chief of Staff only (no Shadow Board executives)
+   */
+  public async initializeForEnterprise(userId: string): Promise<void> {
+    if (this.isInitialized) {
+      throw new Error('SOVREN-AI already initialized - Reality singularity achieved');
+    }
+
+    console.log(`🏢 Initializing SOVREN-AI Chief of Staff for Enterprise user: ${userId}`);
+
+    // Enterprise gets SOVREN-AI only (405B model on GPUs 4-7)
+    const sovrenAI = await this.createExecutive('SOVREN-AI', userId);
+    this.executives.set('SOVREN-AI', sovrenAI);
+
+    // Allocate B200 resources for SOVREN-AI (405B model)
+    const modelConfig = this.getB200ModelConfigForRole('SOVREN-AI');
+    await this.allocateB200ResourcesForExecutive(sovrenAI.id, 'SOVREN-AI', modelConfig);
+
+    // Initialize dimensional processor for SOVREN-AI
+    const processor = await this.createDimensionalProcessor(sovrenAI.id);
+    this.dimensionalProcessors.set(sovrenAI.id, processor);
+
+    // Initialize enterprise-specific features
+    await this.initializeEnterpriseFeatures(userId);
+
+    this.isInitialized = true;
+    this.userId = userId;
+    this.subscriptionTier = 'sovren_enterprise';
+    this.initializationTimestamp = new Date();
+
+    console.log(`✅ SOVREN-AI Chief of Staff initialized for Enterprise`);
+    console.log(`🚀 Reality distortion field: ${this.realityDistortionField}`);
+
+    this.emit('sovrenAIInitialized', {
+      userId,
+      tier: 'sovren_enterprise',
+      executiveCount: 1, // Only SOVREN-AI
+      timestamp: this.initializationTimestamp
+    });
+  }
+
+  /**
+   * Initialize enterprise-specific features
+   */
+  private async initializeEnterpriseFeatures(userId: string): Promise<void> {
+    console.log(`🏢 Initializing enterprise features for user: ${userId}`);
+
+    // Enterprise features: API access, custom integrations, advanced analytics
+    // These would be implemented based on enterprise requirements
+
+    console.log(`✅ Enterprise features initialized`);
   }
 
   /**
