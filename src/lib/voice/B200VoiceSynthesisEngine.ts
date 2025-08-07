@@ -128,57 +128,57 @@ export class B200VoiceSynthesisEngine extends EventEmitter {
   private initializeVoiceProfiles(): void {
     // CFO Voice - Professional, authoritative female
     this.voiceProfiles.set('cfo', {
-      id: 'cfo_sarah_chen',
-      name: 'Sarah Chen',
+      id: 'cfo_executive_voice',
+      name: 'CFO Executive', // SECURITY: No hardcoded name
       gender: 'female',
       age: 42,
       accent: 'american',
       personality: 'authoritative',
       pitch: 180, // Hz
       speed: 160, // WPM
-      modelPath: 'models/voice/cfo_sarah_chen.pth',
+      modelPath: 'models/voice/cfo_executive.pth',
       b200Optimized: true
     });
 
     // CMO Voice - Energetic, persuasive male
     this.voiceProfiles.set('cmo', {
-      id: 'cmo_marcus_rivera',
-      name: 'Marcus Rivera',
+      id: 'cmo_executive_voice',
+      name: 'CMO Executive', // SECURITY: No hardcoded name
       gender: 'male',
       age: 38,
       accent: 'american',
       personality: 'friendly',
       pitch: 120, // Hz
       speed: 180, // WPM
-      modelPath: 'models/voice/cmo_marcus_rivera.pth',
+      modelPath: 'models/voice/cmo_executive.pth',
       b200Optimized: true
     });
 
     // CTO Voice - Technical, precise male
     this.voiceProfiles.set('cto', {
-      id: 'cto_alex_kim',
-      name: 'Alex Kim',
+      id: 'cto_executive_voice',
+      name: 'CTO Executive', // SECURITY: No hardcoded name
       gender: 'male',
       age: 35,
       accent: 'neutral',
       personality: 'professional',
       pitch: 110, // Hz
       speed: 150, // WPM
-      modelPath: 'models/voice/cto_alex_kim.pth',
+      modelPath: 'models/voice/cto_executive.pth',
       b200Optimized: true
     });
 
     // Legal Voice - Careful, precise female
     this.voiceProfiles.set('clo', {
-      id: 'clo_diana_blackstone',
-      name: 'Diana Blackstone',
+      id: 'clo_executive_voice',
+      name: 'CLO Executive', // SECURITY: No hardcoded name
       gender: 'female',
       age: 45,
       accent: 'british',
       personality: 'authoritative',
       pitch: 170, // Hz
       speed: 140, // WPM
-      modelPath: 'models/voice/clo_diana_blackstone.pth',
+      modelPath: 'models/voice/clo_executive.pth',
       b200Optimized: true
     });
 

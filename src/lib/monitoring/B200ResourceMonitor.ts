@@ -395,20 +395,21 @@ export class B200ResourceMonitor extends EventEmitter {
   }
 
   private getExecutiveName(componentName: string): string {
+    // SECURITY: No hardcoded names - use role-based identification
     const roleMap: Record<string, string> = {
-      'cfo': 'Sarah Chen',
-      'cmo': 'Marcus Rivera',
-      'cto': 'Alex Kim',
-      'clo': 'Diana Blackstone',
-      'coo': 'James Wright',
-      'chro': 'Lisa Martinez',
-      'cso': 'Robert Taylor',
+      'cfo': 'CFO Executive',
+      'cmo': 'CMO Executive',
+      'cto': 'CTO Executive',
+      'clo': 'CLO Executive',
+      'coo': 'COO Executive',
+      'chro': 'CHRO Executive',
+      'cso': 'CSO Executive',
       'sovren': 'SOVREN-AI'
     };
 
-    for (const [key, name] of Object.entries(roleMap)) {
+    for (const [key, role] of Object.entries(roleMap)) {
       if (componentName.includes(key)) {
-        return name;
+        return role;
       }
     }
     return 'Unknown Executive';

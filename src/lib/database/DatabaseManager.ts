@@ -204,7 +204,7 @@ export class DatabaseManager {
       },
       {
         id: 'exec_cmo_marcus',
-        name: 'Marcus Rivera',
+        name: 'CMO Executive', // SECURITY: No hardcoded name
         role: 'CMO',
         tier: 'SMB',
         voiceModel: 'male_energetic_innovative',
@@ -245,8 +245,8 @@ export class DatabaseManager {
         updatedAt: new Date()
       },
       {
-        id: 'exec_cto_alex',
-        name: 'Alex Kim',
+        id: 'exec_cto_template',
+        name: 'CTO Executive', // SECURITY: No hardcoded name - template only
         role: 'CTO',
         tier: 'SMB',
         voiceModel: 'neutral_technical_accessible',

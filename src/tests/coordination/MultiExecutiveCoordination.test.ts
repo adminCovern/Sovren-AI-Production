@@ -186,10 +186,11 @@ describe('Multi-Executive Coordination System', () => {
       expect(sovrenAI?.priority).toBe(10);
       expect(sovrenAI?.decisionWeight).toBe(0.3);
       
-      // Verify CFO configuration
+      // SECURITY: This test needs to be updated to use secure executive access
+      // CFO configuration should be verified through ExecutiveAccessManager
       const cfo = executiveRoles.get('cfo');
       expect(cfo).toBeDefined();
-      expect(cfo?.name).toBe('Sarah Chen');
+      expect(cfo?.role).toBe('cfo'); // Verify role, not hardcoded name
       expect(cfo?.title).toBe('Chief Financial Officer');
       expect(cfo?.expertise).toContain('financial_analysis');
       

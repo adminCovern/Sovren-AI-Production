@@ -44,7 +44,7 @@ describe('ShadowBoardVoiceIntegration', () => {
 
   const mockExecutive = {
     id: 'exec-cfo-123',
-    name: 'Sarah Chen',
+    name: 'CFO Executive', // SECURITY: No hardcoded name in tests
     role: 'CFO',
     voiceModel: 'cfo-analytical',
     neuralLoad: 0.3,
@@ -67,12 +67,12 @@ describe('ShadowBoardVoiceIntegration', () => {
     mockPhoneSystem = new PhoneSystemManager({} as any) as jest.Mocked<PhoneSystemManager>;
     mockVoiceSynthesizer = new VoiceSynthesizer({} as any) as jest.Mocked<VoiceSynthesizer>;
 
-    // Mock Shadow Board methods
+    // Mock Shadow Board methods - SECURITY: No hardcoded names
     mockShadowBoard.getExecutives.mockReturnValue(new Map([
       ['CFO', mockExecutive],
-      ['CMO', { ...mockExecutive, id: 'exec-cmo-123', name: 'Marcus Rivera', role: 'CMO' }],
-      ['CTO', { ...mockExecutive, id: 'exec-cto-123', name: 'Alex Kim', role: 'CTO' }],
-      ['CLO', { ...mockExecutive, id: 'exec-clo-123', name: 'Diana Blackstone', role: 'CLO' }]
+      ['CMO', { ...mockExecutive, id: 'exec-cmo-123', name: 'CMO Executive', role: 'CMO' }],
+      ['CTO', { ...mockExecutive, id: 'exec-cto-123', name: 'CTO Executive', role: 'CTO' }],
+      ['CLO', { ...mockExecutive, id: 'exec-clo-123', name: 'CLO Executive', role: 'CLO' }]
     ]));
 
     mockShadowBoard.getExecutive.mockImplementation((role: string) => {

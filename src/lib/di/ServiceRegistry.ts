@@ -282,17 +282,19 @@ export function registerServices(): void {
       const logger = container.resolve<Logger>(SERVICE_IDENTIFIERS.LOGGER);
       const config = container.resolve<AppConfig>(SERVICE_IDENTIFIERS.APP_CONFIG);
 
-      // Create a mock GlobalNameRegistry
+      // SECURITY: Create mock GlobalNameRegistry without hardcoded names
       const mockGlobalNameRegistry = {
         reserveUniqueName: async (role: string, userId: string) => {
-          const names = {
-            'CFO': ['Sarah Chen', 'Michael Torres', 'Jennifer Walsh'],
-            'CMO': ['Marcus Rivera', 'Alexandra Richmond', 'David Kim'],
-            'CTO': ['Alex Kim', 'Priya Patel', 'James Wilson'],
-            'CLO': ['Diana Patel', 'Robert Martinez', 'Lisa Thompson']
+          // SECURITY: Generate unique names based on userId and role, no hardcoded names
+          const nameTemplates = {
+            'CFO': ['Executive A', 'Executive B', 'Executive C'],
+            'CMO': ['Executive D', 'Executive E', 'Executive F'],
+            'CTO': ['Executive G', 'Executive H', 'Executive I'],
+            'CLO': ['Executive J', 'Executive K', 'Executive L']
           };
-          const roleNames = names[role as keyof typeof names] || ['Executive Name'];
-          return roleNames[Math.floor(Math.random() * roleNames.length)];
+          const roleNames = nameTemplates[role as keyof typeof nameTemplates] || ['Executive'];
+          const baseName = roleNames[Math.floor(Math.random() * roleNames.length)];
+          return `${baseName}_${userId.slice(-4)}`; // Include user ID for uniqueness
         },
         releaseName: async (name: string, role: string) => {
           logger.info(`Released name ${name} for role ${role}`);

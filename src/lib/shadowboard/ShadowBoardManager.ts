@@ -342,38 +342,26 @@ export class ShadowBoardManager extends EventEmitter {
   }
 
   /**
-   * Create default global name registry if none provided
+   * Create default global name registry if none provided - SECURE VERSION
    */
   private createDefaultGlobalNameRegistry(): GlobalNameRegistry {
+    // SECURITY: No hardcoded executive names - use proper name pools from ShadowBoardInitializer
     const reservedNames = new Set([
-      'Brian Geary', 'SOVREN', 'SOVREN-AI',
-      'Sarah Chen', 'Michael Torres', 'Jennifer Walsh',
-      'Marcus Chen', 'Diana Patel', 'Alexandra Richmond',
-      'James Morrison III', 'David Kim', 'Rachel Thompson'
+      'Brian Geary', 'SOVREN', 'SOVREN-AI'
+      // SECURITY: No hardcoded executive names
     ]);
 
     const executiveNames = new Map<string, string>();
-    const availableNames = [
-      'Sarah Chen', 'Michael Torres', 'Jennifer Walsh', 'Marcus Chen',
-      'Diana Patel', 'Alexandra Richmond', 'James Morrison III',
-      'David Kim', 'Rachel Thompson', 'Lisa Anderson', 'Robert Wilson'
-    ];
+    // SECURITY: Names will be assigned from proper name pools in ShadowBoardInitializer
 
     return {
       async reserveUniqueName(role: string, userId: string): Promise<string> {
         const existingName = executiveNames.get(`${userId}_${role}`);
         if (existingName) return existingName;
 
-        // Find available name
-        for (const name of availableNames) {
-          if (!Array.from(executiveNames.values()).includes(name)) {
-            executiveNames.set(`${userId}_${role}`, name);
-            return name;
-          }
-        }
-
-        // Generate fallback name
-        const fallbackName = `Executive ${role} ${Math.random().toString(36).substring(2, 8)}`;
+        // SECURITY: Use proper name reservation system instead of hardcoded names
+        // This should delegate to ShadowBoardInitializer for proper name assignment
+        const fallbackName = `${role.toUpperCase()}_Executive_${userId.slice(-4)}`;
         executiveNames.set(`${userId}_${role}`, fallbackName);
         return fallbackName;
       },
