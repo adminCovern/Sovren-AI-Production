@@ -50,7 +50,7 @@ export class ComplementarityBalanceModel {
 export class IndustryPsychologyModel {
   async getOptimization(_industry: string, _role: string): Promise<any> {
     return {
-      name: 'Sarah Chen',
+      name: 'Executive Template', // SECURITY: No hardcoded name
       gender: 'female',
       ageRange: '40-50',
       background: 'Fortune 500 Executive',
@@ -436,16 +436,9 @@ export class PsychologicalOptimizationEngine {
   }
 
   private generateOptimalName(role: string, context: any): string {
-    // Generate culturally appropriate, trust-optimized names
-    const names: Record<string, string[]> = {
-      'CFO': ['Sarah Chen', 'Michael Torres', 'Jennifer Walsh', 'David Kim'],
-      'CMO': ['Marcus Chen', 'Alexandra Richmond', 'Sofia Rodriguez', 'James Morrison'],
-      'CTO': ['Diana Patel', 'Robert Chang', 'Maria Gonzalez', 'Kevin Liu'],
-      'CLO': ['Catherine Williams', 'Jonathan Davis', 'Priya Sharma', 'Thomas Anderson']
-    };
-
-    const roleNames = names[role] || names['CFO'];
-    return roleNames[Math.floor(Math.random() * roleNames.length)];
+    // SECURITY: No hardcoded names - delegate to proper name reservation system
+    // This should use ExecutiveAccessManager or GlobalNameRegistry
+    return `${role.toUpperCase()}_Executive_${Math.random().toString(36).substring(2, 8)}`;
   }
 
   private synthesizeVoiceProfile(trustOpt: any, authorityOpt: any, culturalOpt: any): VoiceProfile {

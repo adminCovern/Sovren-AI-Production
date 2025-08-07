@@ -579,17 +579,18 @@ export class EnhancedShadowBoardIntelligence extends EventEmitter {
   }
 
   private generateExecutiveName(role: string): string {
-    const names: Record<string, string> = {
-      'CEO': 'Alexandra Sterling',
-      'CFO': 'Marcus Chen',
-      'CTO': 'Dr. Sarah Kim',
-      'CMO': 'David Rodriguez',
-      'COO': 'Jennifer Walsh',
-      'CHRO': 'Michael Thompson',
-      'CLO': 'Diana Patel',
-      'CSO': 'Robert Johnson'
+    // SECURITY: No hardcoded names - use role-based identification
+    const roleNames: Record<string, string> = {
+      'CEO': 'CEO Executive',
+      'CFO': 'CFO Executive',
+      'CTO': 'CTO Executive',
+      'CMO': 'CMO Executive',
+      'COO': 'COO Executive',
+      'CHRO': 'CHRO Executive',
+      'CLO': 'CLO Executive',
+      'CSO': 'CSO Executive'
     };
-    return names[role] || `Executive ${role}`;
+    return roleNames[role] || `${role} Executive`;
   }
 
   private getAuthorityLevel(role: string): number {

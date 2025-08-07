@@ -305,22 +305,17 @@ export class TrustPsychologyModel {
   }
 
   /**
-   * Generate culturally appropriate names
+   * Generate culturally appropriate names - SECURITY: No hardcoded names
    */
   private generateAppropriateNames(context: any, gender: 'male' | 'female'): string[] {
-    const names = {
-      male: [
-        'Michael Torres', 'David Kim', 'James Morrison', 'Robert Chang',
-        'Jonathan Davis', 'Thomas Anderson', 'Kevin Liu', 'Marcus Chen'
-      ],
-      female: [
-        'Sarah Chen', 'Jennifer Walsh', 'Diana Patel', 'Alexandra Richmond',
-        'Catherine Williams', 'Maria Gonzalez', 'Priya Sharma', 'Sofia Rodriguez'
-      ]
+    // SECURITY: No hardcoded names - delegate to proper name reservation system
+    // This should use ExecutiveAccessManager or GlobalNameRegistry
+    const templates = {
+      male: ['Executive_M1', 'Executive_M2', 'Executive_M3'],
+      female: ['Executive_F1', 'Executive_F2', 'Executive_F3']
     };
 
-    // Return top 3 names for optimization
-    return names[gender].slice(0, 3);
+    return templates[gender];
   }
 
   /**

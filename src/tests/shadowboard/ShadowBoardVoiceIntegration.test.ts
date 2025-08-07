@@ -101,7 +101,7 @@ describe('ShadowBoardVoiceIntegration', () => {
       expect(voiceProfiles).toHaveLength(4); // CFO, CMO, CTO, CLO
       expect(voiceProfiles[0]).toMatchObject({
         executiveRole: 'CFO',
-        executiveName: 'Sarah Chen',
+        executiveName: 'CFO Executive', // SECURITY: No hardcoded name in tests
         phoneNumber: '+14155551002',
         canMakeCalls: true,
         canReceiveCalls: true,

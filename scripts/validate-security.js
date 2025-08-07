@@ -27,7 +27,9 @@ const FORBIDDEN_HARDCODED_NAMES = [
 const EXCLUDED_FILES = [
   'ExecutiveAccessManager.ts',
   'ExecutiveNameValidator.ts',
-  'validate-security.js'
+  'validate-security.js',
+  'ShadowBoardInitializer.ts', // Contains legitimate name pools
+  'GlobalNameRegistry.ts' // Contains legitimate name pools
 ];
 
 // Directories to scan

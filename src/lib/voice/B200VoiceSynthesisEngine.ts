@@ -184,43 +184,43 @@ export class B200VoiceSynthesisEngine extends EventEmitter {
 
     // COO Voice - Operational, efficient male
     this.voiceProfiles.set('coo', {
-      id: 'coo_james_wright',
-      name: 'James Wright',
+      id: 'coo_executive_voice',
+      name: 'COO Executive', // SECURITY: No hardcoded name
       gender: 'male',
       age: 40,
       accent: 'american',
       personality: 'professional',
       pitch: 115, // Hz
       speed: 170, // WPM
-      modelPath: 'models/voice/coo_james_wright.pth',
+      modelPath: 'models/voice/coo_executive.pth',
       b200Optimized: true
     });
 
     // CHRO Voice - Warm, empathetic female
     this.voiceProfiles.set('chro', {
-      id: 'chro_lisa_martinez',
-      name: 'Lisa Martinez',
+      id: 'chro_executive_voice',
+      name: 'CHRO Executive', // SECURITY: No hardcoded name
       gender: 'female',
       age: 39,
       accent: 'american',
       personality: 'warm',
       pitch: 190, // Hz
       speed: 155, // WPM
-      modelPath: 'models/voice/chro_lisa_martinez.pth',
+      modelPath: 'models/voice/chro_executive.pth',
       b200Optimized: true
     });
 
     // CSO Voice - Strategic, visionary male
     this.voiceProfiles.set('cso', {
-      id: 'cso_robert_taylor',
-      name: 'Robert Taylor',
+      id: 'cso_executive_voice',
+      name: 'CSO Executive', // SECURITY: No hardcoded name
       gender: 'male',
       age: 48,
       accent: 'british',
       personality: 'authoritative',
       pitch: 105, // Hz
       speed: 145, // WPM
-      modelPath: 'models/voice/cso_robert_taylor.pth',
+      modelPath: 'models/voice/cso_executive.pth',
       b200Optimized: true
     });
 

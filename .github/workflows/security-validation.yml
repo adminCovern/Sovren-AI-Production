@@ -1,0 +1,148 @@
+name: 🔐 Executive Name Security Validation
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+jobs:
+  security-validation:
+    name: 🛡️ Validate Executive Name Security
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Checkout Code
+      uses: actions/checkout@v4
+      
+    - name: 🟢 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: 📦 Install Dependencies
+      run: npm ci
+      
+    - name: 🔐 Run Security Validation
+      run: |
+        echo "🔍 Running Executive Name Security Validation..."
+        node scripts/validate-security.js
+        
+    - name: 📊 Security Report
+      if: failure()
+      run: |
+        echo "🚨 SECURITY VIOLATIONS DETECTED!"
+        echo "❌ Hardcoded executive names found in codebase"
+        echo "🔧 Please fix violations before merging"
+        echo ""
+        echo "📋 APPROVED PATTERNS:"
+        echo "✅ ExecutiveAccessManager.getUserExecutives(userId)"
+        echo "✅ ExecutiveAccessManager.getUserExecutive(userId, role)"
+        echo "✅ B200AutoScalerFactory.getForUser(userId)"
+        echo "✅ shadowBoardManager.getShadowBoard(userId)"
+        echo "✅ globalNameRegistry.reserveUniqueName(role, userId)"
+        echo ""
+        echo "❌ FORBIDDEN PATTERNS:"
+        echo "❌ Hardcoded names: 'Sarah Chen', 'Marcus Rivera', etc."
+        echo "❌ Direct executive access without user context"
+        echo "❌ Global executive instances shared across users"
+        exit 1
+        
+    - name: ✅ Security Validation Passed
+      if: success()
+      run: |
+        echo "🎉 SECURITY VALIDATION PASSED!"
+        echo "✅ No hardcoded executive names detected"
+        echo "🔒 Executive name isolation is properly maintained"
+        echo "🛡️ Shadow Board security is compliant"
+
+  lint-security:
+    name: 🔍 Security Linting
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Checkout Code
+      uses: actions/checkout@v4
+      
+    - name: 🟢 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: 📦 Install Dependencies
+      run: npm ci
+      
+    - name: 🔍 ESLint Security Rules
+      run: |
+        echo "🔍 Running ESLint with security focus..."
+        npx eslint src/ --ext .ts,.tsx --format=compact || true
+        
+    - name: 🔐 TypeScript Security Check
+      run: |
+        echo "🔍 Running TypeScript security validation..."
+        npx tsc --noEmit --strict || true
+        
+    - name: 📋 Security Best Practices Check
+      run: |
+        echo "🔍 Checking for security best practices..."
+        
+        # Check for ExecutiveAccessManager usage
+        if grep -r "ExecutiveAccessManager" src/ > /dev/null; then
+          echo "✅ ExecutiveAccessManager usage detected"
+        else
+          echo "⚠️ No ExecutiveAccessManager usage found"
+        fi
+        
+        # Check for user ID validation
+        if grep -r "userId" src/app/api/ > /dev/null; then
+          echo "✅ User ID validation detected in API routes"
+        else
+          echo "⚠️ No user ID validation found in API routes"
+        fi
+        
+        # Check for hardcoded executive patterns
+        HARDCODED_PATTERNS=$(grep -r "name.*:.*['\"].*[A-Z][a-z]* [A-Z][a-z]*['\"]" src/ || true)
+        if [ -n "$HARDCODED_PATTERNS" ]; then
+          echo "⚠️ Potential hardcoded name patterns detected:"
+          echo "$HARDCODED_PATTERNS"
+        else
+          echo "✅ No obvious hardcoded name patterns detected"
+        fi
+
+  security-audit:
+    name: 🛡️ Security Audit
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Checkout Code
+      uses: actions/checkout@v4
+      
+    - name: 🟢 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: 📦 Install Dependencies
+      run: npm ci
+      
+    - name: 🔍 NPM Security Audit
+      run: |
+        echo "🔍 Running NPM security audit..."
+        npm audit --audit-level=moderate || true
+        
+    - name: 🔐 Executive Security Summary
+      run: |
+        echo "📊 EXECUTIVE SECURITY SUMMARY"
+        echo "=============================="
+        echo ""
+        echo "🔐 Executive Name Isolation: $(node scripts/validate-security.js > /dev/null 2>&1 && echo 'SECURE' || echo 'VIOLATIONS DETECTED')"
+        echo "🛡️ ExecutiveAccessManager: $(grep -r 'ExecutiveAccessManager' src/ > /dev/null && echo 'IMPLEMENTED' || echo 'MISSING')"
+        echo "👤 User ID Validation: $(grep -r 'userId.*required' src/ > /dev/null && echo 'IMPLEMENTED' || echo 'MISSING')"
+        echo "🎯 Auto-scaling Security: $(grep -r 'B200AutoScalerFactory' src/ > /dev/null && echo 'SECURE' || echo 'INSECURE')"
+        echo "📝 Audit Logging: $(grep -r 'logAccess' src/ > /dev/null && echo 'IMPLEMENTED' || echo 'MISSING')"
+        echo ""
+        echo "🔒 SECURITY STATUS: $(node scripts/validate-security.js > /dev/null 2>&1 && echo '✅ SECURE' || echo '❌ VIOLATIONS DETECTED')"

@@ -50,7 +50,7 @@ describe('B200VoiceSynthesisEngine', () => {
       // Check CFO voice profile
       const cfoVoice = voiceEngine.getVoiceProfile('cfo');
       expect(cfoVoice).toBeDefined();
-      expect(cfoVoice?.name).toBe('Sarah Chen');
+      expect(cfoVoice?.name).toBe('CFO Executive'); // SECURITY: No hardcoded name in tests
       expect(cfoVoice?.gender).toBe('female');
       expect(cfoVoice?.personality).toBe('authoritative');
       expect(cfoVoice?.b200Optimized).toBe(true);
