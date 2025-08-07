@@ -52,11 +52,10 @@ export class LLMIntegrationSystem extends EventEmitter {
   private activeRequests: Map<string, LLMRequest> = new Map();
   private responseCache: Map<string, LLMResponse> = new Map();
 
-  // Executive Personalities for Shadow Board
-  private readonly EXECUTIVE_PERSONALITIES: Map<string, ExecutivePersonality> = new Map([
+  // SECURITY: Executive Personality Templates - NO HARDCODED NAMES
+  private readonly EXECUTIVE_PERSONALITY_TEMPLATES: Map<string, Omit<ExecutivePersonality, 'name'>> = new Map([
     ['CFO', {
       role: 'CFO',
-      name: 'Sarah Chen',
       communicationStyle: 'analytical_precise',
       expertise: ['financial_analysis', 'risk_management', 'strategic_planning', 'investor_relations'],
       decisionMaking: 'data_driven_conservative',
@@ -118,7 +117,7 @@ export class LLMIntegrationSystem extends EventEmitter {
       console.log('✅ LLM Integration System initialized successfully');
 
       this.emit('initialized', {
-        executivePersonalities: this.EXECUTIVE_PERSONALITIES.size,
+        executivePersonalities: this.EXECUTIVE_PERSONALITY_TEMPLATES.size,
         resourceManager: 'active'
       });
 
@@ -218,10 +217,12 @@ export class LLMIntegrationSystem extends EventEmitter {
     priority: 'critical' | 'high' | 'medium' | 'low' = 'high'
   ): Promise<LLMResponse> {
     
-    const personality = this.EXECUTIVE_PERSONALITIES.get(executiveRole);
-    if (!personality) {
-      throw new Error(`Executive personality not found: ${executiveRole}`);
+    const personalityTemplate = this.EXECUTIVE_PERSONALITY_TEMPLATES.get(executiveRole);
+    if (!personalityTemplate) {
+      throw new Error(`Executive personality template not found: ${executiveRole}`);
     }
+
+    // SECURITY: This method should be updated to use ExecutiveAccessManager for actual names
 
     const request: LLMRequest = {
       id: `exec_${executiveRole}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -233,7 +234,7 @@ export class LLMIntegrationSystem extends EventEmitter {
       temperature: 0.7,
       topP: 0.9,
       stopSequences: ['\n\n', '---'],
-      systemPrompt: personality.systemPrompt,
+      systemPrompt: personalityTemplate.systemPrompt,
       executiveRole,
       consciousnessLevel: 0.8
     };
@@ -274,10 +275,10 @@ export class LLMIntegrationSystem extends EventEmitter {
   }
 
   /**
-   * Get executive personalities
+   * Get executive personality templates - SECURITY: NO HARDCODED NAMES
    */
-  public getExecutivePersonalities(): ExecutivePersonality[] {
-    return Array.from(this.EXECUTIVE_PERSONALITIES.values());
+  public getExecutivePersonalityTemplates(): Omit<ExecutivePersonality, 'name'>[] {
+    return Array.from(this.EXECUTIVE_PERSONALITY_TEMPLATES.values());
   }
 
   /**
@@ -319,23 +320,23 @@ ${request.prompt}
       return prompt;
     }
 
-    const personality = this.EXECUTIVE_PERSONALITIES.get(request.executiveRole);
-    if (!personality) {
+    const personalityTemplate = this.EXECUTIVE_PERSONALITY_TEMPLATES.get(request.executiveRole);
+    if (!personalityTemplate) {
       return prompt;
     }
 
-    return `${personality.systemPrompt}
+    return `${personalityTemplate.systemPrompt}
 
 CONTEXT: ${request.context}
 
 USER REQUEST: ${prompt}
 
 RESPONSE GUIDELINES:
-- Maintain your ${personality.communicationStyle} communication style
-- Draw from your expertise in: ${personality.expertise.join(', ')}
-- Apply ${personality.decisionMaking} decision-making approach
-- Consider risk tolerance level: ${personality.riskTolerance}
-- Respond as ${personality.name}, ${personality.role}`;
+- Maintain your ${personalityTemplate.communicationStyle} communication style
+- Draw from your expertise in: ${personalityTemplate.expertise.join(', ')}
+- Apply ${personalityTemplate.decisionMaking} decision-making approach
+- Consider risk tolerance level: ${personalityTemplate.riskTolerance}
+- Respond as ${personalityTemplate.role} executive`;
   }
 
   /**
@@ -350,12 +351,10 @@ RESPONSE GUIDELINES:
       .replace(/\[INSTRUCTION:.*?\]/g, '')
       .trim();
 
-    // Add executive signature if applicable
+    // SECURITY: Executive signature should use actual user's executive name
     if (request.executiveRole) {
-      const personality = this.EXECUTIVE_PERSONALITIES.get(request.executiveRole);
-      if (personality) {
-        processed += `\n\n— ${personality.name}, ${personality.role}`;
-      }
+      // TODO: Use ExecutiveAccessManager to get actual executive name for user
+      processed += `\n\n— ${request.executiveRole.toUpperCase()} Executive`;
     }
 
     return processed;
@@ -397,10 +396,10 @@ RESPONSE GUIDELINES:
     reasoning.push(`Model: ${request.modelId} (${request.priority} priority)`);
     
     if (request.executiveRole) {
-      const personality = this.EXECUTIVE_PERSONALITIES.get(request.executiveRole);
-      if (personality) {
-        reasoning.push(`Executive perspective: ${personality.name} (${personality.communicationStyle})`);
-        reasoning.push(`Expertise applied: ${personality.expertise.slice(0, 2).join(', ')}`);
+      const personalityTemplate = this.EXECUTIVE_PERSONALITY_TEMPLATES.get(request.executiveRole);
+      if (personalityTemplate) {
+        reasoning.push(`Executive perspective: ${personalityTemplate.role} (${personalityTemplate.communicationStyle})`);
+        reasoning.push(`Expertise applied: ${personalityTemplate.expertise.slice(0, 2).join(', ')}`);
       }
     }
 

@@ -1,12 +1,13 @@
-import { B200AutoScaler } from '../../lib/autoscaling/B200AutoScaler';
+import { B200AutoScaler, B200AutoScalerFactory } from '../../lib/autoscaling/B200AutoScaler';
 
 // Real B200 component integration - no mocks
-describe('B200 Auto-Scaling System', () => {
+describe('B200 Auto-Scaling System - SECURE VERSION', () => {
   let autoScaler: B200AutoScaler;
+  const testUserId = 'test-user-123';
 
   beforeEach(() => {
-    // Create fresh auto-scaler instance with test configuration
-    autoScaler = new B200AutoScaler({
+    // SECURITY: Create user-specific auto-scaler instance
+    autoScaler = B200AutoScalerFactory.getForUser(testUserId, {
       minGPUs: 2,
       maxGPUs: 4, // Smaller range for testing
       targetUtilization: 0.75,
@@ -21,10 +22,11 @@ describe('B200 Auto-Scaling System', () => {
   });
 
   afterEach(async () => {
-    // Cleanup
+    // SECURITY: Cleanup user-specific auto-scaler
     if (autoScaler) {
       await autoScaler.cleanup();
     }
+    await B200AutoScalerFactory.removeForUser(testUserId);
   });
 
   describe('Auto-Scaler Initialization', () => {
@@ -43,44 +45,44 @@ describe('B200 Auto-Scaling System', () => {
       expect(config.powerBudget).toBe(3200);
     });
 
-    test('should initialize executive workloads', () => {
-      const workloads = autoScaler.getExecutiveWorkloads();
-      
-      expect(workloads.size).toBe(8); // All Shadow Board executives
-      expect(workloads.has('sovren-ai')).toBe(true);
-      expect(workloads.has('cfo')).toBe(true);
-      expect(workloads.has('cmo')).toBe(true);
-      expect(workloads.has('cto')).toBe(true);
-      expect(workloads.has('clo')).toBe(true);
-      expect(workloads.has('coo')).toBe(true);
-      expect(workloads.has('chro')).toBe(true);
-      expect(workloads.has('cso')).toBe(true);
+    test('should initialize executive workloads - SECURE VERSION', async () => {
+      // SECURITY: Executive workloads are initialized when start() is called with userId
+      await autoScaler.start(testUserId);
 
-      // Verify SOVREN-AI has critical priority
-      const sovrenWorkload = workloads.get('sovren-ai');
-      expect(sovrenWorkload?.priority).toBe('critical');
-      expect(sovrenWorkload?.currentRequests).toBe(0);
-      expect(sovrenWorkload?.gpuUtilization).toBe(0);
+      const workloads = autoScaler.getExecutiveWorkloads();
+
+      // Should have user's actual executives (varies by subscription tier)
+      expect(workloads.size).toBeGreaterThan(0);
+
+      // Check that workloads have proper structure
+      for (const [role, workload] of workloads.entries()) {
+        expect(workload.executiveId).toBeDefined();
+        expect(workload.currentRequests).toBe(0);
+        expect(workload.gpuUtilization).toBe(0);
+        expect(['low', 'medium', 'high', 'critical']).toContain(workload.priority);
+      }
+
+      await autoScaler.stop();
     });
 
     test('should have correct initial status', () => {
       const status = autoScaler.getStatus();
-      
+
       expect(status.isRunning).toBe(false);
       expect(status.lastScalingAction).toBeNull();
       expect(status.metricsCount).toBe(0);
-      expect(status.activeExecutives).toBe(8);
       expect(status.config).toBeDefined();
+      // SECURITY: activeExecutives will be set when start() is called with userId
     });
   });
 
   describe('Auto-Scaler Lifecycle', () => {
-    test('should start and stop correctly', async () => {
+    test('should start and stop correctly - SECURE VERSION', async () => {
       // Initially stopped
       expect(autoScaler.getStatus().isRunning).toBe(false);
 
-      // Start auto-scaler
-      await autoScaler.start();
+      // SECURITY: Start auto-scaler with userId
+      await autoScaler.start(testUserId);
       expect(autoScaler.getStatus().isRunning).toBe(true);
 
       // Stop auto-scaler
@@ -90,8 +92,8 @@ describe('B200 Auto-Scaling System', () => {
 
     test('should handle multiple start/stop calls gracefully', async () => {
       // Multiple starts should not cause issues
-      await autoScaler.start();
-      await autoScaler.start(); // Should not throw
+      await autoScaler.start(testUserId);
+      await autoScaler.start(testUserId); // Should not throw
       expect(autoScaler.getStatus().isRunning).toBe(true);
 
       // Multiple stops should not cause issues
@@ -101,7 +103,7 @@ describe('B200 Auto-Scaling System', () => {
     });
 
     test('should collect metrics when running', async () => {
-      await autoScaler.start();
+      await autoScaler.start(testUserId);
       
       // Wait for at least one evaluation cycle
       await new Promise(resolve => setTimeout(resolve, 6000));
@@ -151,12 +153,15 @@ describe('B200 Auto-Scaling System', () => {
   });
 
   describe('Executive Workload Tracking', () => {
-    test('should track executive workloads correctly', () => {
+    test('should track executive workloads correctly', async () => {
+      // SECURITY: Initialize with user's executives first
+      await autoScaler.start(testUserId);
+
       const workloads = autoScaler.getExecutiveWorkloads();
-      
+
       // All executives should start with zero workload
-      for (const [executiveId, workload] of workloads.entries()) {
-        expect(workload.executiveId).toBe(executiveId);
+      for (const [role, workload] of workloads.entries()) {
+        expect(workload.executiveId).toBeDefined();
         expect(workload.currentRequests).toBe(0);
         expect(workload.averageLatency).toBe(0);
         expect(workload.gpuUtilization).toBe(0);
@@ -164,25 +169,33 @@ describe('B200 Auto-Scaling System', () => {
         expect(workload.predictedLoad).toBe(0);
         expect(['low', 'medium', 'high', 'critical']).toContain(workload.priority);
       }
+
+      await autoScaler.stop();
     });
 
-    test('should have correct executive priorities', () => {
+    test('should have correct executive priorities', async () => {
+      // SECURITY: Initialize with user's executives first
+      await autoScaler.start(testUserId);
+
       const workloads = autoScaler.getExecutiveWorkloads();
-      
-      // SOVREN-AI should have critical priority
-      expect(workloads.get('sovren-ai')?.priority).toBe('critical');
-      
-      // Other executives should have high priority
-      expect(workloads.get('cfo')?.priority).toBe('high');
-      expect(workloads.get('cmo')?.priority).toBe('high');
-      expect(workloads.get('cto')?.priority).toBe('high');
+
+      // Check that priorities are properly assigned
+      for (const [role, workload] of workloads.entries()) {
+        if (role === 'sovren-ai') {
+          expect(workload.priority).toBe('critical');
+        } else {
+          expect(workload.priority).toBe('high');
+        }
+      }
+
+      await autoScaler.stop();
     });
   });
 
   describe('Metrics Collection', () => {
     test('should collect comprehensive metrics', async () => {
-      await autoScaler.start();
-      
+      await autoScaler.start(testUserId);
+
       // Wait for metrics collection
       await new Promise(resolve => setTimeout(resolve, 6000));
       
@@ -216,8 +229,8 @@ describe('B200 Auto-Scaling System', () => {
     });
 
     test('should maintain metrics history', async () => {
-      await autoScaler.start();
-      
+      await autoScaler.start(testUserId);
+
       // Wait for multiple evaluation cycles
       await new Promise(resolve => setTimeout(resolve, 12000));
       
@@ -235,8 +248,8 @@ describe('B200 Auto-Scaling System', () => {
     });
 
     test('should limit metrics history size', async () => {
-      await autoScaler.start();
-      
+      await autoScaler.start(testUserId);
+
       // Simulate many metrics (would normally take a long time)
       // For testing, we'll just verify the limit exists
       const history = autoScaler.getMetricsHistory();
@@ -267,7 +280,7 @@ describe('B200 Auto-Scaling System', () => {
         stoppedEmitted = true;
       });
 
-      await autoScaler.start();
+      await autoScaler.start(testUserId);
       await autoScaler.stop();
       
       expect(stoppedEmitted).toBe(true);
@@ -282,8 +295,8 @@ describe('B200 Auto-Scaling System', () => {
         evaluationEmitted = true;
       });
 
-      await autoScaler.start();
-      
+      await autoScaler.start(testUserId);
+
       // Wait for at least one evaluation
       await new Promise(resolve => setTimeout(resolve, 6000));
       
@@ -318,8 +331,8 @@ describe('B200 Auto-Scaling System', () => {
         errorEmitted = true;
       });
 
-      await autoScaler.start();
-      
+      await autoScaler.start(testUserId);
+
       // Wait for potential errors
       await new Promise(resolve => setTimeout(resolve, 6000));
       
@@ -332,8 +345,8 @@ describe('B200 Auto-Scaling System', () => {
 
   describe('Resource Management Integration', () => {
     test('should integrate with B200ResourceManager', async () => {
-      await autoScaler.start();
-      
+      await autoScaler.start(testUserId);
+
       // The auto-scaler should be able to collect metrics from B200ResourceManager
       const metrics = autoScaler.getCurrentMetrics();
       
@@ -364,8 +377,8 @@ describe('B200 Auto-Scaling System', () => {
 
   describe('Cleanup', () => {
     test('should cleanup resources properly', async () => {
-      await autoScaler.start();
-      
+      await autoScaler.start(testUserId);
+
       // Verify system is running
       expect(autoScaler.getStatus().isRunning).toBe(true);
       

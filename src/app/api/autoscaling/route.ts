@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authSystem } from '@/lib/auth/AuthenticationSystem';
-import { b200AutoScaler } from '@/lib/autoscaling/B200AutoScaler';
+import { B200AutoScalerFactory } from '@/lib/autoscaling/B200AutoScaler';
 import { rateLimiters } from '@/lib/security/RateLimiters';
 
 /**
@@ -45,23 +45,28 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // SECURITY: Get user-specific auto-scaler
+    const userAutoScaler = B200AutoScalerFactory.getForUser(userId);
+
     // Handle different auto-scaling actions
     switch (action) {
       case 'start':
-        await b200AutoScaler.start();
+        await userAutoScaler.start(userId); // SECURITY: Pass userId
         return NextResponse.json({
           success: true,
           message: 'Auto-scaling system started',
-          status: b200AutoScaler.getStatus(),
+          status: userAutoScaler.getStatus(),
+          userId,
           timestamp: new Date().toISOString()
         });
 
       case 'stop':
-        await b200AutoScaler.stop();
+        await userAutoScaler.stop();
         return NextResponse.json({
           success: true,
           message: 'Auto-scaling system stopped',
-          status: b200AutoScaler.getStatus(),
+          status: userAutoScaler.getStatus(),
+          userId,
           timestamp: new Date().toISOString()
         });
 
@@ -73,17 +78,18 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        b200AutoScaler.updateConfig(config);
+        userAutoScaler.updateConfig(config);
         return NextResponse.json({
           success: true,
           message: 'Auto-scaling configuration updated',
-          config: b200AutoScaler.getConfig(),
+          config: userAutoScaler.getConfig(),
+          userId,
           timestamp: new Date().toISOString()
         });
 
       case 'get_metrics':
-        const currentMetrics = b200AutoScaler.getCurrentMetrics();
-        const metricsHistory = b200AutoScaler.getMetricsHistory();
+        const currentMetrics = userAutoScaler.getCurrentMetrics();
+        const metricsHistory = userAutoScaler.getMetricsHistory();
         
         return NextResponse.json({
           success: true,
@@ -96,7 +102,7 @@ export async function POST(request: NextRequest) {
         });
 
       case 'get_workloads':
-        const executiveWorkloads = b200AutoScaler.getExecutiveWorkloads();
+        const executiveWorkloads = userAutoScaler.getExecutiveWorkloads();
         
         return NextResponse.json({
           success: true,
@@ -110,8 +116,8 @@ export async function POST(request: NextRequest) {
         console.log('🔄 Forcing auto-scaling evaluation...');
         
         // The evaluation happens automatically, but we can return current status
-        const status = b200AutoScaler.getStatus();
-        const metrics = b200AutoScaler.getCurrentMetrics();
+        const status = userAutoScaler.getStatus();
+        const metrics = userAutoScaler.getCurrentMetrics();
         
         return NextResponse.json({
           success: true,
@@ -176,12 +182,15 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // SECURITY: Get user-specific auto-scaler
+    const userAutoScaler = B200AutoScalerFactory.getForUser(userId);
+
     // Get comprehensive auto-scaling system status
-    const status = b200AutoScaler.getStatus();
-    const config = b200AutoScaler.getConfig();
-    const currentMetrics = b200AutoScaler.getCurrentMetrics();
-    const executiveWorkloads = b200AutoScaler.getExecutiveWorkloads();
-    const metricsHistory = b200AutoScaler.getMetricsHistory();
+    const status = userAutoScaler.getStatus();
+    const config = userAutoScaler.getConfig();
+    const currentMetrics = userAutoScaler.getCurrentMetrics();
+    const executiveWorkloads = userAutoScaler.getExecutiveWorkloads();
+    const metricsHistory = userAutoScaler.getMetricsHistory();
 
     // Calculate system performance indicators
     const performanceIndicators = {
@@ -333,8 +342,16 @@ function generateScalingRecommendations(
  */
 export async function HEAD(request: NextRequest) {
   try {
-    const status = b200AutoScaler.getStatus();
-    const currentMetrics = b200AutoScaler.getCurrentMetrics();
+    // Get user ID for security
+    const userId = request.nextUrl.searchParams.get('userId');
+    if (!userId) {
+      return new NextResponse(null, { status: 400 });
+    }
+
+    // SECURITY: Get user-specific auto-scaler
+    const userAutoScaler = B200AutoScalerFactory.getForUser(userId);
+    const status = userAutoScaler.getStatus();
+    const currentMetrics = userAutoScaler.getCurrentMetrics();
     
     return new NextResponse(null, {
       status: 200,

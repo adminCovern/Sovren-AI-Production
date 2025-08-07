@@ -180,13 +180,12 @@ export class DatabaseManager {
 
   /**
    * Initialize in-memory data for immediate deployment
+   * SECURITY: NO HARDCODED EXECUTIVE NAMES - Use ExecutiveAccessManager
    */
   private initializeInMemoryData(): void {
-    // Initialize default executives
-    const defaultExecutives: ExecutiveData[] = [
+    // SECURITY: Initialize default executive templates without hardcoded names
+    const defaultExecutiveTemplates = [
       {
-        id: 'exec_cfo_sarah',
-        name: 'Sarah Chen',
         role: 'CFO',
         tier: 'SMB',
         voiceModel: 'female_professional_confident',
@@ -201,9 +200,7 @@ export class DatabaseManager {
             pitch: 'medium',
             tone: 'authoritative'
           }
-        },
-        createdAt: new Date(),
-        updatedAt: new Date()
+        }
       },
       {
         id: 'exec_cmo_marcus',

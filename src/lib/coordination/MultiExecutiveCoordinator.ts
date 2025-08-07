@@ -2,6 +2,7 @@ import { EventEmitter } from 'events';
 import { nvlinkFabricCoordinator, ExecutiveCoordinationRequest } from './NVLinkFabricCoordinator';
 import { ShadowBoardManager } from '../shadowboard/ShadowBoardManager';
 import { B200LLMClient } from '../inference/B200LLMClient';
+import { executiveAccessManager } from '../security/ExecutiveAccessManager';
 
 /**
  * Multi-Executive Coordination Engine
@@ -64,85 +65,63 @@ export class MultiExecutiveCoordinator extends EventEmitter {
     super();
     this.shadowBoardManager = new ShadowBoardManager();
     this.b200LLMClient = new B200LLMClient();
-    this.initializeExecutiveRoles();
+    // SECURITY: Executive roles will be initialized when needed with userId
   }
 
   /**
-   * Initialize Shadow Board executive roles and hierarchies
+   * Initialize Shadow Board executive roles and hierarchies - SECURE VERSION
+   * NO HARDCODED NAMES - Gets executives from user's actual Shadow Board
    */
-  private initializeExecutiveRoles(): void {
-    const roles: ExecutiveRole[] = [
-      {
-        id: 'sovren-ai',
-        name: 'SOVREN-AI',
-        title: 'Chief AI Officer',
-        expertise: ['strategic_analysis', 'coordination', 'decision_making', 'optimization'],
-        priority: 10,
-        decisionWeight: 0.3
-      },
-      {
-        id: 'cfo',
-        name: 'Sarah Chen',
-        title: 'Chief Financial Officer',
-        expertise: ['financial_analysis', 'budgeting', 'risk_assessment', 'investment'],
-        priority: 9,
-        decisionWeight: 0.25
-      },
-      {
-        id: 'cmo',
-        name: 'Marcus Rivera',
-        title: 'Chief Marketing Officer',
-        expertise: ['market_analysis', 'customer_insights', 'brand_strategy', 'growth'],
-        priority: 8,
-        decisionWeight: 0.2
-      },
-      {
-        id: 'cto',
-        name: 'Alex Kim',
-        title: 'Chief Technology Officer',
-        expertise: ['technical_architecture', 'innovation', 'security', 'scalability'],
-        priority: 8,
-        decisionWeight: 0.2
-      },
-      {
-        id: 'clo',
-        name: 'Diana Blackstone',
-        title: 'Chief Legal Officer',
-        expertise: ['legal_compliance', 'risk_mitigation', 'contracts', 'governance'],
-        priority: 7,
-        decisionWeight: 0.15
-      },
-      {
-        id: 'coo',
-        name: 'James Wright',
-        title: 'Chief Operating Officer',
-        expertise: ['operations', 'process_optimization', 'execution', 'efficiency'],
-        priority: 7,
-        decisionWeight: 0.15
-      },
-      {
-        id: 'chro',
-        name: 'Lisa Martinez',
-        title: 'Chief Human Resources Officer',
-        expertise: ['talent_management', 'culture', 'organizational_development', 'leadership'],
-        priority: 6,
-        decisionWeight: 0.1
-      },
-      {
-        id: 'cso',
-        name: 'Robert Taylor',
-        title: 'Chief Strategy Officer',
-        expertise: ['strategic_planning', 'competitive_analysis', 'market_positioning', 'vision'],
-        priority: 6,
-        decisionWeight: 0.1
-      }
-    ];
-
-    for (const role of roles) {
-      this.executiveRoles.set(role.id, role);
+  private async initializeExecutiveRoles(userId: string): Promise<void> {
+    if (!userId) {
+      throw new Error('SECURITY VIOLATION: userId required for executive role initialization');
     }
 
-    console.log(`👥 Initialized ${roles.length} executive roles for coordination`);
+    try {
+      // SECURITY: Get user's actual executives - NO HARDCODED NAMES
+      await executiveAccessManager.ensureUserShadowBoard(userId);
+      const userExecutives = await executiveAccessManager.getUserExecutives(userId);
+
+      this.executiveRoles.clear(); // Clear any previous data
+
+      let priority = 10;
+      for (const [role, executive] of userExecutives.entries()) {
+        const executiveRole: ExecutiveRole = {
+          id: role,
+          name: executive.name, // SECURITY: Use actual user's executive name
+          title: executive.title,
+          expertise: this.getExpertiseForRole(role),
+          priority: role === 'sovren-ai' ? 10 : priority--,
+          decisionWeight: role === 'sovren-ai' ? 0.3 : 0.25 / (userExecutives.size - 1)
+        };
+        this.executiveRoles.set(role, executiveRole);
+      }
+
+      console.log(`🔐 SECURE: Initialized ${userExecutives.size} executive roles for user ${userId}`);
+      console.log(`🎯 Executives: ${Array.from(userExecutives.values()).map(e => `${e.role}: ${e.name}`).join(', ')}`);
+
+    } catch (error) {
+      console.error(`❌ SECURITY ERROR: Failed to initialize executive roles for user ${userId}:`, error);
+      throw new Error(`Executive role initialization failed for user: ${userId}`);
+    }
+  }
+
+  /**
+   * Get expertise areas for executive role
+   */
+  private getExpertiseForRole(role: string): string[] {
+    const expertiseMap: Record<string, string[]> = {
+      'sovren-ai': ['strategic_analysis', 'coordination', 'decision_making', 'optimization'],
+      'cfo': ['financial_analysis', 'budgeting', 'risk_assessment', 'investment'],
+      'cmo': ['market_analysis', 'customer_insights', 'brand_strategy', 'growth'],
+      'cto': ['technical_architecture', 'innovation', 'security', 'scalability'],
+      'clo': ['legal_compliance', 'risk_mitigation', 'contracts', 'governance'],
+      'coo': ['operations', 'process_optimization', 'execution', 'efficiency'],
+      'chro': ['talent_management', 'culture', 'organizational_development', 'leadership'],
+      'cso': ['strategic_planning', 'competitive_analysis', 'market_positioning', 'vision']
+    };
+
+    return expertiseMap[role] || ['general_management', 'strategic_thinking'];
   }
 
   /**

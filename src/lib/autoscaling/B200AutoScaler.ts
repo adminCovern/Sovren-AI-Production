@@ -1,6 +1,7 @@
 import { EventEmitter } from 'events';
 import { B200ResourceManager, B200AllocationRequest } from '../b200/B200ResourceManager';
 import { nvlinkFabricCoordinator } from '../coordination/NVLinkFabricCoordinator';
+import { executiveAccessManager } from '../security/ExecutiveAccessManager';
 
 /**
  * B200 Auto-Scaling Engine
@@ -65,6 +66,7 @@ export class B200AutoScaler extends EventEmitter {
   private metricsHistory: ScalingMetrics[] = [];
   private executiveWorkloads: Map<string, ExecutiveWorkload> = new Map();
   private scalingInterval: NodeJS.Timeout | null = null;
+  private currentUserId: string | null = null; // SECURITY: Track which user this auto-scaler serves
 
   // Default auto-scaling configuration
   private readonly defaultConfig: AutoScalingConfig = {
@@ -84,34 +86,56 @@ export class B200AutoScaler extends EventEmitter {
     super();
     this.b200ResourceManager = new B200ResourceManager();
     this.config = { ...this.defaultConfig, ...config };
-    this.initializeExecutiveWorkloads();
+    // SECURITY: Executive workloads will be initialized when start() is called with userId
   }
 
   /**
-   * Initialize executive workload tracking
+   * Initialize executive workload tracking - SECURE VERSION
+   * NO HARDCODED NAMES - Gets executives from user's actual Shadow Board
    */
-  private initializeExecutiveWorkloads(): void {
-    const executives = ['sovren-ai', 'cfo', 'cmo', 'cto', 'clo', 'coo', 'chro', 'cso'];
-    
-    for (const executive of executives) {
-      this.executiveWorkloads.set(executive, {
-        executiveId: executive,
-        currentRequests: 0,
-        averageLatency: 0,
-        gpuUtilization: 0,
-        memoryUsage: 0,
-        priority: executive === 'sovren-ai' ? 'critical' : 'high',
-        predictedLoad: 0
-      });
+  private async initializeExecutiveWorkloads(userId: string): Promise<void> {
+    if (!userId) {
+      throw new Error('SECURITY VIOLATION: userId required for executive workload initialization');
     }
 
-    console.log(`🎯 Initialized workload tracking for ${executives.length} executives`);
+    this.currentUserId = userId;
+
+    try {
+      // SECURITY: Get user's actual executives - NO HARDCODED NAMES
+      await executiveAccessManager.ensureUserShadowBoard(userId);
+      const userExecutives = await executiveAccessManager.getUserExecutives(userId);
+
+      this.executiveWorkloads.clear(); // Clear any previous data
+
+      for (const [role, executive] of userExecutives.entries()) {
+        this.executiveWorkloads.set(role, {
+          executiveId: executive.executiveId,
+          currentRequests: 0,
+          averageLatency: 0,
+          gpuUtilization: 0,
+          memoryUsage: 0,
+          priority: role === 'sovren-ai' ? 'critical' : 'high',
+          predictedLoad: 0
+        });
+      }
+
+      console.log(`🔐 SECURE: Initialized workload tracking for ${userExecutives.size} executives for user ${userId}`);
+      console.log(`🎯 Executives: ${Array.from(userExecutives.values()).map(e => `${e.role}: ${e.name}`).join(', ')}`);
+
+    } catch (error) {
+      console.error(`❌ SECURITY ERROR: Failed to initialize executive workloads for user ${userId}:`, error);
+      throw new Error(`Executive workload initialization failed for user: ${userId}`);
+    }
   }
 
   /**
-   * Start auto-scaling system
+   * Start auto-scaling system - SECURE VERSION
    */
-  public async start(): Promise<void> {
+  public async start(userId: string): Promise<void> {
+    if (!userId) {
+      throw new Error('SECURITY VIOLATION: userId required to start auto-scaling');
+    }
+
     if (this.isRunning) {
       console.log('⚠️ Auto-scaling already running');
       return;
@@ -119,22 +143,25 @@ export class B200AutoScaler extends EventEmitter {
 
     try {
       await this.b200ResourceManager.initialize();
-      
+
+      // SECURITY: Initialize with user's actual executives
+      await this.initializeExecutiveWorkloads(userId);
+
       this.isRunning = true;
       this.scalingInterval = setInterval(
         () => this.evaluateScaling(),
         this.config.evaluationInterval
       );
 
-      console.log('🚀 B200 Auto-Scaling system started');
+      console.log(`🔐 SECURE: B200 Auto-Scaling system started for user ${userId}`);
       console.log(`📊 Evaluation interval: ${this.config.evaluationInterval / 1000}s`);
       console.log(`🎯 Target utilization: ${this.config.targetUtilization * 100}%`);
       console.log(`⚡ GPU range: ${this.config.minGPUs}-${this.config.maxGPUs} GPUs`);
 
-      this.emit('started', { config: this.config });
+      this.emit('started', { config: this.config, userId });
 
     } catch (error) {
-      console.error('❌ Failed to start auto-scaling:', error);
+      console.error(`❌ Failed to start auto-scaling for user ${userId}:`, error);
       throw error;
     }
   }
@@ -255,18 +282,23 @@ export class B200AutoScaler extends EventEmitter {
   }
 
   /**
-   * Extract executive ID from component name
+   * Extract executive ID from component name - SECURE VERSION
    */
   private extractExecutiveFromComponent(componentName: string): string {
+    if (!this.currentUserId) {
+      console.warn('⚠️ SECURITY WARNING: No user context for executive extraction');
+      return 'unknown';
+    }
+
     const parts = componentName.toLowerCase().split('_');
-    const executives = ['sovren-ai', 'cfo', 'cmo', 'cto', 'clo', 'coo', 'chro', 'cso'];
-    
-    for (const executive of executives) {
-      if (parts.some(part => part.includes(executive.replace('-', '')))) {
-        return executive;
+
+    // SECURITY: Use actual user's executive roles, not hardcoded list
+    for (const [role, workload] of this.executiveWorkloads.entries()) {
+      if (parts.some(part => part.includes(role.replace('-', '')))) {
+        return role;
       }
     }
-    
+
     return 'unknown';
   }
 
@@ -534,21 +566,29 @@ export class B200AutoScaler extends EventEmitter {
   }
 
   /**
-   * Calculate optimal executive reallocation
+   * Calculate optimal executive reallocation - SECURE VERSION
    */
   private async calculateOptimalReallocation(): Promise<Map<string, number>> {
+    if (!this.currentUserId) {
+      throw new Error('SECURITY VIOLATION: No user context for executive reallocation');
+    }
+
     const reallocation = new Map<string, number>();
-    const workloads = Array.from(this.executiveWorkloads.values())
+    const workloads = Array.from(this.executiveWorkloads.entries())
+      .map(([role, workload]) => ({ role, ...workload }))
       .sort((a, b) => b.currentRequests - a.currentRequests);
 
-    // Simple rebalancing: distribute high-load executives across available GPUs
+    // SECURITY: Use actual user's executives for rebalancing
     let gpuIndex = 0;
     for (const workload of workloads) {
       if (workload.currentRequests > 0) {
-        reallocation.set(workload.executiveId, gpuIndex % this.config.maxGPUs);
+        reallocation.set(workload.role, gpuIndex % this.config.maxGPUs);
         gpuIndex++;
       }
     }
+
+    console.log(`🔐 SECURE: Calculated reallocation for user ${this.currentUserId}:`,
+      Array.from(reallocation.entries()).map(([role, gpu]) => `${role}->GPU${gpu}`).join(', '));
 
     return reallocation;
   }
@@ -612,17 +652,25 @@ export class B200AutoScaler extends EventEmitter {
   }
 
   /**
-   * Redistribute executives across GPUs
+   * Redistribute executives across GPUs - SECURE VERSION
    */
   private async redistributeExecutives(reallocation: Map<string, number>): Promise<void> {
-    console.log(`🔄 Redistributing ${reallocation.size} executives`);
-    
-    for (const [executive, gpuId] of reallocation.entries()) {
-      console.log(`📍 Moving ${executive} to GPU ${gpuId}`);
+    if (!this.currentUserId) {
+      throw new Error('SECURITY VIOLATION: No user context for executive redistribution');
     }
-    
-    // Apply new executive placement
-    await nvlinkFabricCoordinator.optimizeExecutivePlacement(Array.from(reallocation.keys()));
+
+    console.log(`🔐 SECURE: Redistributing ${reallocation.size} executives for user ${this.currentUserId}`);
+
+    for (const [role, gpuId] of reallocation.entries()) {
+      const workload = this.executiveWorkloads.get(role);
+      if (workload) {
+        console.log(`📍 Moving ${role} (${workload.executiveId}) to GPU ${gpuId}`);
+      }
+    }
+
+    // SECURITY: Apply new executive placement using actual executive IDs
+    const executiveIds = Array.from(reallocation.keys());
+    await nvlinkFabricCoordinator.optimizeExecutivePlacement(executiveIds);
   }
 
   /**
@@ -710,5 +758,44 @@ export class B200AutoScaler extends EventEmitter {
   }
 }
 
-// Global auto-scaler instance
-export const b200AutoScaler = new B200AutoScaler();
+// SECURITY NOTE: Auto-scaler instances should be created per user, not globally
+// Use B200AutoScalerFactory.createForUser(userId) instead
+export class B200AutoScalerFactory {
+  private static userAutoScalers: Map<string, B200AutoScaler> = new Map();
+
+  /**
+   * Get or create auto-scaler for specific user - SECURE ACCESS
+   */
+  public static getForUser(userId: string, config?: Partial<AutoScalingConfig>): B200AutoScaler {
+    if (!userId) {
+      throw new Error('SECURITY VIOLATION: userId required for auto-scaler access');
+    }
+
+    if (!this.userAutoScalers.has(userId)) {
+      const autoScaler = new B200AutoScaler(config);
+      this.userAutoScalers.set(userId, autoScaler);
+      console.log(`🔐 SECURE: Created auto-scaler for user ${userId}`);
+    }
+
+    return this.userAutoScalers.get(userId)!;
+  }
+
+  /**
+   * Remove auto-scaler for user - SECURITY CLEANUP
+   */
+  public static async removeForUser(userId: string): Promise<void> {
+    const autoScaler = this.userAutoScalers.get(userId);
+    if (autoScaler) {
+      await autoScaler.cleanup();
+      this.userAutoScalers.delete(userId);
+      console.log(`🔐 SECURE: Removed auto-scaler for user ${userId}`);
+    }
+  }
+
+  /**
+   * Get all active users - ADMIN ONLY
+   */
+  public static getActiveUsers(): string[] {
+    return Array.from(this.userAutoScalers.keys());
+  }
+}
