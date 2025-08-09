@@ -955,7 +955,7 @@ export class B200PerformanceBenchmark extends EventEmitter {
 
     // B200 resource allocation with real performance measurement
     const b200Start = Date.now();
-    const allocations = [];
+    const allocations: any[] = [];
 
     try {
       for (const request of allocationRequests) {

@@ -522,12 +522,18 @@ export class CMOExecutive extends EventEmitter {
 
   private extractTriggers(text: string): string[] {
     const triggers = text.match(/triggers?[:\s]+(.*?)(?:\n\n|\.|$)/i);
-    return triggers ? triggers[1].split(',').map(t => t.trim()) : ['Social proof', 'FOMO', 'Exclusivity'];
+    if (triggers && triggers[1] !== undefined) {
+      return triggers[1].split(',').map(t => t.trim());
+    }
+    return ['Social proof', 'FOMO', 'Exclusivity'];
   }
 
   private extractTargetAudience(text: string): any {
     const audience = text.match(/target audience[:\s]+(.*?)(?:\n\n|\.|$)/i);
-    return audience ? { description: audience[1].trim() } : { description: 'Tech-savvy early adopters' };
+    if (audience && audience[1] !== undefined) {
+      return { description: audience[1].trim() };
+    }
+    return { description: 'Tech-savvy early adopters' };
   }
 
   // Private helper methods

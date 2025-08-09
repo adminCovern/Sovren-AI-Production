@@ -330,7 +330,7 @@ export class ErrorHandler {
       [ErrorCategory.UNKNOWN]: 'An unexpected error occurred. Please try again.'
     };
 
-    return userMessages[category] || userMessages[ErrorCategory.UNKNOWN];
+    return userMessages[category] ?? userMessages[ErrorCategory.UNKNOWN];
   }
 
   private generateSuggestedActions(category: ErrorCategory): string[] {
@@ -349,7 +349,7 @@ export class ErrorHandler {
       [ErrorCategory.UNKNOWN]: ['Retry operation', 'Contact support if persistent']
     };
 
-    return actions[category] || actions[ErrorCategory.UNKNOWN];
+    return actions[category] ?? actions[ErrorCategory.UNKNOWN];
   }
 
   private logError(error: SOVRENError): void {

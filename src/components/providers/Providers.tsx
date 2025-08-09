@@ -2,19 +2,19 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useVoiceSystem, VoiceSystemHook } from '@/hooks/useVoiceSystem';
-import { SOVRENAICore } from '@/lib/sovren/SOVRENAICore';
-import { initializeApplication, getSOVRENCore, checkApplicationHealth } from '@/lib/bootstrap/ApplicationBootstrap';
+import {
+  initializeClientApplication,
+  getClientApplicationState,
+  checkClientApplicationHealth,
+  ClientApplicationState
+} from '@/lib/bootstrap/ClientBootstrap';
 
 interface ProvidersProps {
   children: React.ReactNode;
 }
 
-interface ApplicationContextType {
-  sovrenCore: SOVRENAICore | null;
-  isInitialized: boolean;
-  isLoading: boolean;
-  error: string | null;
-  healthStatus: 'healthy' | 'unhealthy' | 'unknown';
+interface ApplicationContextType extends ClientApplicationState {
+  // Client-side application context
 }
 
 // Application Context
@@ -40,38 +40,47 @@ export function useVoiceSystemContext(): VoiceSystemHook {
 }
 
 function ApplicationProvider({ children }: { children: React.ReactNode }) {
-  const [sovrenCore, setSovrenCore] = useState<SOVRENAICore | null>(null);
-  const [isInitialized, setIsInitialized] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [healthStatus, setHealthStatus] = useState<'healthy' | 'unhealthy' | 'unknown'>('unknown');
+  const [state, setState] = useState<ClientApplicationState>({
+    isInitialized: false,
+    isLoading: true,
+    error: null,
+    healthStatus: 'unknown'
+  });
 
   useEffect(() => {
     let mounted = true;
 
     const initializeApp = async () => {
       try {
-        setIsLoading(true);
-        setError(null);
+        console.log('🚀 Initializing client application...');
 
-        // Initialize the application with dependency injection
-        const core = await initializeApplication();
+        // Initialize the client application (no server dependencies)
+        const success = await initializeClientApplication();
 
         if (mounted) {
-          setSovrenCore(core);
-          setIsInitialized(true);
-          setHealthStatus('healthy');
+          if (success) {
+            const clientState = getClientApplicationState();
+            setState(clientState);
+            console.log('✅ Client application initialized successfully');
+          } else {
+            setState(prev => ({
+              ...prev,
+              error: 'Failed to initialize client application',
+              healthStatus: 'unhealthy',
+              isLoading: false
+            }));
+          }
         }
       } catch (err) {
         if (mounted) {
           const errorMessage = err instanceof Error ? err.message : 'Unknown initialization error';
-          setError(errorMessage);
-          setHealthStatus('unhealthy');
-          console.error('Application initialization failed:', err);
-        }
-      } finally {
-        if (mounted) {
-          setIsLoading(false);
+          console.error('❌ Client initialization failed:', errorMessage);
+          setState(prev => ({
+            ...prev,
+            error: errorMessage,
+            healthStatus: 'unhealthy',
+            isLoading: false
+          }));
         }
       }
     };
@@ -80,12 +89,12 @@ function ApplicationProvider({ children }: { children: React.ReactNode }) {
 
     // Health check interval
     const healthCheckInterval = setInterval(async () => {
-      if (mounted && isInitialized) {
+      if (mounted && state.isInitialized) {
         try {
-          const health = await checkApplicationHealth();
-          setHealthStatus(health.status);
+          const health = await checkClientApplicationHealth();
+          setState(prev => ({ ...prev, healthStatus: health }));
         } catch (err) {
-          setHealthStatus('unhealthy');
+          setState(prev => ({ ...prev, healthStatus: 'unhealthy' }));
         }
       }
     }, 30000); // Check every 30 seconds
@@ -96,13 +105,7 @@ function ApplicationProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  const contextValue: ApplicationContextType = {
-    sovrenCore,
-    isInitialized,
-    isLoading,
-    error,
-    healthStatus
-  };
+  const contextValue: ApplicationContextType = state;
 
   return (
     <ApplicationContext.Provider value={contextValue}>
@@ -112,7 +115,7 @@ function ApplicationProvider({ children }: { children: React.ReactNode }) {
 }
 
 function VoiceSystemProvider({ children }: { children: React.ReactNode }) {
-  const { sovrenCore, isInitialized } = useApplicationContext();
+  const { isInitialized } = useApplicationContext();
 
   const voiceSystem = useVoiceSystem({
     autoInitialize: isInitialized,

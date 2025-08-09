@@ -391,7 +391,7 @@ RESPONSE GUIDELINES:
    * Generate reasoning for response
    */
   private async generateReasoning(request: LLMRequest, response: string): Promise<string[]> {
-    const reasoning = [];
+    const reasoning: any[] = [];
 
     reasoning.push(`Model: ${request.modelId} (${request.priority} priority)`);
     

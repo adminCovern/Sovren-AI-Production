@@ -18,8 +18,7 @@ export async function initializePhoneSystem(): Promise<PhoneSystemManager | null
     const requiredEnvVars = [
       'SKYETEL_API_KEY',
       'SKYETEL_API_SECRET',
-      'SKYETEL_API_URL',
-      'SIP_DOMAIN',
+      // SKYETEL API URL can be provided via SKYETEL_API_URL or SKYETEL_BASE_URL
       'FREESWITCH_HOST',
       'FREESWITCH_ESL_PORT',
       'FREESWITCH_ESL_PASSWORD'
@@ -31,20 +30,30 @@ export async function initializePhoneSystem(): Promise<PhoneSystemManager | null
       }
     }
 
+    const sipDomain = process.env.SIP_DOMAIN || process.env.FREESWITCH_SIP_DOMAIN;
+    if (!sipDomain) {
+      throw new Error('Missing required environment variable: SIP_DOMAIN or FREESWITCH_SIP_DOMAIN');
+    }
+
+    const skyetelBaseUrl = process.env.SKYETEL_API_URL || process.env.SKYETEL_BASE_URL;
+    if (!skyetelBaseUrl) {
+      throw new Error('Missing required environment variable: SKYETEL_API_URL or SKYETEL_BASE_URL');
+    }
+
     // Build configuration from environment
     const config: PhoneSystemConfig = {
       skyetel: {
         apiKey: process.env.SKYETEL_API_KEY!,
         apiSecret: process.env.SKYETEL_API_SECRET!,
-        baseUrl: process.env.SKYETEL_API_URL!,
-        sipDomain: process.env.SIP_DOMAIN!
+        baseUrl: skyetelBaseUrl!,
+        sipDomain
       },
       freeswitch: {
         host: process.env.FREESWITCH_HOST!,
         port: parseInt(process.env.FREESWITCH_PORT || '5060'),
         eslPort: parseInt(process.env.FREESWITCH_ESL_PORT!),
         eslPassword: process.env.FREESWITCH_ESL_PASSWORD!,
-        sipDomain: process.env.SIP_DOMAIN!
+        sipDomain
       }
     };
 
@@ -122,7 +131,7 @@ export async function phoneSystemHealthCheck(): Promise<{
     if (!phoneSystemManager) {
       return {
         healthy: false,
-        status: null,
+        status: { initialized: false },
         error: 'Phone system not initialized'
       };
     }
@@ -140,7 +149,7 @@ export async function phoneSystemHealthCheck(): Promise<{
   } catch (error) {
     return {
       healthy: false,
-      status: null,
+      status: { initialized: false, error: true },
       error: error instanceof Error ? error.message : 'Unknown health check error'
     };
   }

@@ -407,7 +407,7 @@ export class B200LLMClient {
       coordination: 'Develop executive coordination strategy with clear roles, timelines, and expected outcomes.'
     };
 
-    const specificPrompt = analysisPrompts[analysisType as keyof typeof analysisPrompts] || 'Provide detailed strategic analysis.';
+    const specificPrompt = analysisPrompts[analysisType as keyof typeof analysisPrompts] ?? 'Provide detailed strategic analysis.';
     const contextPrompt = context ? `\n\nContext: ${context}` : '';
     const dataPrompt = `\n\nData to analyze: ${JSON.stringify(data, null, 2)}`;
 

@@ -535,7 +535,7 @@ export class OnboardingOrchestrator extends EventEmitter {
   }
 
   private generateNextSteps(session: CompleteOnboardingSession): string[] {
-    const nextSteps = [];
+    const nextSteps: string[] = [];
 
     if (session.tutorial?.status !== 'completed') {
       nextSteps.push('Complete the interactive tutorial to learn all features');

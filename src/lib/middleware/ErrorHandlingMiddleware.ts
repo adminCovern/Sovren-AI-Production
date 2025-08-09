@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ErrorHandler, ErrorCategory, ErrorSeverity, SOVRENError } from '../errors/ErrorHandler';
 import { container, SERVICE_IDENTIFIERS } from '../di/DIContainer';
-import { Logger } from '../di/ServiceRegistry';
+import { Logger, registerServices } from '../di/ServiceRegistry';
 
 export interface APIErrorResponse {
   success: false;
@@ -49,12 +49,39 @@ export type APIResponse<T = unknown> = APISuccessResponse<T> | APIErrorResponse;
  * Error handling middleware for API routes
  */
 export class APIErrorHandlingMiddleware {
-  private errorHandler: ErrorHandler;
-  private logger: Logger;
+  private errorHandler: ErrorHandler | null = null;
+  private logger: Logger | null = null;
 
   constructor() {
-    this.errorHandler = container.resolve<ErrorHandler>(SERVICE_IDENTIFIERS.ERROR_HANDLER);
-    this.logger = container.resolve<Logger>(SERVICE_IDENTIFIERS.LOGGER);
+    // Services will be resolved lazily when needed
+  }
+
+  private getErrorHandler(): ErrorHandler {
+    if (!this.errorHandler) {
+      // Ensure services are registered
+      try {
+        this.errorHandler = container.resolve<ErrorHandler>(SERVICE_IDENTIFIERS.ERROR_HANDLER);
+      } catch (error) {
+        // Services not registered, register them now
+        registerServices();
+        this.errorHandler = container.resolve<ErrorHandler>(SERVICE_IDENTIFIERS.ERROR_HANDLER);
+      }
+    }
+    return this.errorHandler;
+  }
+
+  private getLogger(): Logger {
+    if (!this.logger) {
+      // Ensure services are registered
+      try {
+        this.logger = container.resolve<Logger>(SERVICE_IDENTIFIERS.LOGGER);
+      } catch (error) {
+        // Services not registered, register them now
+        registerServices();
+        this.logger = container.resolve<Logger>(SERVICE_IDENTIFIERS.LOGGER);
+      }
+    }
+    return this.logger;
   }
 
   /**
@@ -83,7 +110,7 @@ export class APIErrorHandlingMiddleware {
       const ipAddress = this.getClientIP(request);
 
       try {
-        this.logger.info(`📥 API Request: ${method} ${endpoint}`, {
+        this.getLogger().info(`📥 API Request: ${method} ${endpoint}`, {
           requestId,
           userAgent,
           ipAddress
@@ -104,7 +131,7 @@ export class APIErrorHandlingMiddleware {
           const body = await request.json();
           const validationResult = options.validation(body);
           if (!validationResult.valid) {
-            throw this.errorHandler.createError(
+            throw this.getErrorHandler().createError(
               'VALIDATION_FAILED',
               `Input validation failed: ${validationResult.errors?.join(', ')}`,
               ErrorCategory.VALIDATION,
@@ -122,7 +149,7 @@ export class APIErrorHandlingMiddleware {
         const result = await handler(request);
         const processingTime = Date.now() - startTime;
 
-        this.logger.info(`✅ API Success: ${method} ${endpoint}`, {
+        this.getLogger().info(`✅ API Success: ${method} ${endpoint}`, {
           requestId,
           processingTime,
           status: 'success'
@@ -177,7 +204,7 @@ export class APIErrorHandlingMiddleware {
       sovrenError = error;
     } else {
       // Convert to SOVRENError
-      sovrenError = this.errorHandler.handleError(
+      sovrenError = this.getErrorHandler().handleError(
         error instanceof Error ? error : new Error(String(error)),
         {
           requestId: context.requestId,
@@ -191,7 +218,7 @@ export class APIErrorHandlingMiddleware {
     }
 
     // Log error
-    this.logger.error(`❌ API Error: ${context.method} ${context.endpoint}`, {
+    this.getLogger().error(`❌ API Error: ${context.method} ${context.endpoint}`, {
       errorId: sovrenError.id,
       requestId: context.requestId,
       category: sovrenError.category,
@@ -238,7 +265,7 @@ export class APIErrorHandlingMiddleware {
     const cookieToken = request.cookies.get('auth-token')?.value;
 
     if (!authHeader && !cookieToken) {
-      throw this.errorHandler.createError(
+      throw this.getErrorHandler().createError(
         'MISSING_AUTHENTICATION',
         'No authentication token provided',
         ErrorCategory.AUTHENTICATION,

@@ -668,8 +668,8 @@ export class SocialMediaPlatformManager extends EventEmitter {
     score += successRate * 0.4;
 
     // Engagement rate (35% weight)
-    const totalEngagement = Object.values(analytics.total_engagement).reduce((sum: number, val: any) => sum + val, 0);
-    const engagementScore = Math.min(totalEngagement / 1000, 1); // Normalize to 0-1
+    const totalEngagement = Object.values(analytics.total_engagement).reduce((sum: number, val: any) => sum + (Number(val) || 0), 0);
+    const engagementScore = Math.min(Number(totalEngagement) / 1000, 1); // Normalize to 0-1
     score += engagementScore * 0.35;
 
     // Reach score (25% weight)
@@ -684,7 +684,7 @@ export class SocialMediaPlatformManager extends EventEmitter {
    * Generate optimization recommendations with strategic intelligence
    */
   private generateOptimizationRecommendations(analytics: any): string[] {
-    const recommendations = [];
+    const recommendations: any[] = [];
 
     if (analytics.failed_posts > 0) {
       recommendations.push(`Fix posting issues on ${analytics.failed_posts} platform(s)`);
@@ -698,7 +698,8 @@ export class SocialMediaPlatformManager extends EventEmitter {
       recommendations.push('Focus on organic reach improvement strategies');
     }
 
-    const avgEngagement = Object.values(analytics.total_engagement).reduce((sum: number, val: any) => sum + val, 0) / analytics.total_platforms;
+    const totalEngagementSum = Object.values(analytics.total_engagement).reduce((sum: number, val: any) => sum + (Number(val) || 0), 0);
+    const avgEngagement = Number(totalEngagementSum) / Number(analytics.total_platforms || 1);
     if (avgEngagement < 50) {
       recommendations.push('Increase engagement through interactive content');
     }
@@ -984,7 +985,7 @@ export class SocialMediaPlatformManager extends EventEmitter {
    * Generate optimal posting times
    */
   private generateOptimalPostingTimes(): Date[] {
-    const times = [];
+    const times: any[] = [];
     const baseDate = new Date();
 
     // Generate 5-7 optimal times throughout the day

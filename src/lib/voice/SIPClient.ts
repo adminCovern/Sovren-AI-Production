@@ -152,9 +152,12 @@ export class SIPClient {
         onBye: () => this.handleCallEnd(sessionId),
         onSessionDescriptionHandler: (sdh) => {
           if (sdh && (sdh as any).peerConnection) {
-            callSession.audioStream = (sdh as any).peerConnection?.getLocalStreams()?.[0];
-            if (callSession.audioStream) {
-              this.audioProcessor.processOutboundAudio(callSession.audioStream, executiveId);
+            const streams = (sdh as any).peerConnection?.getLocalStreams();
+            if (streams && streams.length > 0) {
+              callSession.audioStream = streams[0];
+              if (callSession.audioStream) {
+                this.audioProcessor.processOutboundAudio(callSession.audioStream, executiveId);
+              }
             }
           }
         }

@@ -8,6 +8,7 @@ import { TTSBackendService } from '@/lib/services/TTSBackendService';
 import { withErrorHandling } from '@/lib/middleware/ErrorHandlingMiddleware';
 import { ErrorHandler, ErrorCategory, ErrorSeverity } from '@/lib/errors/ErrorHandler';
 import { container, SERVICE_IDENTIFIERS } from '@/lib/di/DIContainer';
+import { registerServices } from '@/lib/di/ServiceRegistry';
 
 export interface TTSSynthesisRequest {
   text: string;
@@ -34,11 +35,18 @@ export interface TTSSynthesisResponse {
   };
 }
 
-const ttsService = container.resolve<TTSBackendService>(SERVICE_IDENTIFIERS.TTS_BACKEND_SERVICE);
-
 // TTS synthesis handler with comprehensive error handling
 async function ttsSynthesisHandler(request: NextRequest): Promise<TTSSynthesisResponse> {
+  // Ensure services are registered
+  try {
+    container.resolve<ErrorHandler>(SERVICE_IDENTIFIERS.ERROR_HANDLER);
+  } catch (error) {
+    // Services not registered, register them now
+    registerServices();
+  }
+
   const errorHandler = container.resolve<ErrorHandler>(SERVICE_IDENTIFIERS.ERROR_HANDLER);
+  const ttsService = container.resolve<TTSBackendService>(SERVICE_IDENTIFIERS.TTS_BACKEND_SERVICE);
 
   const body: TTSSynthesisRequest = await request.json();
   const startTime = Date.now();
@@ -235,7 +243,16 @@ async function ttsHealthHandler(request: NextRequest): Promise<{
   availableVoices: string[];
   isHealthy: boolean;
 }> {
+  // Ensure services are registered
+  try {
+    container.resolve<ErrorHandler>(SERVICE_IDENTIFIERS.ERROR_HANDLER);
+  } catch (error) {
+    // Services not registered, register them now
+    registerServices();
+  }
+
   const errorHandler = container.resolve<ErrorHandler>(SERVICE_IDENTIFIERS.ERROR_HANDLER);
+  const ttsService = container.resolve<TTSBackendService>(SERVICE_IDENTIFIERS.TTS_BACKEND_SERVICE);
 
   const healthResult = await errorHandler.handleAsync(
     () => ttsService.healthCheck(),

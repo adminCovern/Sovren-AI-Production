@@ -452,17 +452,19 @@ export class CRMIntegrationSystem {
   }
 
   public async syncCRMData(providerId?: string): Promise<void> {
-    const providersToSync = providerId 
-      ? [this.providers.get(providerId)!].filter(Boolean)
+    const providersToSync = providerId
+      ? [this.providers.get(providerId)].filter(Boolean)
       : Array.from(this.providers.values()).filter(p => p.isConnected);
 
     for (const provider of providersToSync) {
+      if (!provider) continue;
+
       try {
         console.log(`Syncing CRM data from ${provider.name}...`);
 
         // Sync different data types in parallel
-        const syncPromises = [];
-        
+        const syncPromises: any[] = [];
+
         if (provider.features.leads) {
           syncPromises.push(this.syncLeads(provider));
         }
@@ -1413,7 +1415,7 @@ class CRMAIAnalyzer {
   }
   
   private getLeadRecommendations(lead: CRMLead): string[] {
-    const recommendations = [];
+    const recommendations: any[] = [];
     
     if (lead.score > 80) recommendations.push('Schedule immediate demo');
     if (lead.score > 60) recommendations.push('Send personalized proposal');
@@ -1424,7 +1426,7 @@ class CRMAIAnalyzer {
   }
   
   private detectBuyingSignals(lead: CRMLead): string[] {
-    const signals = [];
+    const signals: any[] = [];
     
     if (lead.score > 70) signals.push('High engagement score');
     if (lead.source === 'Referral') signals.push('Warm referral');
@@ -1434,7 +1436,7 @@ class CRMAIAnalyzer {
   }
   
   private detectRiskFactors(lead: CRMLead): string[] {
-    const risks = [];
+    const risks: any[] = [];
     
     if (lead.score < 30) risks.push('Low engagement');
     if (!lead.phone) risks.push('Limited contact information');
@@ -1462,7 +1464,7 @@ class CRMAIAnalyzer {
   }
   
   private detectOpportunityRisks(opportunity: CRMOpportunity): string[] {
-    const risks = [];
+    const risks: any[] = [];
     
     if (opportunity.probability < 30) risks.push('Low win probability');
     if (opportunity.expectedCloseDate < new Date()) risks.push('Overdue close date');
@@ -1472,7 +1474,7 @@ class CRMAIAnalyzer {
   }
   
   private identifyAccelerators(opportunity: CRMOpportunity): string[] {
-    const accelerators = [];
+    const accelerators: any[] = [];
     
     if (opportunity.probability > 70) accelerators.push('High probability');
     if (opportunity.value > 100000) accelerators.push('High value deal');
@@ -1482,7 +1484,7 @@ class CRMAIAnalyzer {
   }
   
   private suggestNextActions(opportunity: CRMOpportunity): string[] {
-    const actions = [];
+    const actions: any[] = [];
     
     if (opportunity.probability < 50) actions.push('Address objections');
     if (opportunity.probability > 70) actions.push('Prepare contract');
@@ -1512,7 +1514,7 @@ class CRMAIAnalyzer {
   }
   
   private identifyExpansionOpportunities(account: CRMAccount): string[] {
-    const opportunities = [];
+    const opportunities: any[] = [];
     
     if (account.size === 'enterprise') opportunities.push('Additional departments');
     if (account.health === 'excellent') opportunities.push('Premium features');
@@ -1524,7 +1526,9 @@ class CRMAIAnalyzer {
   private analyzeHealthTrends(account: CRMAccount): 'improving' | 'stable' | 'declining' {
     // Simulate trend analysis
     const trends = ['improving', 'stable', 'declining'] as const;
-    return trends[Math.floor(Math.random() * trends.length)];
+    const randomIndex = Math.floor(Math.random() * trends.length);
+    const trend = trends[randomIndex];
+    return trend !== undefined ? trend : 'stable';
   }
 }
 

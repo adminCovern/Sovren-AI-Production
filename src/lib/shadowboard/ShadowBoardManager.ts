@@ -5,7 +5,7 @@
  * Based on advanced psychological models for maximum trust, authority, and business impact
  */
 
-import { v4 as uuid } from 'uuid';
+import { v4 as uuidv4 } from 'uuid';
 import { EventEmitter } from 'events';
 import { randomBytes } from 'crypto';
 import { ShadowBoardVoiceIntegration } from './ShadowBoardVoiceIntegration';
@@ -755,7 +755,7 @@ export class ShadowBoardManager extends EventEmitter {
     const consciousnessIntegration = this.calculateConsciousnessIntegration(role);
 
     const executive: ExecutiveEntity = {
-      id: uuid(),
+      id: uuidv4(),
       name,
       role,
       appearance: 'photorealistic_human',

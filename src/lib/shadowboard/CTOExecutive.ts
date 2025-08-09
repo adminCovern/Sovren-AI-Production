@@ -323,7 +323,7 @@ export class CTOExecutive extends EventEmitter {
   private extractNumericValue(text: string, metric: string): number {
     const regex = new RegExp(`${metric}[:\\s]+([\\d.,%-]+)`, 'i');
     const match = text.match(regex);
-    if (match) {
+    if (match && match[1] !== undefined) {
       return parseFloat(match[1].replace(/[,%]/g, ''));
     }
     return 0;

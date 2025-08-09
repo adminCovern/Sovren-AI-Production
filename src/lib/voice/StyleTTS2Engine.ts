@@ -578,13 +578,19 @@ export class StyleTTS2Engine {
     // Normalize audio
     let maxAmplitude = 0;
     for (let i = 0; i < audioView.length; i++) {
-      maxAmplitude = Math.max(maxAmplitude, Math.abs(audioView[i]));
+      const sample = audioView[i];
+      if (sample !== undefined) {
+        maxAmplitude = Math.max(maxAmplitude, Math.abs(sample));
+      }
     }
-    
+
     if (maxAmplitude > 0) {
       const normalizationFactor = 16384 / maxAmplitude;
       for (let i = 0; i < audioView.length; i++) {
-        audioView[i] *= normalizationFactor;
+        const sample = audioView[i];
+        if (sample !== undefined) {
+          audioView[i] = sample * normalizationFactor;
+        }
       }
     }
     

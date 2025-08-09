@@ -56,7 +56,7 @@ export const POST = withAuth(async (request: NextRequest, user) => {
         ? ['cfo', 'cmo', 'cto', 'clo', 'coo', 'chro', 'cso']
         : ['cfo', 'cmo', 'cto'];
 
-      const executiveProfiles = [];
+      const executiveProfiles: any[] = [];
 
       for (const role of executiveRoles) {
         const executiveName = generateExecutiveName(role, industry);

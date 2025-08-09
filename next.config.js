@@ -1,3 +1,5 @@
+const path = require('path');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Production optimizations
@@ -6,92 +8,21 @@ const nextConfig = {
   generateEtags: true,
 
   webpack: (config, { buildId, dev, isServer, defaultLoaders, webpack }) => {
-    // Handle Three.js and WebGL dependencies
-    config.module.rules.push({
-      test: /\.(glsl|vs|fs|vert|frag)$/,
-      use: ['raw-loader', 'glslify-loader'],
-    });
+    // Minimal webpack configuration to fix build issues
 
-    // Handle audio files for voice synthesis
-    config.module.rules.push({
-      test: /\.(mp3|wav|ogg|m4a)$/,
-      use: {
-        loader: 'file-loader',
-        options: {
-          publicPath: '/_next/static/audio/',
-          outputPath: 'static/audio/',
-        },
-      },
-    });
-
-    // Handle 3D model files
-    config.module.rules.push({
-      test: /\.(gltf|glb|fbx|obj)$/,
-      use: {
-        loader: 'file-loader',
-        options: {
-          publicPath: '/_next/static/models/',
-          outputPath: 'static/models/',
-        },
-      },
-    });
-
-    // Optimize for WebGL and Three.js
+    // Resolve TS path aliases (@/*)
     config.resolve.alias = {
       ...config.resolve.alias,
-      three: 'three',
+      '@': path.resolve(__dirname, 'src'),
     };
 
-    // Handle WebAssembly for StyleTTS2
-    config.experiments = {
-      ...config.experiments,
-      asyncWebAssembly: true,
-    };
-
-    // Production optimizations
-    if (!dev) {
-      // Bundle splitting for optimal loading
-      config.optimization.splitChunks = {
-        chunks: 'all',
-        cacheGroups: {
-          vendor: {
-            test: /[\\/]node_modules[\\/]/,
-            name: 'vendors',
-            chunks: 'all',
-            priority: 10,
-            maxSize: 244000, // 244KB chunks
-          },
-          three: {
-            test: /[\\/]node_modules[\\/](three|@react-three)[\\/]/,
-            name: 'three',
-            chunks: 'all',
-            priority: 20,
-            maxSize: 244000,
-          },
-          voice: {
-            test: /[\\/]src[\\/]lib[\\/]voice[\\/]/,
-            name: 'voice',
-            chunks: 'all',
-            priority: 15,
-            maxSize: 244000,
-          },
-          shadowboard: {
-            test: /[\\/]src[\\/]lib[\\/]shadowboard[\\/]/,
-            name: 'shadowboard',
-            chunks: 'all',
-            priority: 15,
-            maxSize: 244000,
-          },
-        },
-      };
-
-      // Tree shaking optimization
-      config.optimization.usedExports = true;
-      config.optimization.sideEffects = false;
-
-      // Minimize bundle size
-      config.optimization.minimize = true;
+    // Handle server-side externals
+    if (isServer) {
+      config.externals = config.externals || [];
+      config.externals.push('redis', 'modesl', 'ws', 'bcrypt', 'node-gyp-build');
     }
+
+
 
     return config;
   },
@@ -151,21 +82,29 @@ const nextConfig = {
       },
     ];
   },
-  // Optimize for performance
-  swcMinify: true,
+
   // Enable experimental features for SOVREN AI
   experimental: {
-    serverComponentsExternalPackages: ['three', 'cannon-es'],
-    optimizePackageImports: ['@react-three/fiber', '@react-three/drei'],
-    turbo: {
-      rules: {
-        '*.svg': {
-          loaders: ['@svgr/webpack'],
-          as: '*.js',
-        },
-      },
-    },
+    // Temporarily disable Three.js optimization to fix build
+    // optimizePackageImports: ['@react-three/fiber', '@react-three/drei'],
   },
+
+  // Server external packages (moved from experimental in Next.js 15)
+  serverExternalPackages: [
+    'redis',
+    'modesl',
+    'ws',
+    'bcrypt',
+    'node-gyp-build',
+    // Graphics and animation libraries that use browser globals
+    'three',
+    '@react-three/fiber',
+    '@react-three/drei',
+    '@react-three/cannon',
+    'cannon-es',
+    'gsap',
+    'framer-motion'
+  ],
 };
 
 module.exports = nextConfig;

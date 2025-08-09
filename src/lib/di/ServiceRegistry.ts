@@ -134,6 +134,11 @@ export function registerServices(): void {
   container.register(
     SERVICE_IDENTIFIERS.REDIS_CLIENT,
     () => {
+      // Skip Redis during build
+      if (process.env.NEXT_PHASE === 'build' || process.env.DISABLE_REDIS === 'true') {
+        return null;
+      }
+
       const config = container.resolve<AppConfig>(SERVICE_IDENTIFIERS.APP_CONFIG);
       const client = createClient({
         url: config.redis.url,
@@ -293,7 +298,8 @@ export function registerServices(): void {
             'CLO': ['Executive J', 'Executive K', 'Executive L']
           };
           const roleNames = nameTemplates[role as keyof typeof nameTemplates] || ['Executive'];
-          const baseName = roleNames[Math.floor(Math.random() * roleNames.length)];
+          const randomIndex = Math.floor(Math.random() * roleNames.length);
+          const baseName = roleNames[randomIndex] !== undefined ? roleNames[randomIndex] : 'Executive';
           return `${baseName}_${userId.slice(-4)}`; // Include user ID for uniqueness
         },
         releaseName: async (name: string, role: string) => {
@@ -360,21 +366,26 @@ export async function initializeServices(): Promise<void> {
   
   try {
     logger.info('Initializing SOVREN AI services...');
-    
-    // Initialize Redis connection
-    const redisClient = container.resolve(SERVICE_IDENTIFIERS.REDIS_CLIENT) as RedisClientType;
-    if (redisClient && typeof redisClient.connect === 'function') {
-      await redisClient.connect();
-      logger.info('Redis connection established');
+
+    // Skip Redis during build
+    if (process.env.NEXT_PHASE !== 'build' && process.env.DISABLE_REDIS !== 'true') {
+      // Initialize Redis connection
+      const redisClient = container.resolve(SERVICE_IDENTIFIERS.REDIS_CLIENT) as RedisClientType;
+      if (redisClient && typeof redisClient.connect === 'function') {
+        await redisClient.connect();
+        logger.info('Redis connection established');
+      }
+    } else {
+      logger.info('Redis connection skipped during build');
     }
-    
+
     // Initialize authentication system
     const authSystem = container.resolve<AuthenticationSystem>(SERVICE_IDENTIFIERS.AUTHENTICATION_SYSTEM);
     logger.info('Authentication system initialized');
-    
+
     // Initialize other services as needed
     logger.info('All services initialized successfully');
-    
+
   } catch (error) {
     logger.error('Service initialization failed:', error);
     throw error;

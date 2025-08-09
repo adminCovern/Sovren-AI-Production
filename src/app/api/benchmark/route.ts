@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
         console.log('🚀 Running all benchmark suites...');
         
         const allSuites = b200PerformanceBenchmark.getBenchmarkSuites();
-        const allResults = [];
+        const allResults: any[] = [];
         
         for (const [id, suite] of allSuites.entries()) {
           try {

@@ -449,8 +449,8 @@ export class BiologicalExperienceEngine extends EventEmitter {
     resilienceIncrease: number,
     capabilityEnhancement: any
   ): number {
-    const capabilitySum = Object.values(capabilityEnhancement).reduce((sum: number, val: any) => sum + val, 0);
-    return strengthGain + resilienceIncrease + capabilitySum;
+    const capabilitySum = Object.values(capabilityEnhancement).reduce((sum: number, val: any) => sum + (Number(val) || 0), 0);
+    return Number(strengthGain) + Number(resilienceIncrease) + Number(capabilitySum);
   }
 
   private classifyFrustrationType(frustrationSource: string): string {

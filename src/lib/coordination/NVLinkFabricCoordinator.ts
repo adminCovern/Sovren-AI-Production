@@ -82,6 +82,12 @@ export class NVLinkFabricCoordinator extends EventEmitter {
    * Initialize NVLink fabric topology for B200 cluster
    */
   private async initializeFabricTopology(): Promise<void> {
+    // Skip NVLink initialization during build
+    if (process.env.NEXT_PHASE === 'build' || process.env.DISABLE_GPU_INIT === 'true') {
+      console.log('⚠️ NVLink fabric topology disabled during build');
+      return;
+    }
+
     try {
       console.log('🔗 Initializing NVLink 5.0 fabric topology...');
 

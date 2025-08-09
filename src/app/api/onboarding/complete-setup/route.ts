@@ -158,10 +158,18 @@ export async function POST(request: NextRequest) {
             companyName: user.preferences?.company || 'Unknown Company'
           });
 
-          if (phoneResult.success && phoneResult.allocation) {
+          if (phoneResult.success && phoneResult.allocation && phoneResult.allocation.phoneNumbers.sovrenAI) {
+            // Convert optional executive numbers to required Record<string, string>
+            const executiveNumbers: Record<string, string> = {};
+            Object.entries(phoneResult.allocation.phoneNumbers.executives).forEach(([role, number]) => {
+              if (number) {
+                executiveNumbers[role] = number;
+              }
+            });
+
             phoneNumbers = {
               sovrenAI: phoneResult.allocation.phoneNumbers.sovrenAI,
-              executives: phoneResult.allocation.phoneNumbers.executives,
+              executives: executiveNumbers,
               monthlyRate: phoneResult.allocation.monthlyRate
             };
 
@@ -254,7 +262,7 @@ export async function POST(request: NextRequest) {
       const completionTime = Date.now() - startTime;
 
       // Determine next steps
-      const nextSteps = [];
+      const nextSteps: string[] = [];
       if (shadowBoard.getInitializationStatus().isInitialized) {
         nextSteps.push('Explore your Shadow Board executives');
       }

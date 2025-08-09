@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { authSystem } from '@/lib/auth/AuthenticationSystem';
+import { authSystem, type User } from '@/lib/auth/AuthenticationSystem';
 import { rateLimiters } from '@/lib/security/RateLimiters';
 
 /**
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
     }
 
     let isValid = false;
-    let user = null;
+    let user: User | null = null;
 
     // Validate using token if provided
     if (token) {
@@ -52,13 +52,7 @@ export async function POST(request: NextRequest) {
         // Get user details
         const userDetails = authSystem.getUser(userId);
         if (userDetails) {
-          user = {
-            id: userDetails.id,
-            username: userDetails.username,
-            email: userDetails.email,
-            role: userDetails.role,
-            permissions: userDetails.permissions
-          };
+          user = userDetails; // Use the complete user object from authSystem
         }
       }
     }
