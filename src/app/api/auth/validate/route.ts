@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authSystem } from '@/lib/auth/AuthenticationSystem';
 import { rateLimiters } from '@/lib/security/RateLimiters';
+import type { User } from '@/types/auth';
 
 /**
  * Authentication Validation API
@@ -35,7 +36,7 @@ export async function POST(request: NextRequest) {
     }
 
     let isValid = false;
-    let user = null;
+    let user: User | null = null;
 
     // Validate using token if provided
     if (token) {
