@@ -219,7 +219,7 @@ export const GET = withAuth(async (request: NextRequest, user) => {
     }, {});
 
     // Get Stripe subscription if active
-    let stripeSubscription = null;
+    let stripeSubscription: any = null;
     if (userData.subscription_status === 'active') {
       try {
         const customers = await stripe.customers.list({
