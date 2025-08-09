@@ -42,7 +42,7 @@ export interface UserPhoneAllocation {
   subscriptionTier: 'sovren_proof' | 'sovren_proof_plus';
   geography: string;
   phoneNumbers: {
-    sovrenAI: string;
+    sovrenAI: string | undefined;
     executives: {
       cfo?: string;
       cmo?: string;
@@ -93,7 +93,11 @@ export class SkyetelService {
       const numbersNeeded = subscriptionTier === 'sovren_proof' ? 5 : 9;
       
       // Get appropriate area codes for user's location
-      const locationData: GeographicLocation = { city: geography.split(',')[0], state: geography.split(',')[1]?.trim() };
+      const geoParts = geography.split(',');
+      const locationData: GeographicLocation = {
+        city: geoParts.length > 0 ? geoParts[0].trim() : geography,
+        state: geoParts.length > 1 ? geoParts[1].trim() : undefined
+      };
       const areaCodes = await this.areaCodeMapper.getAreaCodesForLocation(locationData);
       
       if (areaCodes.length === 0) {
@@ -241,7 +245,7 @@ export class SkyetelService {
       subscriptionTier,
       geography,
       phoneNumbers: {
-        sovrenAI: phoneNumbers[0], // First number always goes to SOVREN AI
+        sovrenAI: phoneNumbers.length > 0 ? phoneNumbers[0] : undefined, // First number always goes to SOVREN AI
         executives: {}
       },
       areaCode,
@@ -254,22 +258,22 @@ export class SkyetelService {
     if (subscriptionTier === 'sovren_proof') {
       // 4 core executives for Proof tier
       allocation.phoneNumbers.executives = {
-        cfo: phoneNumbers[1],
-        cmo: phoneNumbers[2],
-        clo: phoneNumbers[3],
-        cto: phoneNumbers[4]
+        cfo: phoneNumbers.length > 1 ? phoneNumbers[1] : undefined,
+        cmo: phoneNumbers.length > 2 ? phoneNumbers[2] : undefined,
+        clo: phoneNumbers.length > 3 ? phoneNumbers[3] : undefined,
+        cto: phoneNumbers.length > 4 ? phoneNumbers[4] : undefined
       };
     } else {
       // All 8 executives for Proof+ tier
       allocation.phoneNumbers.executives = {
-        cfo: phoneNumbers[1],
-        cmo: phoneNumbers[2],
-        clo: phoneNumbers[3],
-        cto: phoneNumbers[4],
-        coo: phoneNumbers[5],
-        chro: phoneNumbers[6],
-        cso: phoneNumbers[7],
-        cio: phoneNumbers[8]
+        cfo: phoneNumbers.length > 1 ? phoneNumbers[1] : undefined,
+        cmo: phoneNumbers.length > 2 ? phoneNumbers[2] : undefined,
+        clo: phoneNumbers.length > 3 ? phoneNumbers[3] : undefined,
+        cto: phoneNumbers.length > 4 ? phoneNumbers[4] : undefined,
+        coo: phoneNumbers.length > 5 ? phoneNumbers[5] : undefined,
+        chro: phoneNumbers.length > 6 ? phoneNumbers[6] : undefined,
+        cso: phoneNumbers.length > 7 ? phoneNumbers[7] : undefined,
+        cio: phoneNumbers.length > 8 ? phoneNumbers[8] : undefined
       };
     }
 
@@ -287,10 +291,17 @@ export class SkyetelService {
       const endpointGroupId = await this.createUserEndpointGroup(allocation.userId);
 
       // Configure each phone number to route to the user's endpoint group
-      const allNumbers = [
-        allocation.phoneNumbers.sovrenAI,
-        ...Object.values(allocation.phoneNumbers.executives)
-      ].filter(Boolean);
+      const allNumbers: string[] = [];
+
+      if (allocation.phoneNumbers.sovrenAI) {
+        allNumbers.push(allocation.phoneNumbers.sovrenAI);
+      }
+
+      Object.values(allocation.phoneNumbers.executives).forEach(number => {
+        if (number) {
+          allNumbers.push(number);
+        }
+      });
 
       for (const phoneNumber of allNumbers) {
         // Get the phone number ID from Skyetel
@@ -368,10 +379,17 @@ export class SkyetelService {
     try {
       console.log(`🗑️ Releasing phone numbers for user ${allocation.userId}...`);
 
-      const allNumbers = [
-        allocation.phoneNumbers.sovrenAI,
-        ...Object.values(allocation.phoneNumbers.executives)
-      ].filter(Boolean);
+      const allNumbers: string[] = [];
+
+      if (allocation.phoneNumbers.sovrenAI) {
+        allNumbers.push(allocation.phoneNumbers.sovrenAI);
+      }
+
+      Object.values(allocation.phoneNumbers.executives).forEach(number => {
+        if (number) {
+          allNumbers.push(number);
+        }
+      });
 
       // Delete each phone number using Skyetel API
       for (const phoneNumber of allNumbers) {

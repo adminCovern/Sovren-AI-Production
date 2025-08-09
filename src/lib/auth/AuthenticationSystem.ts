@@ -78,6 +78,13 @@ export class AuthenticationSystem {
    * Initialize Redis connection for session management
    */
   private async initializeRedis(): Promise<void> {
+    // Skip Redis during build
+    if (process.env.NEXT_PHASE === 'build' || process.env.DISABLE_REDIS === 'true') {
+      console.log('⚠️ Redis disabled during build, using in-memory sessions');
+      this.redisClient = null;
+      return;
+    }
+
     try {
       this.redisClient = createClient({
         url: process.env.REDIS_URL || 'redis://localhost:6379'
@@ -355,14 +362,16 @@ export class AuthenticationSystem {
    * Get user by ID
    */
   public getUser(userId: string): User | { id: any; username: any; email: any; role: any; permissions: any; } | null {
-    const user = this.users.get(userId);
-    if (user) {
-      return {
-        ...user,
-        username: user.username || user.name,
-        role: user.role || 'user',
-        permissions: user.permissions || this.getUserPermissions(user.tier)
-      };
+    // Find user by ID since users are stored by email
+    for (const user of this.users.values()) {
+      if (user.id === userId) {
+        return {
+          ...user,
+          username: user.username || user.name,
+          role: user.role || 'user',
+          permissions: user.permissions || this.getUserPermissions(user.tier)
+        };
+      }
     }
     return null;
   }

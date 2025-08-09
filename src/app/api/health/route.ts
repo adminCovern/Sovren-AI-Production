@@ -55,35 +55,43 @@ export async function GET(request: NextRequest) {
     }
 
     // Redis Health Check
-    try {
-      const Redis = require('ioredis');
-      const redis = new Redis({
-        host: process.env.REDIS_HOST || 'localhost',
-        port: parseInt(process.env.REDIS_PORT || '6379'),
-        password: process.env.REDIS_PASSWORD,
-        connectTimeout: 5000,
-        lazyConnect: true
-      });
-
-      const redisStart = Date.now();
-      await redis.ping();
-      const redisTime = Date.now() - redisStart;
-
+    if (process.env.NEXT_PHASE === 'build' || process.env.DISABLE_REDIS === 'true') {
       healthStatus.checks.redis = {
-        healthy: redisTime < 500,
-        responseTime: redisTime,
-        error: null
-      };
-
-      redis.disconnect();
-    } catch (redisError: unknown) {
-      healthStatus.checks.redis = {
-        healthy: false,
+        healthy: true,
         responseTime: 0,
-        error: redisError instanceof Error ? redisError.message : 'Redis connection failed'
+        error: 'Redis disabled during build'
       };
-      healthStatus.healthy = false;
-      healthStatus.status = 'degraded';
+    } else {
+      try {
+        const Redis = require('ioredis');
+        const redis = new Redis({
+          host: process.env.REDIS_HOST || 'localhost',
+          port: parseInt(process.env.REDIS_PORT || '6379'),
+          password: process.env.REDIS_PASSWORD,
+          connectTimeout: 5000,
+          lazyConnect: true
+        });
+
+        const redisStart = Date.now();
+        await redis.ping();
+        const redisTime = Date.now() - redisStart;
+
+        healthStatus.checks.redis = {
+          healthy: redisTime < 500,
+          responseTime: redisTime,
+          error: null
+        };
+
+        redis.disconnect();
+      } catch (redisError: unknown) {
+        healthStatus.checks.redis = {
+          healthy: false,
+          responseTime: 0,
+          error: redisError instanceof Error ? redisError.message : 'Redis connection failed'
+        };
+        healthStatus.healthy = false;
+        healthStatus.status = 'degraded';
+      }
     }
 
     // Phone System Health Check

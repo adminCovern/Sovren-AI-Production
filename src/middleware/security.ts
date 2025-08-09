@@ -5,7 +5,10 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createRateLimiter, getClientId } from './redisRateLimit';
-import { authSystem } from '../lib/auth/AuthenticationSystem';
+import { AuthenticationSystem } from '../lib/auth/AuthenticationSystem';
+
+// Create auth system instance
+const authSystem = new AuthenticationSystem();
 import { csrfProtection } from '../lib/security/CSRFProtection';
 
 export interface SecurityConfig {
@@ -440,16 +443,19 @@ export class SecurityMiddleware {
   private getClientIP(request: NextRequest): string {
     const forwarded = request.headers.get('x-forwarded-for');
     const realIP = request.headers.get('x-real-ip');
-    
+
     if (forwarded) {
-      return forwarded.split(',')[0].trim();
+      const forwardedIPs = forwarded.split(',');
+      if (forwardedIPs.length > 0) {
+        return forwardedIPs[0].trim();
+      }
     }
-    
+
     if (realIP) {
       return realIP;
     }
 
-    return (request as any).ip || request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
+    return (request as any).ip || 'unknown';
   }
 
   /**

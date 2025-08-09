@@ -262,8 +262,9 @@ export class AudioProcessor {
       let maxIndex = 0;
       let maxValue = -Infinity;
       for (let i = 0; i < frequencyData.length; i++) {
-        if (frequencyData[i] > maxValue) {
-          maxValue = frequencyData[i];
+        const value = frequencyData[i];
+        if (value !== undefined && value > maxValue) {
+          maxValue = value;
           maxIndex = i;
         }
       }
@@ -304,7 +305,10 @@ export class AudioProcessor {
     let noiseSum = 0;
     
     for (let i = 0; i < Math.min(noiseRange, frequencyData.length); i++) {
-      noiseSum += Math.pow(10, frequencyData[i] / 20);
+      const value = frequencyData[i];
+      if (value !== undefined) {
+        noiseSum += Math.pow(10, value / 20);
+      }
     }
     
     return noiseSum / noiseRange;
@@ -319,11 +323,14 @@ export class AudioProcessor {
     let totalSum = 0;
     
     for (let i = 0; i < frequencyData.length; i++) {
-      const power = Math.pow(10, frequencyData[i] / 20);
-      totalSum += power;
-      
-      if (i >= voiceStart && i <= voiceEnd) {
-        voiceSum += power;
+      const value = frequencyData[i];
+      if (value !== undefined) {
+        const power = Math.pow(10, value / 20);
+        totalSum += power;
+
+        if (i >= voiceStart && i <= voiceEnd) {
+          voiceSum += power;
+        }
       }
     }
     
@@ -381,7 +388,10 @@ export class AudioProcessor {
     if (!this.eventListeners.has(event)) {
       this.eventListeners.set(event, []);
     }
-    this.eventListeners.get(event)!.push(callback);
+    const listeners = this.eventListeners.get(event);
+    if (listeners) {
+      listeners.push(callback);
+    }
   }
 
   public off(event: string, callback: Function): void {

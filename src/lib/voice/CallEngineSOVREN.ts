@@ -463,7 +463,9 @@ Keep it conversational and appropriate for a phone call.`;
         "I'll need to gather some additional information to help you better."
       ];
 
-      return fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)];
+      const randomIndex = Math.floor(Math.random() * fallbackResponses.length);
+      const response = fallbackResponses[randomIndex];
+      return response !== undefined ? response : "Thank you for calling SOVREN AI. How can I assist you today?";
     }
   }
 

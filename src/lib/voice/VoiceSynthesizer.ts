@@ -678,7 +678,11 @@ export class VoiceSynthesizer {
 
   private getAvailableWorker(): Worker | null {
     // In a real implementation, you'd track worker availability
-    return this.workerPool.length > 0 ? this.workerPool[0] : null;
+    if (this.workerPool.length > 0) {
+      const worker = this.workerPool[0];
+      return worker !== undefined ? worker : null;
+    }
+    return null;
   }
 
   private async synthesizeInMainThread(request: SynthesisRequest, model: VoiceModel): Promise<void> {

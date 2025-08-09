@@ -586,8 +586,13 @@ export class B200OptimizationLayer extends EventEmitter {
   }
 
   private async executeBatch(batch: ParallelTask[], batchIndex: number, computationId: string): Promise<any[]> {
-    const worker = this.workerPool[batchIndex % this.maxWorkers];
-    
+    const workerIndex = batchIndex % this.maxWorkers;
+    const worker = this.workerPool[workerIndex];
+
+    if (!worker) {
+      throw new Error(`Worker ${workerIndex} not available`);
+    }
+
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
         reject(new Error(`Batch ${batchIndex} timeout`));
@@ -677,8 +682,8 @@ export class B200OptimizationLayer extends EventEmitter {
 
     for (let i = 0; i < hypotheses.length; i++) {
       // Simplified Bayesian update
-      const likelihood = evidence[i] || 0.5;
-      const prior = priors[i] || 1 / hypotheses.length;
+      const likelihood = evidence[i] !== undefined ? evidence[i] : 0.5;
+      const prior = priors[i] !== undefined ? priors[i] : 1 / hypotheses.length;
       const posterior = (likelihood * prior) / (likelihood * prior + (1 - likelihood) * (1 - prior));
       posteriors.push(posterior);
     }
@@ -693,10 +698,14 @@ export class B200OptimizationLayer extends EventEmitter {
 
     for (let i = 0; i < inputTensors.length; i++) {
       const row: number[] = [];
+      const inputRow = inputTensors[i];
+      if (!inputRow) continue;
+
       for (let j = 0; j < weights[0].length; j++) {
-        let sum = biases[j] || 0;
-        for (let k = 0; k < inputTensors[i].length; k++) {
-          sum += inputTensors[i][k] * weights[k][j];
+        let sum = biases[j] !== undefined ? biases[j] : 0;
+        for (let k = 0; k < inputRow.length; k++) {
+          const weightValue = weights[k] && weights[k][j] !== undefined ? weights[k][j] : 0;
+          sum += inputRow[k] * weightValue;
         }
         row.push(Math.max(0, sum)); // ReLU activation
       }

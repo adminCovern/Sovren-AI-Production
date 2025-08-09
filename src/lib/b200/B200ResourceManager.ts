@@ -95,8 +95,14 @@ export class B200ResourceManager {
    * Initialize B200 resource monitoring
    */
   public async initialize(): Promise<void> {
+    // Skip B200 initialization during build
+    if (process.env.NEXT_PHASE === 'build' || process.env.DISABLE_GPU_INIT === 'true') {
+      console.log('⚠️ B200 Resource Manager disabled during build');
+      return;
+    }
+
     console.log('🚀 Initializing B200 Blackwell Resource Manager...');
-    
+
     try {
       // Test MCP Server connection
       const response = await fetch(`${this.mcpServerUrl}/health`);
@@ -111,10 +117,10 @@ export class B200ResourceManager {
 
       // Start monitoring
       this.startMonitoring();
-      
+
       console.log('✅ B200 Resource Manager initialized successfully');
       console.log(`📊 Total Resources: ${this.systemMetrics.total_memory_gb}GB VRAM, ${this.systemMetrics.total_fp8_tensor_cores} FP8 Tensor Cores`);
-      
+
     } catch (error) {
       console.error('❌ Failed to initialize B200 Resource Manager:', error);
       throw error;
@@ -276,7 +282,11 @@ export class B200ResourceManager {
     }
     
     // Return the first N available GPUs (could be optimized further)
-    return availableGPUs.slice(0, request.required_gpus);
+    const selectedGPUs = availableGPUs.slice(0, request.required_gpus);
+    if (selectedGPUs.length < request.required_gpus) {
+      throw new Error(`Could not allocate ${request.required_gpus} GPUs`);
+    }
+    return selectedGPUs;
   }
 
   private calculateTensorCoreAllocation(request: B200AllocationRequest): number {

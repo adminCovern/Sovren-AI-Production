@@ -402,7 +402,10 @@ export class TTSBackendService {
     
     // Audio data
     for (let i = 0; i < audioData.length; i++) {
-      buffer.writeInt16LE(audioData[i], 44 + i * 2);
+      const sample = audioData[i];
+      if (sample !== undefined) {
+        buffer.writeInt16LE(sample, 44 + i * 2);
+      }
     }
     
     return buffer;

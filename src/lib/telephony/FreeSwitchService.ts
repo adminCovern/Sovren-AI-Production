@@ -5,6 +5,9 @@
 
 import { EventSocket, FreeSwitchEvent } from 'modesl';
 import { UserPhoneAllocation } from './SkyetelService';
+import * as fs from 'fs/promises';
+import * as path from 'path';
+import { whisperASRService } from '../voice/WhisperASRService';
 
 export interface FreeSwitchConfig {
   host: string;
@@ -44,6 +47,16 @@ export class FreeSwitchService {
 
   constructor(private config: FreeSwitchConfig) {}
 
+  /** Get dialplan directory (override via FREESWITCH_DIALPLAN_DIR) */
+  private getDialplanDir(): string {
+    return process.env.FREESWITCH_DIALPLAN_DIR || '/data/freeswitch/conf/dialplan/public';
+  }
+
+  /** Get scripts directory (override via FREESWITCH_SCRIPTS_DIR) */
+  private getScriptsDir(): string {
+    return process.env.FREESWITCH_SCRIPTS_DIR || '/data/freeswitch/scripts';
+  }
+
   /**
    * Initialize FreeSWITCH connection
    */
@@ -74,6 +87,9 @@ export class FreeSwitchService {
       // Subscribe to call events
       await this.subscribeToCallEvents();
 
+      // Ensure Lua handler scripts are present
+      await this.ensureLuaHandlers();
+
       return true;
 
     } catch (error) {
@@ -90,18 +106,20 @@ export class FreeSwitchService {
       console.log(`📞 Configuring call routing for user ${allocation.userId}...`);
 
       // Configure SOVREN AI main number
-      this.routingRules.set(allocation.phoneNumbers.sovrenAI, {
-        phoneNumber: allocation.phoneNumbers.sovrenAI,
-        userId: allocation.userId,
-        executiveRole: 'sovren-ai',
-        autoAnswer: true,
-        recordCall: true,
-        transcribeCall: true
-      });
+      if (allocation.phoneNumbers.sovrenAI) {
+        this.routingRules.set(allocation.phoneNumbers.sovrenAI, {
+          phoneNumber: allocation.phoneNumbers.sovrenAI,
+          userId: allocation.userId,
+          executiveRole: 'sovren-ai',
+          autoAnswer: true,
+          recordCall: true,
+          transcribeCall: true
+        });
+      }
 
       // Configure executive numbers
       const executiveRoles = Object.keys(allocation.phoneNumbers.executives) as Array<keyof typeof allocation.phoneNumbers.executives>;
-      
+
       for (const role of executiveRoles) {
         const phoneNumber = allocation.phoneNumbers.executives[role];
         if (phoneNumber) {
@@ -129,40 +147,101 @@ export class FreeSwitchService {
   }
 
   /**
-   * Generate FreeSWITCH dialplan for user
+   * Generate and persist FreeSWITCH dialplan for user, then reload
    */
   private async generateUserDialplan(allocation: UserPhoneAllocation): Promise<void> {
     const dialplanXml = this.generateDialplanXML(allocation);
-    
-    // Write dialplan to FreeSWITCH configuration
-    // In production, this would write to /etc/freeswitch/dialplan/
-    console.log(`📝 Generated dialplan for user ${allocation.userId}`);
-    console.log(dialplanXml);
+
+    const dir = this.getDialplanDir();
+    const fileName = `sovren_${allocation.userId}.xml`;
+    const fullPath = path.join(dir, fileName);
+
+    try {
+      await fs.mkdir(dir, { recursive: true });
+      await fs.writeFile(fullPath, dialplanXml, { encoding: 'utf8' });
+      console.log(`📝 Dialplan written: ${fullPath}`);
+
+      // Reload FreeSWITCH XML to apply changes
+      if (this.eslConnection) {
+        await this.eslConnection.api('reloadxml');
+        console.log('🔄 FreeSWITCH dialplan reloaded (reloadxml)');
+      } else {
+        console.warn('⚠️ ESL not connected; cannot auto-reload dialplan');
+      }
+    } catch (err) {
+      console.error('❌ Failed to write/reload dialplan:', err);
+      throw err;
+    }
+  }
+
+  /**
+   * Ensure required Lua handler scripts exist in FreeSWITCH scripts dir
+   */
+  private async ensureLuaHandlers(): Promise<void> {
+    const scriptsDir = this.getScriptsDir();
+    await fs.mkdir(scriptsDir, { recursive: true });
+
+    const files: Array<{ name: string; content: string }> = [
+      {
+        name: 'sovren_call_handler.lua',
+        content: `-- SOVREN Inbound Call Handler\n-- args: userId, role, number\napi = require('api')\ncall_api = api:executeString\nuserId = argv[1] or ''\nrole = argv[2] or ''\nnumber = argv[3] or ''\n-- Set standard vars\nsession:setVariable('playback_terminators', 'none')\nsession:answer()\nsession:sleep(500)\n-- Tag channel\nsession:setVariable('sovren_user_id', userId)\nsession:setVariable('sovren_role', role)\nsession:setVariable('sovren_number', number)\n-- Bridge to app media pipeline (placeholder: music on hold)\nsession:execute('progress')\nsession:execute('playback', 'local_stream://moh')\n`,
+      },
+      {
+        name: 'sovren_outbound_handler.lua',
+        content: `-- SOVREN Outbound Call Handler\n-- args: userId, role, fromNumber\napi = require('api')\ncall_api = api:executeString\nuserId = argv[1] or ''\nrole = argv[2] or ''\nfromNumber = argv[3] or ''\nsession:setVariable('effective_caller_id_number', fromNumber)\nsession:setVariable('sovren_user_id', userId)\nsession:setVariable('sovren_role', role)\nsession:answer()\nsession:sleep(200)\n`,
+      },
+    ];
+
+    for (const f of files) {
+      const full = path.join(scriptsDir, f.name);
+      try {
+        await fs.access(full);
+      } catch {
+        await fs.writeFile(full, f.content, { encoding: 'utf8' });
+        console.log(`📝 Wrote Lua handler: ${full}`);
+      }
+    }
   }
 
   /**
    * Generate XML dialplan configuration
    */
   private generateDialplanXML(allocation: UserPhoneAllocation): string {
-    const allNumbers = [
-      { number: allocation.phoneNumbers.sovrenAI, role: 'sovren-ai' },
-      ...Object.entries(allocation.phoneNumbers.executives).map(([role, number]) => ({ number, role }))
-    ].filter(item => item.number);
+    const allNumbers: Array<{ number: string; role: string }> = [];
+
+    // Add SOVREN AI number if available
+    if (allocation.phoneNumbers.sovrenAI) {
+      allNumbers.push({ number: allocation.phoneNumbers.sovrenAI, role: 'sovren-ai' });
+    }
+
+    // Add executive numbers
+    Object.entries(allocation.phoneNumbers.executives).forEach(([role, number]) => {
+      if (number) {
+        allNumbers.push({ number, role });
+      }
+    });
+
+    // Use public context for inbound from external profile
+    // Allow overriding recordings dir via env; default to B200 path
+    const recordingsDir = process.env.FREESWITCH_RECORDINGS_DIR || '/data/freeswitch/recordings';
 
     let dialplanXml = `
 <!-- SOVREN AI Dialplan for User ${allocation.userId} -->
 <include>
-  <context name="sovren_${allocation.userId}">
+  <context name="public">
 `;
 
     for (const { number, role } of allNumbers) {
+      const dest = (number || '').replace('+1', '');
+      // Match 10-digit, 11-digit (1NPA), or E.164 (+1NPA)
+      const expr = `^(?:\\+?1)?${dest}$`;
       dialplanXml += `
     <extension name="${role}_${allocation.userId}">
-      <condition field="destination_number" expression="^${number.replace('+1', '')}$">
+      <condition field="destination_number" expression="${expr}">
         <action application="set" data="call_timeout=30"/>
         <action application="set" data="hangup_after_bridge=true"/>
         <action application="set" data="continue_on_fail=true"/>
-        <action application="record_session" data="/var/lib/freeswitch/recordings/${allocation.userId}_${role}_\${strftime(%Y%m%d_%H%M%S)}.wav"/>
+        <action application="record_session" data="${recordingsDir}/${allocation.userId}_${role}_` + '${uuid}' + `.wav"/>
         <action application="lua" data="sovren_call_handler.lua ${allocation.userId} ${role} ${number}"/>
       </condition>
     </extension>
@@ -281,6 +360,12 @@ export class FreeSwitchService {
 
       console.log(`📞 Call ended: ${callSession.executiveRole} (Duration: ${callSession.duration}s)`);
 
+      // Capture recording file if set by record_session
+      const recPath = event.getHeader('variable_record_session_path') || event.getHeader('record_path') || '';
+      if (recPath) {
+        (callSession as any).recordingPath = recPath;
+      }
+
       // Process call recording and transcription
       this.processCallRecording(callSession);
 
@@ -296,13 +381,13 @@ export class FreeSwitchService {
       // This would integrate with the main SOVREN AI system
       // to trigger the appropriate executive AI to handle the call
       console.log(`🧠 Notifying SOVREN AI: ${callSession.executiveRole} call from ${callSession.callerNumber}`);
-      
+
       // In production, this would:
       // 1. Load the appropriate executive AI model
       // 2. Initialize voice synthesis for the executive
       // 3. Prepare business context for the call
       // 4. Start real-time conversation handling
-      
+
     } catch (error) {
       console.error('Failed to notify SOVREN system:', error);
     }
@@ -314,14 +399,27 @@ export class FreeSwitchService {
   private async processCallRecording(callSession: CallSession): Promise<void> {
     try {
       console.log(`🎙️ Processing recording for call ${callSession.callId}...`);
-      
-      // In production, this would:
-      // 1. Process the recorded audio file
-      // 2. Generate transcription using Whisper
-      // 3. Store call data in database
-      // 4. Update user's call history
-      // 5. Generate call summary and insights
-      
+
+      const recPath: string | undefined = (callSession as any).recordingPath;
+      const pathFromSession = recPath || '';
+
+      if (!pathFromSession) {
+        console.warn('ℹ️ No recording path found on call session; skipping transcription');
+        return;
+      }
+
+      // Transcribe recording with local Whisper (whisper.cpp)
+      const result = await whisperASRService.transcribeFile(pathFromSession, 'en');
+      console.log('📝 Transcription summary:', {
+        textPreview: result.text.slice(0, 160),
+        durationSec: result.audioLength,
+        confidence: result.confidence,
+      });
+
+      // TODO: persist transcript JSON next to WAV, or to DB
+      // const transcriptPath = pathFromSession.replace(/\.wav$/i, '.json');
+      // await fs.writeFile(transcriptPath, JSON.stringify(result, null, 2), 'utf8');
+
     } catch (error) {
       console.error('Failed to process call recording:', error);
     }
@@ -393,14 +491,14 @@ export class FreeSwitchService {
       }
 
       const callId = `outbound_${Date.now()}`;
-      
+
       // Originate call through FreeSWITCH
       const command = `originate sofia/gateway/skyetel/${toNumber} &lua(sovren_outbound_handler.lua ${userId} ${executiveRole} ${fromNumber})`;
-      
+
       await this.eslConnection.api(command);
-      
+
       console.log(`📞 Initiated outbound call: ${fromNumber} → ${toNumber} (${executiveRole})`);
-      
+
       return callId;
 
     } catch (error) {
