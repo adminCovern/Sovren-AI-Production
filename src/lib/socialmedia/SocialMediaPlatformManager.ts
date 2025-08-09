@@ -684,7 +684,7 @@ export class SocialMediaPlatformManager extends EventEmitter {
    * Generate optimization recommendations with strategic intelligence
    */
   private generateOptimizationRecommendations(analytics: any): string[] {
-    const recommendations = [];
+    const recommendations: any[] = [];
 
     if (analytics.failed_posts > 0) {
       recommendations.push(`Fix posting issues on ${analytics.failed_posts} platform(s)`);
@@ -985,7 +985,7 @@ export class SocialMediaPlatformManager extends EventEmitter {
    * Generate optimal posting times
    */
   private generateOptimalPostingTimes(): Date[] {
-    const times = [];
+    const times: any[] = [];
     const baseDate = new Date();
 
     // Generate 5-7 optimal times throughout the day

@@ -358,7 +358,7 @@ export class CFOExecutive extends EventEmitter {
 
   // Private helper methods
   private async runFinancialScenarios(opportunity: InvestmentOpportunity, count: number): Promise<any[]> {
-    const scenarios = [];
+    const scenarios: any[] = [];
     
     for (let i = 0; i < count; i++) {
       const scenario = {
@@ -555,7 +555,7 @@ export class CFOExecutive extends EventEmitter {
   private generateCashFlows(scenario: any): number[] {
     // Generate cash flows based on scenario
     const periods = Math.floor(scenario.timeline);
-    const cashFlows = [];
+    const cashFlows: any[] = [];
     
     for (let i = 0; i < periods; i++) {
       const cf = scenario.return * (1 - scenario.risk * Math.random());
@@ -979,7 +979,7 @@ export class CFOExecutive extends EventEmitter {
 // Placeholder classes for financial models
 class CashFlowPredictor {
   async predict(months: number): Promise<number[]> {
-    const projections = [];
+    const projections: any[] = [];
     let base = 1500000;
     
     for (let i = 0; i < months; i++) {

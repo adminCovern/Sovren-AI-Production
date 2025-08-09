@@ -78,8 +78,8 @@ function NeuralConnections() {
   const linesRef = useRef<THREE.LineSegments>(null);
   
   const geometry = useMemo(() => {
-    const positions = [];
-    const colors = [];
+    const positions: number[] = [];
+    const colors: number[] = [];
     
     // Create some connecting lines between random points
     for (let i = 0; i < 100; i++) {

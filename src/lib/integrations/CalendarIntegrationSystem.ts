@@ -954,7 +954,7 @@ class CalendarAIScheduler {
   
   private extractKeyTopics(event: CalendarEvent): string[] {
     const text = `${event.title} ${event.description || ''}`.toLowerCase();
-    const topics = [];
+    const topics: any[] = [];
     
     if (text.includes('budget') || text.includes('financial')) topics.push('Finance');
     if (text.includes('strategy') || text.includes('planning')) topics.push('Strategy');
@@ -968,7 +968,7 @@ class CalendarAIScheduler {
   
   private identifyRequiredDocuments(event: CalendarEvent): string[] {
     const text = `${event.title} ${event.description || ''}`.toLowerCase();
-    const documents = [];
+    const documents: any[] = [];
     
     if (text.includes('presentation')) documents.push('Presentation slides');
     if (text.includes('budget') || text.includes('financial')) documents.push('Financial reports');

@@ -249,7 +249,7 @@ export class SocialAnalyticsEngine extends EventEmitter {
    * Generate optimal posting times
    */
   private generateOptimalTimes(): Date[] {
-    const times = [];
+    const times: any[] = [];
     const baseDate = new Date();
 
     // Generate 3-5 optimal times
@@ -411,7 +411,7 @@ export class SocialAnalyticsEngine extends EventEmitter {
    * Identify competitive advantages with strategic analysis
    */
   private identifyCompetitiveAdvantages(competitors: string[]): string[] {
-    const advantages = [];
+    const advantages: any[] = [];
 
     // Analyze our position vs competitors
     const avgEngagement = this.calculateAverageCompetitorEngagement(competitors);
@@ -468,7 +468,7 @@ export class SocialAnalyticsEngine extends EventEmitter {
    * Generate strategic recommendations with AI intelligence
    */
   private generateStrategicRecommendations(competitors: string[]): string[] {
-    const recommendations = [];
+    const recommendations: any[] = [];
 
     const threats = this.identifyEmergingThreats(competitors);
     const gaps = this.identifyMarketGaps(competitors);
@@ -1169,7 +1169,7 @@ export class SocialAnalyticsEngine extends EventEmitter {
    * Identify key strengths with strategic analysis
    */
   private identifyKeyStrengths(metrics: AnalyticsMetrics): string[] {
-    const strengths = [];
+    const strengths: any[] = [];
 
     if (metrics.engagement.rate > 0.05) {
       strengths.push('High engagement rates');
@@ -1194,7 +1194,7 @@ export class SocialAnalyticsEngine extends EventEmitter {
    * Identify improvement areas with optimization intelligence
    */
   private identifyImprovementAreas(metrics: AnalyticsMetrics): string[] {
-    const areas = [];
+    const areas: any[] = [];
 
     if (metrics.engagement.rate < 0.03) {
       areas.push('Engagement optimization needed');
@@ -1308,7 +1308,7 @@ export class SocialAnalyticsEngine extends EventEmitter {
    * Generate engagement tactics
    */
   private generateEngagementTactics(metrics: AnalyticsMetrics): string[] {
-    const tactics = [];
+    const tactics: any[] = [];
 
     if (metrics.engagement.comments < metrics.engagement.likes * 0.1) {
       tactics.push('Increase call-to-action questions to boost comments');
@@ -1329,7 +1329,7 @@ export class SocialAnalyticsEngine extends EventEmitter {
    * Generate hashtag recommendations with performance analysis
    */
   private generateHashtagRecommendations(hashtagPerformance: any): string[] {
-    const recommendations = [];
+    const recommendations: any[] = [];
 
     // Sort hashtags by performance
     const sortedHashtags = Object.entries(hashtagPerformance)
@@ -1387,7 +1387,7 @@ export class SocialAnalyticsEngine extends EventEmitter {
    * Identify risk factors with predictive analysis
    */
   private identifyRiskFactors(metrics: AnalyticsMetrics): string[] {
-    const risks = [];
+    const risks: any[] = [];
 
     if (metrics.audience.growth_rate < 0) {
       risks.push('Declining audience growth');
@@ -1451,7 +1451,7 @@ export class SocialAnalyticsEngine extends EventEmitter {
    * Identify growth factors with strategic analysis
    */
   private identifyGrowthFactors(platform: string, metrics: AnalyticsMetrics): string[] {
-    const factors = [];
+    const factors: any[] = [];
 
     if (metrics.engagement.rate > 0.05) {
       factors.push('High engagement driving organic reach');
@@ -1512,7 +1512,7 @@ export class SocialAnalyticsEngine extends EventEmitter {
    * Identify engagement drivers with behavioral analysis
    */
   private identifyEngagementDrivers(platform: string, metrics: AnalyticsMetrics): string[] {
-    const drivers = [];
+    const drivers: any[] = [];
 
     if (metrics.content_performance.content_types.video.avg_engagement > metrics.content_performance.content_types.image.avg_engagement) {
       drivers.push('Video content driving higher engagement');
@@ -1533,7 +1533,7 @@ export class SocialAnalyticsEngine extends EventEmitter {
    * Identify engagement optimization opportunities
    */
   private identifyEngagementOptimizations(metrics: AnalyticsMetrics): string[] {
-    const optimizations = [];
+    const optimizations: any[] = [];
 
     if (metrics.engagement.comments < metrics.engagement.likes * 0.1) {
       optimizations.push('Increase interactive content to boost comments');
@@ -1621,7 +1621,7 @@ export class SocialAnalyticsEngine extends EventEmitter {
    * Identify ROI drivers with strategic analysis
    */
   private identifyROIDrivers(platform: string, metrics: AnalyticsMetrics): string[] {
-    const drivers = [];
+    const drivers: any[] = [];
 
     if (metrics.engagement.rate > 0.05) {
       drivers.push('High engagement driving conversions');
@@ -1889,7 +1889,7 @@ export class SocialAnalyticsEngine extends EventEmitter {
   private async runAnomalyDetection(metrics: AnalyticsMetrics): Promise<any[]> {
     console.log('🔍 Running anomaly detection with quantum precision...');
 
-    const anomalies = [];
+    const anomalies: any[] = [];
 
     // Engagement rate anomalies
     if (metrics.engagement.rate > 0.15) {
@@ -2040,7 +2040,7 @@ export class SocialAnalyticsEngine extends EventEmitter {
    * Generate global strategic recommendations
    */
   private generateGlobalRecommendations(allMetrics: Map<string, AnalyticsMetrics>): string[] {
-    const recommendations = [];
+    const recommendations: any[] = [];
 
     const topPlatform = this.identifyTopPerformers(allMetrics)[0];
     if (topPlatform) {
@@ -2079,7 +2079,7 @@ export class SocialAnalyticsEngine extends EventEmitter {
    * Identify key risks across all platforms
    */
   private identifyKeyRisks(allMetrics: Map<string, AnalyticsMetrics>): string[] {
-    const risks = [];
+    const risks: any[] = [];
 
     if (allMetrics.size < 3) {
       risks.push('Platform concentration risk - limited diversification');
@@ -2102,7 +2102,7 @@ export class SocialAnalyticsEngine extends EventEmitter {
    * Generate mitigation strategies
    */
   private generateMitigationStrategies(riskLevel: number): string[] {
-    const strategies = [];
+    const strategies: any[] = [];
 
     if (riskLevel > 0.6) {
       strategies.push('Immediate diversification across additional platforms');

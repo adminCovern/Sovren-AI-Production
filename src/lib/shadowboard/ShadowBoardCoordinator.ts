@@ -572,7 +572,7 @@ export class ShadowBoardCoordinator extends EventEmitter {
 
   private identifyConflicts(analyses: ExecutiveDecision[]): any[] {
     // Simplified conflict identification
-    const conflicts = [];
+    const conflicts: any[] = [];
     const avgImpact = analyses.reduce((sum, a) => sum + a.impact, 0) / analyses.length;
     
     for (const analysis of analyses) {

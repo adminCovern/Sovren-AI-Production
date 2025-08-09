@@ -1225,7 +1225,7 @@ export class EngagementAutomationSystem extends EventEmitter {
   private async identifyEngagementOpportunities(): Promise<any[]> {
     console.log('🔍 Identifying engagement opportunities with quantum analysis...');
 
-    const opportunities = [];
+    const opportunities: any[] = [];
 
     // Trending topics opportunities
     const trendingOpportunities = await this.identifyTrendingOpportunities();
@@ -1250,7 +1250,7 @@ export class EngagementAutomationSystem extends EventEmitter {
    * Identify trending topic opportunities
    */
   private async identifyTrendingOpportunities(): Promise<any[]> {
-    const opportunities = [];
+    const opportunities: any[] = [];
     const platforms = ['twitter', 'linkedin', 'instagram'];
 
     for (const platform of platforms) {

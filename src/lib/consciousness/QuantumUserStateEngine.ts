@@ -851,7 +851,7 @@ export class QuantumUserStateEngine extends EventEmitter {
 
   private generateEngagementHooks(userState: QuantumUserState): string[] {
     // Generate engagement hooks based on user state
-    const hooks = [];
+    const hooks: any[] = [];
 
     if (userState.flowStateIndicators.focus_depth > 0.7) {
       hooks.push('deep_focus_content');
@@ -870,7 +870,7 @@ export class QuantumUserStateEngine extends EventEmitter {
 
   private generateDopamineTriggers(userState: QuantumUserState): any[] {
     // Generate dopamine triggers
-    const triggers = [];
+    const triggers: any[] = [];
 
     // Progress indicators
     if (userState.flowStateIndicators.challenge_skill_balance > 0.6) {
@@ -1019,7 +1019,7 @@ export class QuantumUserStateEngine extends EventEmitter {
 
   private generateContextualSuggestions(context: any): string[] {
     // Generate contextual suggestions
-    const suggestions = [];
+    const suggestions: any[] = [];
 
     if (context?.type === 'exploration') {
       suggestions.push('Discover new features');
@@ -1058,7 +1058,7 @@ export class QuantumUserStateEngine extends EventEmitter {
   }
 
   private calculateContentPriority(userState: QuantumUserState): string[] {
-    const priorities = [];
+    const priorities: any[] = [];
 
     if (userState.flowStateIndicators.intrinsic_motivation > 0.7) {
       priorities.push('achievement_content');
@@ -1080,7 +1080,7 @@ export class QuantumUserStateEngine extends EventEmitter {
    */
   private generatePathNodes(userState: QuantumUserState): any[] {
     // Generate path nodes for Monte Carlo tree search
-    const nodes = [];
+    const nodes: any[] = [];
     const currentState = this.classifyUserState(userState);
 
     // Generate possible next actions based on current state
@@ -1139,7 +1139,7 @@ export class QuantumUserStateEngine extends EventEmitter {
 
   private generateMutations(userState: QuantumUserState): any[] {
     // Generate mutations for genetic algorithm
-    const mutations = [];
+    const mutations: any[] = [];
 
     // Attention vector mutations
     mutations.push({
@@ -1176,7 +1176,7 @@ export class QuantumUserStateEngine extends EventEmitter {
 
   private crossoverVectors(vectorA: number[], vectorB: number[]): number[] {
     // Perform crossover between two vectors
-    const result = [];
+    const result: any[] = [];
     const crossoverPoint = Math.floor(Math.random() * vectorA.length);
 
     for (let i = 0; i < vectorA.length; i++) {

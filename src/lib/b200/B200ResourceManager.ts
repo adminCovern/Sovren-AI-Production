@@ -486,7 +486,7 @@ export class B200ResourceManager {
     console.log(`🔄 Migrating allocation ${allocationId}`);
 
     // Find new GPUs (simplified - would be more complex in production)
-    const newGPUs = [];
+    const newGPUs: any[] = [];
     const requiredGPUs = allocation.gpu_ids.length; // Use current GPU count
     for (let gpuId = 0; gpuId < this.systemMetrics.total_gpus; gpuId++) {
       if (!excludeGPUs.includes(gpuId) && newGPUs.length < requiredGPUs) {

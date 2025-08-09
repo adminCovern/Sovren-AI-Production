@@ -73,7 +73,7 @@ export class ExecutiveSelectionInterface {
     selectedExecutives: string[],
     businessProfile: BusinessProfile
   ): string {
-    const reasons = [];
+    const reasons: string[] = [];
     
     reasons.push(`Based on your ${businessProfile.industry} business in ${businessProfile.stage} stage`);
     

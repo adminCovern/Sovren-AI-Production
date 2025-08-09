@@ -144,7 +144,7 @@ describe('SOVREN-AI Shadow Board Integration Tests', () => {
         { role: 'cto', text: 'System architecture review' }
       ];
 
-      const results = [];
+      const results: any[] = [];
       for (const interaction of interactions) {
         const result = await shadowBoard.executeExecutiveInteraction(interaction.role, {
           text: interaction.text,

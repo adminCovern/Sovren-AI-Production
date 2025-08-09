@@ -481,7 +481,7 @@ export class B200AutoScaler extends EventEmitter {
    * Get scale up reason
    */
   private getScaleUpReason(metrics: ScalingMetrics): string {
-    const reasons = [];
+    const reasons: string[] = [];
     
     if (metrics.gpuUtilization > this.config.scaleUpThreshold) {
       reasons.push(`High GPU utilization: ${(metrics.gpuUtilization * 100).toFixed(1)}%`);

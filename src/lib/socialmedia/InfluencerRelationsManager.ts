@@ -295,7 +295,7 @@ export class InfluencerRelationsManager extends EventEmitter {
    * Generate performance-based recommendations
    */
   private generatePerformanceRecommendations(score: number, trend: string): string[] {
-    const recommendations = [];
+    const recommendations: any[] = [];
 
     if (score < 0.6) {
       recommendations.push('Consider renegotiating collaboration terms');
@@ -1315,7 +1315,7 @@ export class InfluencerRelationsManager extends EventEmitter {
       const completedCollaborations = Array.from(this.collaborationOpportunities.values())
         .filter(opp => opp.status === 'completed');
 
-      const renewalOpportunities = [];
+      const renewalOpportunities: any[] = [];
 
       for (const collaboration of completedCollaborations) {
         const renewalScore = await this.calculateRenewalScore(collaboration);
