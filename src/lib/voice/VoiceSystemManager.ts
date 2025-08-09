@@ -316,7 +316,10 @@ export class VoiceSystemManager {
     if (!this.eventListeners.has(event)) {
       this.eventListeners.set(event, []);
     }
-    this.eventListeners.get(event)!.push(callback);
+    const listeners = this.eventListeners.get(event);
+    if (listeners) {
+      listeners.push(callback);
+    }
   }
 
   public off(event: string, callback: Function): void {

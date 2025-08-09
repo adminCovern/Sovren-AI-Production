@@ -580,7 +580,8 @@ export class ExecutiveVoiceRouter {
       return 'ceo'; // Fallback
     }
     
-    return availableExecutives[0].id;
+    const firstExecutive = availableExecutives[0];
+    return firstExecutive !== undefined ? firstExecutive.id : 'sovren-ai';
   }
 
   private isExecutiveAvailable(executive: ExecutiveProfile): boolean {
@@ -601,7 +602,11 @@ export class ExecutiveVoiceRouter {
       )
       .sort((a, b) => b.priority - a.priority);
     
-    return alternatives.length > 0 ? alternatives[0].id : 'ceo';
+    if (alternatives.length > 0) {
+      const firstAlternative = alternatives[0];
+      return firstAlternative !== undefined ? firstAlternative.id : 'sovren-ai';
+    }
+    return 'sovren-ai';
   }
 
   private updateExecutiveLoad(executiveId: string, delta: number): void {
@@ -616,12 +621,14 @@ export class ExecutiveVoiceRouter {
     if (!this.callHistory.has(callerUri)) {
       this.callHistory.set(callerUri, []);
     }
-    this.callHistory.get(callerUri)!.push(context);
-    
-    // Keep only last 10 interactions
-    const history = this.callHistory.get(callerUri)!;
-    if (history.length > 10) {
-      history.splice(0, history.length - 10);
+    const history = this.callHistory.get(callerUri);
+    if (history) {
+      history.push(context);
+
+      // Keep only last 10 interactions
+      if (history.length > 10) {
+        history.splice(0, history.length - 10);
+      }
     }
   }
 
@@ -662,7 +669,10 @@ export class ExecutiveVoiceRouter {
     if (!this.eventListeners.has(event)) {
       this.eventListeners.set(event, []);
     }
-    this.eventListeners.get(event)!.push(callback);
+    const listeners = this.eventListeners.get(event);
+    if (listeners) {
+      listeners.push(callback);
+    }
   }
 
   public off(event: string, callback: Function): void {
@@ -704,7 +714,8 @@ export class ExecutiveVoiceRouter {
       return 'sovren-ai'; // Always fallback to SOVREN AI
     }
 
-    return availableExecutives[0].id;
+    const firstExecutive = availableExecutives[0];
+    return firstExecutive !== undefined ? firstExecutive.id : 'sovren-ai';
   }
 
   public getSubscriptionTier(): string {

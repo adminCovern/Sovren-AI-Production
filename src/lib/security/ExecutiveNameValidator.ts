@@ -137,9 +137,13 @@ export class ExecutiveNameValidator {
    */
   public static hasApprovedPatterns(codeContent: string): boolean {
     const approvedPatterns = this.getApprovedPatterns();
-    return approvedPatterns.some(pattern => 
-      codeContent.includes(pattern.split('(')[0]) // Check for method name
-    );
+    return approvedPatterns.some(pattern => {
+      const methodParts = pattern.split('(');
+      if (methodParts.length > 0) {
+        return codeContent.includes(methodParts[0]); // Check for method name
+      }
+      return false;
+    });
   }
 
   /**

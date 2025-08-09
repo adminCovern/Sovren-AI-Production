@@ -119,8 +119,8 @@ export class ExecutiveCoordinationEngine extends EventEmitter {
       skyetel: {
         apiKey: process.env.SKYETEL_API_KEY || '',
         apiSecret: process.env.SKYETEL_API_SECRET || '',
-        baseUrl: process.env.SKYETEL_BASE_URL || 'https://api.skyetel.com',
-        sipDomain: process.env.SKYETEL_SIP_DOMAIN || 'sovren.skyetel.com'
+        baseUrl: process.env.SKYETEL_API_URL || process.env.SKYETEL_BASE_URL || 'https://api.skyetel.com',
+        sipDomain: process.env.SKYETEL_SIP_DOMAIN || process.env.SIP_DOMAIN || 'sovren.skyetel.com'
       },
       freeswitch: {
         host: process.env.FREESWITCH_HOST || 'localhost',

@@ -1,3 +1,4 @@
+import '../polyfills';
 import 'reflect-metadata';
 import type { Metadata } from 'next';
 import { Inter, JetBrains_Mono, Orbitron } from 'next/font/google';

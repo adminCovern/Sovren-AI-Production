@@ -388,7 +388,8 @@ export class CFOExecutive extends EventEmitter {
   private calculateValueAtRisk(distribution: any, confidence: number): number {
     const sortedValues = distribution.distribution.sort((a: number, b: number) => a - b);
     const index = Math.floor((1 - confidence) * sortedValues.length);
-    return sortedValues[index];
+    const value = sortedValues[index];
+    return value !== undefined ? value : 0;
   }
 
   private async assessInvestmentRisk(opportunity: InvestmentOpportunity): Promise<RiskAssessment> {
@@ -567,7 +568,14 @@ export class CFOExecutive extends EventEmitter {
   private calculateMedian(values: number[]): number {
     const sorted = values.sort((a, b) => a - b);
     const mid = Math.floor(sorted.length / 2);
-    return sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
+    if (sorted.length % 2 === 0) {
+      const left = sorted[mid - 1];
+      const right = sorted[mid];
+      return (left !== undefined && right !== undefined) ? (left + right) / 2 : 0;
+    } else {
+      const median = sorted[mid];
+      return median !== undefined ? median : 0;
+    }
   }
 
   private calculateStandardDeviation(values: number[]): number {
@@ -584,10 +592,10 @@ export class CFOExecutive extends EventEmitter {
   private calculatePercentiles(values: number[]): any {
     const sorted = values.sort((a, b) => a - b);
     return {
-      p5: sorted[Math.floor(0.05 * sorted.length)],
-      p25: sorted[Math.floor(0.25 * sorted.length)],
-      p75: sorted[Math.floor(0.75 * sorted.length)],
-      p95: sorted[Math.floor(0.95 * sorted.length)]
+      p5: sorted[Math.floor(0.05 * sorted.length)] || 0,
+      p25: sorted[Math.floor(0.25 * sorted.length)] || 0,
+      p75: sorted[Math.floor(0.75 * sorted.length)] || 0,
+      p95: sorted[Math.floor(0.95 * sorted.length)] || 0
     };
   }
 
@@ -688,7 +696,7 @@ export class CFOExecutive extends EventEmitter {
   private extractNumericValue(text: string, metric: string): number {
     const regex = new RegExp(`${metric}[:\\s]+([\\d.,%-]+)`, 'i');
     const match = text.match(regex);
-    if (match) {
+    if (match && match[1] !== undefined) {
       return parseFloat(match[1].replace(/[,%]/g, ''));
     }
     return 0;
@@ -714,12 +722,18 @@ export class CFOExecutive extends EventEmitter {
   private extractRiskFactors(text: string): string[] {
     // Extract risk factors from B200 analysis
     const factors = text.match(/risk factors?[:\s]+(.*?)(?:\n\n|\.|$)/i);
-    return factors ? factors[1].split(',').map(f => f.trim()) : ['Market volatility', 'Regulatory changes'];
+    if (factors && factors[1] !== undefined) {
+      return factors[1].split(',').map(f => f.trim());
+    }
+    return ['Market volatility', 'Regulatory changes'];
   }
 
   private extractMitigationStrategies(text: string): string[] {
     const strategies = text.match(/mitigation[:\s]+(.*?)(?:\n\n|\.|$)/i);
-    return strategies ? strategies[1].split(',').map(s => s.trim()) : ['Diversification', 'Hedging'];
+    if (strategies && strategies[1] !== undefined) {
+      return strategies[1].split(',').map(s => s.trim());
+    }
+    return ['Diversification', 'Hedging'];
   }
 
   private extractRecommendationAction(text: string): 'approve' | 'reject' | 'conditional_approve' | 'defer' {
@@ -735,17 +749,26 @@ export class CFOExecutive extends EventEmitter {
 
   private extractRationale(text: string): string {
     const rationale = text.match(/rationale[:\s]+(.*?)(?:\n\n|conditions|$)/i);
-    return rationale ? rationale[1].trim() : 'Based on comprehensive financial analysis';
+    if (rationale && rationale[1] !== undefined) {
+      return rationale[1].trim();
+    }
+    return 'Based on comprehensive financial analysis';
   }
 
   private extractConditions(text: string): string[] {
     const conditions = text.match(/conditions?[:\s]+(.*?)(?:\n\n|\.|$)/i);
-    return conditions ? conditions[1].split(',').map(c => c.trim()) : [];
+    if (conditions && conditions[1] !== undefined) {
+      return conditions[1].split(',').map(c => c.trim());
+    }
+    return [];
   }
 
   private extractAlternatives(text: string): string[] {
     const alternatives = text.match(/alternatives?[:\s]+(.*?)(?:\n\n|\.|$)/i);
-    return alternatives ? alternatives[1].split(',').map(a => a.trim()) : [];
+    if (alternatives && alternatives[1] !== undefined) {
+      return alternatives[1].split(',').map(a => a.trim());
+    }
+    return [];
   }
 
   private extractConfidenceLevel(text: string): number {
@@ -940,7 +963,9 @@ export class CFOExecutive extends EventEmitter {
 
   private simulateMarketConditions(): string {
     const conditions = ['bull', 'bear', 'neutral', 'volatile'];
-    return conditions[Math.floor(Math.random() * conditions.length)];
+    const randomIndex = Math.floor(Math.random() * conditions.length);
+    const condition = conditions[randomIndex];
+    return condition !== undefined ? condition : 'neutral';
   }
 
   private simulateTimeline(opportunity: InvestmentOpportunity): number {

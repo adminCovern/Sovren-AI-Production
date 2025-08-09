@@ -452,17 +452,19 @@ export class CRMIntegrationSystem {
   }
 
   public async syncCRMData(providerId?: string): Promise<void> {
-    const providersToSync = providerId 
-      ? [this.providers.get(providerId)!].filter(Boolean)
+    const providersToSync = providerId
+      ? [this.providers.get(providerId)].filter(Boolean)
       : Array.from(this.providers.values()).filter(p => p.isConnected);
 
     for (const provider of providersToSync) {
+      if (!provider) continue;
+
       try {
         console.log(`Syncing CRM data from ${provider.name}...`);
 
         // Sync different data types in parallel
         const syncPromises = [];
-        
+
         if (provider.features.leads) {
           syncPromises.push(this.syncLeads(provider));
         }
@@ -1524,7 +1526,9 @@ class CRMAIAnalyzer {
   private analyzeHealthTrends(account: CRMAccount): 'improving' | 'stable' | 'declining' {
     // Simulate trend analysis
     const trends = ['improving', 'stable', 'declining'] as const;
-    return trends[Math.floor(Math.random() * trends.length)];
+    const randomIndex = Math.floor(Math.random() * trends.length);
+    const trend = trends[randomIndex];
+    return trend !== undefined ? trend : 'stable';
   }
 }
 

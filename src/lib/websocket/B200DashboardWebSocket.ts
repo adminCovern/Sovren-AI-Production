@@ -2,7 +2,10 @@ import { WebSocketServer, WebSocket } from 'ws';
 import { IncomingMessage } from 'http';
 import { EventEmitter } from 'events';
 import { b200ResourceMonitor } from '../monitoring/B200ResourceMonitor';
-import { authSystem } from '../auth/AuthenticationSystem';
+import { AuthenticationSystem } from '../auth/AuthenticationSystem';
+
+// Create auth system instance
+const authSystem = new AuthenticationSystem();
 
 /**
  * B200 Dashboard WebSocket Server

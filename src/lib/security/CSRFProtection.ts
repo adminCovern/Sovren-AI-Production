@@ -67,7 +67,12 @@ export class CSRFProtection {
       }
 
       const [tokenSessionId, timestampStr, randomToken, signature] = parts;
-      const timestamp = parseInt(timestampStr);
+      const timestamp = parseInt(timestampStr, 10);
+
+      // Check if timestamp is valid
+      if (isNaN(timestamp)) {
+        return false;
+      }
 
       // Check if token is for the correct session
       if (tokenSessionId !== sessionId) {

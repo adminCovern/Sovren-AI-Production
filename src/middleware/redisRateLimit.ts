@@ -42,6 +42,14 @@ export class RedisRateLimiter {
    * Initialize Redis connection
    */
   private async initializeRedis(): Promise<void> {
+    // Skip Redis during build
+    if (process.env.NEXT_PHASE === 'build' || process.env.DISABLE_REDIS === 'true') {
+      console.log('⚠️ Redis Rate Limiter disabled during build, using memory fallback');
+      this.redisClient = null;
+      this.isRedisConnected = false;
+      return;
+    }
+
     try {
       this.redisClient = createClient({
         url: process.env.REDIS_URL || 'redis://localhost:6379',

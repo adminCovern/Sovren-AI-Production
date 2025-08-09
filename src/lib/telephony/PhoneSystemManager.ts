@@ -63,6 +63,11 @@ export class PhoneSystemManager {
         throw new Error('Failed to initialize FreeSWITCH');
       }
 
+      // Initialize provisioning manager (e.g., preload pricing, rate tables)
+      if (typeof this.provisioningManager.initialize === 'function') {
+        await this.provisioningManager.initialize();
+      }
+
       console.log('✅ Phone system initialized successfully');
       return true;
 
@@ -153,8 +158,11 @@ export class PhoneSystemManager {
 
       // Determine which number to use as caller ID
       let fromNumber: string;
-      
+
       if (request.executiveRole === 'sovren-ai') {
+        if (!allocation.phoneNumbers.sovrenAI) {
+          throw new Error('No SOVREN AI phone number allocated');
+        }
         fromNumber = allocation.phoneNumbers.sovrenAI;
       } else {
         const executiveNumber = allocation.phoneNumbers.executives[request.executiveRole as keyof typeof allocation.phoneNumbers.executives];
@@ -237,10 +245,19 @@ export class PhoneSystemManager {
     const allocation = this.userAllocations.get(userId);
     if (!allocation) return [];
 
-    return [
-      allocation.phoneNumbers.sovrenAI,
-      ...Object.values(allocation.phoneNumbers.executives)
-    ].filter(Boolean);
+    const numbers: string[] = [];
+
+    if (allocation.phoneNumbers.sovrenAI) {
+      numbers.push(allocation.phoneNumbers.sovrenAI);
+    }
+
+    Object.values(allocation.phoneNumbers.executives).forEach(number => {
+      if (number) {
+        numbers.push(number);
+      }
+    });
+
+    return numbers;
   }
 
   /**

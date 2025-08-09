@@ -331,7 +331,7 @@ describe('PhoneSystemManager', () => {
         freeswitchConnected: true,
         activeUsers: 2,
         activeCalls: 0,
-        totalPhoneNumbers: 7 // 5 from user-1 + 2 from user-2
+        totalPhoneNumbers: 8 // 5 from user-1 + 3 from user-2 (includes SOVREN AI)
       });
     });
   });

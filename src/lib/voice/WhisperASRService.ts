@@ -449,29 +449,19 @@ export class WhisperASRService extends EventEmitter {
    * Build Whisper command arguments
    */
   private buildWhisperArgs(inputFile: string, outputFile: string, language: string): string[] {
+    // Prefer whisper.cpp short options for broad compatibility
+    // -m <model> -f <file> -ot json -of <prefix> -t <threads> [-l <lang>]
+    const outputPrefix = outputFile.replace(/\.json$/i, '');
     const args = [
-      '--model', this.config.modelPath,
-      '--file', inputFile,
-      '--output-file', outputFile,
-      '--output-format', this.config.outputFormat!,
-      '--threads', this.config.threads!.toString(),
-      '--processors', this.config.processors!.toString()
+      '-m', this.config.modelPath,
+      '-f', inputFile,
+      '-ot', (this.config.outputFormat || 'json') as string,
+      '-of', outputPrefix,
+      '-t', (this.config.threads || 4).toString()
     ];
 
-    if (language !== 'auto') {
-      args.push('--language', language);
-    }
-
-    if (this.config.enableTimestamps) {
-      args.push('--print-timestamps');
-    }
-
-    if (this.config.enableWordTimestamps) {
-      args.push('--word-timestamps');
-    }
-
-    if (this.config.temperature !== undefined) {
-      args.push('--temperature', this.config.temperature.toString());
+    if (language && language !== 'auto') {
+      args.push('-l', language);
     }
 
     return args;

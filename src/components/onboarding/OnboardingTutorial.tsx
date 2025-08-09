@@ -6,7 +6,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+// Temporarily disable framer-motion to fix build
+// import { motion, AnimatePresence } from 'framer-motion';
 
 export interface TutorialStep {
   id: string;
@@ -255,11 +256,8 @@ export const OnboardingTutorial: React.FC<OnboardingTutorialProps> = ({
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50" />
       
       {/* Tutorial Panel */}
-      <AnimatePresence>
-        <motion.div
-          initial={{ opacity: 0, y: 50 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 50 }}
+      {/* <AnimatePresence> */}
+        <div
           className="fixed bottom-8 left-8 right-8 md:left-auto md:right-8 md:w-96 bg-gray-900/95 backdrop-blur-md border border-green-500/30 rounded-lg p-6 z-50"
         >
           {/* Header */}
@@ -337,8 +335,8 @@ export const OnboardingTutorial: React.FC<OnboardingTutorialProps> = ({
               </button>
             </div>
           </div>
-        </motion.div>
-      </AnimatePresence>
+        </div>
+      {/* </AnimatePresence> */}
 
       {/* Highlight Styles */}
       <style jsx global>{`

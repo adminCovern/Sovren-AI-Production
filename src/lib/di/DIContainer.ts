@@ -216,7 +216,10 @@ if (typeof Reflect === 'undefined' || !Reflect.defineMetadata) {
       if (!metadataMap.has(target)) {
         metadataMap.set(target, new Map());
       }
-      metadataMap.get(target).set(key, value);
+      const targetMetadata = metadataMap.get(target);
+      if (targetMetadata) {
+        targetMetadata.set(key, value);
+      }
     },
     getMetadata(key: string, target: any) {
       const metadata = metadataMap.get(target);

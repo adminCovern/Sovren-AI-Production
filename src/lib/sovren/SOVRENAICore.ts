@@ -628,9 +628,9 @@ export class SOVRENAICore extends EventEmitter {
     
     // Keep only last 1000 learning entries
     if (this.learningData.size > 1000) {
-      const firstKey = this.learningData.keys().next().value;
-      if (firstKey) {
-        this.learningData.delete(firstKey);
+      const firstKeyIterator = this.learningData.keys().next();
+      if (!firstKeyIterator.done && firstKeyIterator.value !== undefined) {
+        this.learningData.delete(firstKeyIterator.value);
       }
     }
   }

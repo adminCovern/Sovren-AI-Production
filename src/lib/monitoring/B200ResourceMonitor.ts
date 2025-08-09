@@ -344,7 +344,10 @@ export class B200ResourceMonitor extends EventEmitter {
     const gpuMetrics: B200GPUMetrics[] = [];
     for (const [gpuId, history] of this.metricsHistory.entries()) {
       if (history.length > 0) {
-        gpuMetrics.push(history[history.length - 1]);
+        const latestMetric = history[history.length - 1];
+        if (latestMetric !== undefined) {
+          gpuMetrics.push(latestMetric);
+        }
       }
     }
 
@@ -427,7 +430,9 @@ export class B200ResourceMonitor extends EventEmitter {
       'Voice Synthesis',
       'Data Analysis'
     ];
-    return tasks[Math.floor(Math.random() * tasks.length)];
+    const randomIndex = Math.floor(Math.random() * tasks.length);
+    const task = tasks[randomIndex];
+    return task !== undefined ? task : 'AI Processing';
   }
 
   private getModelType(modelType: string): 'llm' | 'tts' | 'analysis' {
