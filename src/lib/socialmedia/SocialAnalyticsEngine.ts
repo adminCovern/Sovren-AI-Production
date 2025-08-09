@@ -1293,11 +1293,12 @@ export class SocialAnalyticsEngine extends EventEmitter {
    * Calculate optimal content mix
    */
   private calculateOptimalContentMix(contentTypes: any): any {
-    const totalEngagement = Object.values(contentTypes).reduce((sum: number, type: any) => sum + type.avg_engagement, 0);
+    const totalEngagement = Object.values(contentTypes).reduce((sum: number, type: any) => sum + (Number(type.avg_engagement) || 0), 0);
 
     const mix: any = {};
     Object.entries(contentTypes).forEach(([type, data]: [string, any]) => {
-      mix[type] = Math.round((data.avg_engagement / totalEngagement) * 100);
+      const avgEngagement = Number(data.avg_engagement) || 0;
+      mix[type] = Math.round((Number(avgEngagement) / Number(totalEngagement || 1)) * 100);
     });
 
     return mix;

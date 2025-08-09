@@ -361,16 +361,11 @@ export class AuthenticationSystem {
   /**
    * Get user by ID
    */
-  public getUser(userId: string): User | { id: any; username: any; email: any; role: any; permissions: any; } | null {
+  public getUser(userId: string): User | null {
     // Find user by ID since users are stored by email
     for (const user of this.users.values()) {
       if (user.id === userId) {
-        return {
-          ...user,
-          username: user.username || user.name,
-          role: user.role || 'user',
-          permissions: user.permissions || this.getUserPermissions(user.tier)
-        };
+        return user; // Return the complete user object
       }
     }
     return null;
