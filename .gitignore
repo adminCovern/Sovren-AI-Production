@@ -7,6 +7,7 @@ pnpm-debug.log*
 
 # Next.js
 .next/
+.next/**/*
 out/
 build/
 dist/
@@ -121,6 +122,13 @@ deployment/
 # Cache
 .cache/
 *.cache
+
+# Next.js specific cache and build files
+.next/cache/
+.next/server/
+.next/static/chunks/
+.next/trace
+*.pack
 
 # Storybook build outputs
 .out
