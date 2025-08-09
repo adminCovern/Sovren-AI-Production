@@ -54,8 +54,8 @@ popd >/dev/null
 if [[ "$FULL" == "1" ]]; then
   say "FULL=1: building client (Next.js)"
   pushd /data/sovren-ai/app >/dev/null
-  NPM_CONFIG_LOGLEVEL=error sudo -u ubuntu "$NPM_BIN" ci --omit=optional
-  sudo -u ubuntu "$NPM_BIN" run build:client
+  sudo -u ubuntu NPM_CONFIG_LOGLEVEL=error "$NPM_BIN" ci --omit=dev --omit=optional --no-audit --fund=false
+  sudo -u ubuntu NEXT_TELEMETRY_DISABLED=1 NEXT_DISABLE_ESLINT=1 NEXT_DISABLE_TYPECHECK=1 "$NPM_BIN" run build:client
   popd >/dev/null
 fi
 
