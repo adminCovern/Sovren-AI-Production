@@ -1219,7 +1219,7 @@ export class SocialAnalyticsEngine extends EventEmitter {
    * Identify demographic opportunities with market intelligence
    */
   private identifyDemographicOpportunities(demographics: any): string[] {
-    const opportunities = [];
+    const opportunities: string[] = [];
 
     // Analyze age group distribution
     if (demographics.age_groups['18-24'] > 0.3) {
@@ -2016,7 +2016,7 @@ export class SocialAnalyticsEngine extends EventEmitter {
    * Identify global improvement opportunities
    */
   private identifyGlobalImprovementOpportunities(allMetrics: Map<string, AnalyticsMetrics>): string[] {
-    const opportunities = [];
+    const opportunities: string[] = [];
 
     const avgEngagement = Array.from(allMetrics.values()).reduce((sum, m) => sum + m.engagement.rate, 0) / allMetrics.size;
     if (avgEngagement < 0.03) {

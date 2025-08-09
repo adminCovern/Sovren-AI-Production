@@ -523,7 +523,7 @@ export class IntegrationSetupSystem extends EventEmitter {
     industry: string,
     tier: 'SMB' | 'ENTERPRISE'
   ): string[] {
-    const reasons = [];
+    const reasons: string[] = [];
 
     if (service.popularity > 0.8) {
       reasons.push('Highly popular and trusted by businesses');
@@ -549,7 +549,7 @@ export class IntegrationSetupSystem extends EventEmitter {
   }
 
   private generateIntegrationBenefits(service: IntegrationService): string[] {
-    const benefits = [];
+    const benefits: string[] = [];
 
     if (service.capabilities.includes('contacts')) {
       benefits.push('Sync and manage contacts automatically');
