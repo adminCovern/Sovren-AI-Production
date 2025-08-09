@@ -23,6 +23,11 @@ fi
 NPM_BIN="${NODE_BIN%/node}/npm"
 
 say "Using Node: $NODE_BIN"
+# Deployment toggles
+FULL="${FULL:-0}"
+WITH_NGINX="${WITH_NGINX:-0}"
+NEXT_PORT="${NEXT_PORT:-3000}"
+
 
 # Ensure dirs
 sudo mkdir -p /data/{sovren-ai,whisper,freesswitch} >/dev/null 2>&1 || true
@@ -45,6 +50,15 @@ NPM_CONFIG_LOGLEVEL=error sudo -u ubuntu "$NPM_BIN" install --no-save --silent t
 popd >/dev/null
 
 # Build server dist
+
+if [[ "$FULL" == "1" ]]; then
+  say "FULL=1: building client (Next.js)"
+  pushd /data/sovren-ai/app >/dev/null
+  NPM_CONFIG_LOGLEVEL=error sudo -u ubuntu "$NPM_BIN" ci --omit=optional
+  sudo -u ubuntu "$NPM_BIN" run build:client
+  popd >/dev/null
+fi
+
 say "Building dist from repo at /data/sovren-ai/app"
 [[ -d /data/sovren-ai/app ]] || { err "/data/sovren-ai/app missing. Clone repo there."; exit 1; }
 sudo rm -rf /data/sovren-ai/app-build/dist
@@ -118,6 +132,28 @@ StandardError=journal
 [Install]
 WantedBy=multi-user.target
 EOF
+# Optional: configure NGINX reverse proxy to Next.js (if FULL and WITH_NGINX)
+if [[ "$FULL" == "1" && "$WITH_NGINX" == "1" ]]; then
+  say "Configuring NGINX reverse proxy on :80 -> localhost:$NEXT_PORT"
+  sudo tee /etc/nginx/sites-available/sovren-ai >/dev/null <<NGINX
+server {
+  listen 80;
+  server_name _;
+
+  location / {
+    proxy_pass http://127.0.0.1:$NEXT_PORT;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection 'upgrade';
+    proxy_set_header Host $host;
+    proxy_cache_bypass $http_upgrade;
+  }
+}
+NGINX
+  sudo ln -sf /etc/nginx/sites-available/sovren-ai /etc/nginx/sites-enabled/sovren-ai
+  sudo nginx -t && sudo systemctl reload nginx || true
+fi
+
 
 sudo systemd-analyze verify /etc/systemd/system/sovren-ai.service
 sudo systemctl daemon-reload
