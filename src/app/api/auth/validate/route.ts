@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { authSystem } from '@/lib/auth/AuthenticationSystem';
+import { authSystem, type User } from '@/lib/auth/AuthenticationSystem';
 import { rateLimiters } from '@/lib/security/RateLimiters';
-import type { User } from '@/types/auth';
 
 /**
  * Authentication Validation API
