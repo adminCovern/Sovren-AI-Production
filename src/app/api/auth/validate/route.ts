@@ -52,13 +52,7 @@ export async function POST(request: NextRequest) {
         // Get user details
         const userDetails = authSystem.getUser(userId);
         if (userDetails) {
-          user = {
-            id: userDetails.id,
-            username: userDetails.username,
-            email: userDetails.email,
-            role: userDetails.role,
-            permissions: userDetails.permissions
-          };
+          user = userDetails; // Use the complete user object from authSystem
         }
       }
     }
