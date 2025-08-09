@@ -328,7 +328,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Generate alerts based on system state
-    const alerts = [];
+    const alerts: any[] = [];
     
     // High neural load alert
     const highLoadExecutives = dashboardData.executives.filter(exec => exec.performance.neuralLoad > 0.9);

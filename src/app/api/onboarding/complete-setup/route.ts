@@ -262,7 +262,7 @@ export async function POST(request: NextRequest) {
       const completionTime = Date.now() - startTime;
 
       // Determine next steps
-      const nextSteps = [];
+      const nextSteps: string[] = [];
       if (shadowBoard.getInitializationStatus().isInitialized) {
         nextSteps.push('Explore your Shadow Board executives');
       }
