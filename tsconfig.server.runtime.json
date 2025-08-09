@@ -1,0 +1,34 @@
+{
+  "extends": "./tsconfig.server.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "noEmitOnError": false,
+    "incremental": false
+  },
+  "include": [
+    "src/lib/server/**/*",
+    "src/lib/telephony/**/*",
+    "src/lib/voice/**/*",
+    "src/lib/security/**/*",
+    "src/lib/utils/**/*",
+    "config/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    ".next",
+    "src/app/**/*",
+    "src/components/**/*",
+    "src/hooks/**/*",
+    "src/store/**/*",
+    "src/styles/**/*",
+    "src/tests/**/*",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/*.spec.ts",
+    "**/*.spec.tsx",
+    "scripts/**/*",
+    "docker/**/*"
+  ]
+}
+

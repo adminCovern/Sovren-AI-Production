@@ -49,7 +49,7 @@ say "Building dist from repo at /data/sovren-ai/app"
 [[ -d /data/sovren-ai/app ]] || { err "/data/sovren-ai/app missing. Clone repo there."; exit 1; }
 sudo rm -rf /data/sovren-ai/app-build/dist
 sudo mkdir -p /data/sovren-ai/app-build/dist
-/data/sovren-ai/tsc-toolchain/node_modules/.bin/tsc --project /data/sovren-ai/app/tsconfig.server.json --outDir /data/sovren-ai/app-build/dist
+/data/sovren-ai/tsc-toolchain/node_modules/.bin/tsc --project /data/sovren-ai/app/tsconfig.server.runtime.json --outDir /data/sovren-ai/app-build/dist
 
 # Prepare runtime with prod deps only
 say "Preparing runtime with production-only dependencies"
