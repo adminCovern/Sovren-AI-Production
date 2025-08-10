@@ -211,14 +211,14 @@ export async function GET(request: NextRequest) {
     // Calculate system metrics
     const systemMetrics = {
       totalSuites: suites.size,
-      completedSuites: Array.from(suites.values()).filter(s => s.status === 'completed').length,
-      runningSuites: Array.from(suites.values()).filter(s => s.status === 'running').length,
-      totalTests: Array.from(suites.values()).reduce((sum, s) => sum + s.totalTests, 0),
+      completedSuites: (Array.from(suites.values()) as any[]).filter((s: any) => s.status === 'completed').length,
+      runningSuites: (Array.from(suites.values()) as any[]).filter((s: any) => s.status === 'running').length,
+      totalTests: (Array.from(suites.values()) as any[]).reduce((sum: number, s: any) => sum + (s?.totalTests ?? 0), 0),
       completedTests: results.size,
       averagePerformanceGain: summary.averageGain || 0,
       maxPerformanceGain: summary.maxGain || 0,
-      lastBenchmark: results.size > 0 ? 
-        Array.from(results.values()).sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())[0].timestamp : null
+      lastBenchmark: results.size > 0 ?
+        ((Array.from(results.values()) as any[]).sort((a: any, b: any) => b.timestamp.getTime() - a.timestamp.getTime())[0]?.timestamp ?? null) : null
     };
 
     // Available benchmark categories

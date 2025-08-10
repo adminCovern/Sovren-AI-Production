@@ -165,9 +165,8 @@ export async function GET(request: NextRequest) {
     const dashboardData: ExecutiveDashboardData = {
       overview: {
         totalExecutives: shadowBoard.getExecutives().size,
-        activeExecutives: Array.from(shadowBoard.getExecutives().values()).filter(
-          exec => exec.neuralLoad > 0.1
-        ).length,
+        activeExecutives: (Array.from(shadowBoard.getExecutives().values()) as any[])
+          .filter((exec: any) => exec.neuralLoad > 0.1).length,
         totalInteractions: state.totalInteractions,
         activeCalls: shadowBoard.isVoiceIntegrationAvailable() 
           ? shadowBoard.getActiveExecutiveCalls().length 
@@ -245,7 +244,7 @@ export async function GET(request: NextRequest) {
       ? shadowBoard.getExecutiveVoiceProfiles() 
       : [];
 
-    dashboardData.executives = Array.from(executives.values()).map(exec => {
+    dashboardData.executives = (Array.from(executives.values()) as any[]).map((exec: any) => {
       const voiceProfile = voiceProfiles.find(p => p.executiveRole === exec.role);
       
       return {

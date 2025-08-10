@@ -184,7 +184,7 @@ async function handleGetShadowBoardStatus(userId: string): Promise<NextResponse>
     const capabilities = sovrenCore.getCapabilities();
     const state = sovrenCore.getState();
 
-    const executives = Array.from(shadowBoard.getExecutives().values()).map(exec => ({
+    const executives = (Array.from(shadowBoard.getExecutives().values()) as any[]).map((exec: any) => ({
       id: exec.id,
       name: exec.name,
       role: exec.role,
@@ -228,7 +228,7 @@ async function handleGetExecutives(userId: string): Promise<NextResponse> {
     const sovrenCore = getSOVRENCore();
     const shadowBoard = sovrenCore.getShadowBoard();
     
-    const executives = Array.from(shadowBoard.getExecutives().values()).map(exec => ({
+    const executives = (Array.from(shadowBoard.getExecutives().values()) as any[]).map((exec: any) => ({
       id: exec.id,
       name: exec.name,
       role: exec.role,

@@ -266,8 +266,8 @@ export async function GET(request: NextRequest) {
         ? shadowBoard.getExecutiveVoiceProfiles() 
         : [];
 
-      capabilities.executiveRoles = Array.from(executives.values()).map(exec => {
-        const voiceProfile = voiceProfiles.find(p => p.executiveRole === exec.role);
+      capabilities.executiveRoles = (Array.from(executives.values()) as any[]).map((exec: any) => {
+        const voiceProfile = (voiceProfiles as any[]).find((p: any) => p.executiveRole === exec.role);
         
         return {
           role: exec.role,

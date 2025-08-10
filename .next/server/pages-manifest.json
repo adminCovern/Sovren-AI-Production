@@ -1,9 +1,9 @@
 {
-  "/_app": "pages/_app.js",
-  "/_error": "pages/_error.js",
   "/api/billing/subscription/create": "pages/api/billing/subscription/create.js",
   "/api/billing/user/[userId]/status": "pages/api/billing/user/[userId]/status.js",
+  "/_app": "pages/_app.js",
   "/api/billing/webhook/stripe": "pages/api/billing/webhook/stripe.js",
+  "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
   "/404": "pages/404.html"
 }

@@ -166,7 +166,7 @@ export async function GET(request: NextRequest) {
 
     // Get user's executives
     const executives = await executiveAccessManager.getUserExecutives(userId);
-    const executiveList = Array.from(executives.values()).map(exec => ({
+    const executiveList = (Array.from(executives.values()) as any[]).map((exec: any) => ({
       executiveId: exec.executiveId,
       role: exec.role,
       name: exec.name,

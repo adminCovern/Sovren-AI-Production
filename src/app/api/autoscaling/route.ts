@@ -200,8 +200,8 @@ export async function GET(request: NextRequest) {
       resourceUtilization: currentMetrics ? currentMetrics.gpuUtilization : 0,
       averageLatency: currentMetrics ? currentMetrics.averageLatency : 0,
       activeExecutives: executiveWorkloads.size,
-      totalWorkload: Array.from(executiveWorkloads.values())
-        .reduce((sum, w) => sum + w.currentRequests, 0)
+      totalWorkload: (Array.from(executiveWorkloads.values()) as any[])
+        .reduce((sum: number, w: any) => sum + (w?.currentRequests ?? 0), 0)
     };
 
     // Auto-scaling capabilities

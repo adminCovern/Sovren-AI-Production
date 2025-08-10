@@ -123,16 +123,14 @@ export async function GET(request: NextRequest) {
 
     // Calculate overview metrics
     const totalExecutives = executives.size;
-    const activeExecutives = Array.from(executives.values()).filter(
-      exec => exec.neuralLoad > 0.1
-    ).length;
+    const activeExecutives = (Array.from(executives.values()) as any[])
+      .filter((exec: any) => exec.neuralLoad > 0.1).length;
     
-    const averageNeuralLoad = Array.from(executives.values()).reduce(
-      (sum, exec) => sum + exec.neuralLoad, 0
-    ) / totalExecutives;
+    const averageNeuralLoad = (Array.from(executives.values()) as any[])
+      .reduce((sum: number, exec: any) => sum + exec.neuralLoad, 0) / totalExecutives;
 
     // Build executive metrics
-    const executiveMetrics = Array.from(executives.values()).map(executive => ({
+    const executiveMetrics = (Array.from(executives.values()) as any[]).map((executive: any) => ({
       id: executive.id,
       name: executive.name,
       role: executive.role,
@@ -171,12 +169,10 @@ export async function GET(request: NextRequest) {
       totalInteractions: state.totalInteractions,
       averageResponseTime: state.averageResponseTime,
       successRate: state.successRate,
-      dimensionalProcessingEvents: Array.from(executives.values()).filter(
-        exec => exec.singularityCoefficient > 0.8
-      ).length,
-      quantumEntanglements: Array.from(executives.values()).filter(
-        exec => exec.quantumState === 'entangled'
-      ).length,
+      dimensionalProcessingEvents: (Array.from(executives.values()) as any[])
+        .filter((exec: any) => exec.singularityCoefficient > 0.8).length,
+      quantumEntanglements: (Array.from(executives.values()) as any[])
+        .filter((exec: any) => exec.quantumState === 'entangled').length,
       memeticVirusDeployments: totalExecutives, // All executives have memetic viruses
       realityDistortionEvents: Math.floor(shadowBoard.getRealityDistortionField() * 10)
     };

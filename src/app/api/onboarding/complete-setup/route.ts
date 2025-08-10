@@ -126,7 +126,7 @@ export async function POST(request: NextRequest) {
         await shadowBoard.initializeForSMB(body.userId, body.subscriptionTier);
       }
 
-      const executives = Array.from(shadowBoard.getExecutives().values()).map(exec => ({
+      const executives = (Array.from(shadowBoard.getExecutives().values()) as any[]).map((exec: any) => ({
         id: exec.id,
         name: exec.name,
         role: exec.role,
